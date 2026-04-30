@@ -10,7 +10,7 @@ import { showToast } from '@/components/ui/Toast';
 interface Props { open: boolean; onClose: () => void; }
 
 export default function ShareModal({ open, onClose }: Props) {
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const { appData, activeZone, selYear, selMonth, shareType, setShareType, shareFmt, setShareFmt } = useAppStore();
   const [zone, setZone] = useState<string>(activeZone);

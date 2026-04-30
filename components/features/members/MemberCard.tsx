@@ -41,7 +41,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
   const [riwOpen, setRiwOpen] = useState(false);
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const inputDirty   = useRef(false);
   const isCollapsing = useRef(false);

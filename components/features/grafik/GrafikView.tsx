@@ -27,7 +27,7 @@ export default function GrafikView() {
   const { appData, activeZone, selYear, setSelYear, darkMode } = useAppStore();
 
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const [donutMonth, setDonutMonth] = useState(new Date().getMonth());
   const [p1Year,  setP1Year]  = useState(new Date().getFullYear());
@@ -44,12 +44,12 @@ export default function GrafikView() {
   const zcTOT = ZC_TOT;
 
   const mData = MONTHS.map((_, mi) =>
-    activeZone === ('TOTAL' as any)
+    activeZone === 'TOTAL'
       ? getZoneTotal(appData, 'KRS', selYear, mi) + getZoneTotal(appData, 'SLK', selYear, mi)
       : mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0)
   );
   const yData = getYears().map(y =>
-    activeZone === ('TOTAL' as any)
+    activeZone === 'TOTAL'
       ? MONTHS.reduce((s, _, mi) => s + getZoneTotal(appData, 'KRS', y, mi) + getZoneTotal(appData, 'SLK', y, mi), 0)
       : MONTHS.reduce((s, _, mi) => s + mems.reduce((ss, m) => ss + (getPay(appData, activeZone, m, y, mi) || 0), 0), 0)
   );
@@ -166,7 +166,7 @@ export default function GrafikView() {
   };
 
   // Chart 4: Donut
-  const donutZone = activeZone === ('TOTAL' as any) ? 'KRS' : activeZone;
+  const donutZone = activeZone === 'TOTAL' ? 'KRS' : activeZone;
   const donutStat = getDonutData(donutZone, selYear, donutMonth);
   const donutChartData = {
     labels: [t('status.lunas'), t('status.belum'), t('status.free')],

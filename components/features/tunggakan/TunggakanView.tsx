@@ -23,7 +23,7 @@ export default function TunggakanView() {
   const [mode, setMode] = useState<TMode>('nakal');
   const [agingFilter, setAgingFilter] = useState<AgingFilter>('total');
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
 
   const mems = activeZone === 'KRS' ? appData.krsMembers : appData.slkMembers;

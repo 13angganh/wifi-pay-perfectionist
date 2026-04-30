@@ -4,6 +4,6 @@ import { useAppStore } from '@/store/useAppStore';
 import GrafikView from '@/components/features/grafik/GrafikView';
 export default function Page() {
   const { setView } = useAppStore();
-  useEffect(() => { setView('grafik' as any); }, []);
+  useEffect(() => { setView('grafik'); }, []);
   return <GrafikView />;
 }

@@ -4,6 +4,6 @@ import { useAppStore } from '@/store/useAppStore';
 import TunggakanView from '@/components/features/tunggakan/TunggakanView';
 export default function Page() {
   const { setView } = useAppStore();
-  useEffect(() => { setView('tunggakan' as any); }, []);
+  useEffect(() => { setView('tunggakan'); }, []);
   return <TunggakanView />;
 }

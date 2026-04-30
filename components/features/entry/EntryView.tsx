@@ -11,6 +11,7 @@ import { showToast } from '@/components/ui/Toast';
 import MemberCard from '../members/MemberCard';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import type { FilterStatus } from '@/types';
 import {
   ClipboardList, CheckCircle2, Clock, Gift,
   Search, X, Smartphone,
@@ -64,7 +65,7 @@ export default function EntryView() {
   }, [setEntryScrollTop]);
 
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const chips: { key: FilterType; icon: React.ReactNode; label: string; count?: number }[] = [
     { key: 'all',    icon: <ClipboardList size={12} />, label: t('common.all') },
@@ -256,7 +257,7 @@ export default function EntryView() {
             <button
               key={key}
               className={`fchip ${filterStatus2 === key ? 'on' : ''}`}
-              onClick={() => setFilter(key as any)}
+              onClick={() => setFilter(key as FilterStatus)}
               style={{ minHeight:36, display:'flex', alignItems:'center', gap:5 }}
             >
               {icon}

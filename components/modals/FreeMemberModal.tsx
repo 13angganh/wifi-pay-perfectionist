@@ -21,7 +21,7 @@ interface Props {
 export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   const { appData, setAppData, uid, userEmail, setSyncStatus } = useAppStore();
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
 
   const existing = appData.freeMembers?.[zone+'__'+name];

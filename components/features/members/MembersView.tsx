@@ -42,7 +42,7 @@ export default function MembersView() {
   const [riwOpen,  setRiwOpen]  = useState(false);
 
   const t = useT();
-  const lang = (useAppStore(s => s.settings) as any).language ?? 'id';
+  const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const zone = newMemberZone;
   const zc   = zone === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)';

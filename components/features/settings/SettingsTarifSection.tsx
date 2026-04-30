@@ -130,12 +130,12 @@ export default function SettingsTarifSection() {
   }) {
     return (
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
-        <select style={{ ...selStyle, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as Zone)}>
+        <select style={{ ...selStyle, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as 'KRS'|'SLK'|'ALL')}>
           <option value="KRS">KRS</option>
           <option value="SLK">SLK</option>
           {showAll && <option value="ALL">ALL</option>}
         </select>
-        <select style={{ ...selStyle, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'perBulan' | 'pertahun')}>
+        <select style={{ ...selStyle, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'monthly'|'yearly')}>
           <option value="monthly">{t('settings.export.monthly')}</option>
           <option value="yearly">{t('settings.export.yearly')}</option>
         </select>

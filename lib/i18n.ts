@@ -46,7 +46,7 @@ export function tLog(key: string): string {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { useAppStore } = require('@/store/useAppStore');
-    const lang: Language = (useAppStore.getState()?.settings as any)?.language ?? 'id';
+    const lang: Language = useAppStore.getState()?.settings?.language ?? 'id';
     return createTranslator(lang)(key);
   } catch {
     return t(key, 'id');

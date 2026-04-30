@@ -265,6 +265,7 @@ export default function RekapView() {
           size="md"
         />
       ) : (
+      <>
       <div className="rekap-wrap">
         <table className="rtable">
           <thead>
@@ -369,6 +370,7 @@ export default function RekapView() {
       <div style={{ fontSize:10, color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
         {t('rekap.scrollHint')}
       </div>
+      </> /* end data branch fragment */
       )} {/* end loading/empty/data conditional */}
 
       <RekapModal inputDirty={inputDirty} modalClosing={modalClosing} onClose={closeModal} />

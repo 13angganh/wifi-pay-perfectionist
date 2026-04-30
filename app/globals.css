@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════
+   globals.css — Entry point (FASE-1 refactor)
+   
+   Semua gaya dipecah ke styles/ untuk maintainability.
+   File ini hanya berisi @import — JANGAN tambahkan
+   CSS baru di sini; taruh di file yang sesuai:
+   
+   styles/tokens.css      → CSS custom properties (design tokens)
+   styles/reset.css       → Reset & base element styles
+   styles/animations.css  → Keyframes & transitions
+   styles/layout.css      → Layout utilities & structural styles
+   styles/components.css  → Component-specific styles
+   ══════════════════════════════════════════════════════ */
+
+@import "../styles/tokens.css";
+@import "../styles/reset.css";
+@import "../styles/animations.css";
+@import "../styles/layout.css";
+@import "../styles/components.css";

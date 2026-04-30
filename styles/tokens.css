@@ -1,0 +1,113 @@
+/* ══════════════════════════════════════════════════════
+   styles/tokens.css — MASTER design tokens
+   Source of truth untuk semua CSS custom properties.
+   Jika mengubah nilai token, update file ini TERLEBIH DAHULU,
+   lalu cek lib/design-tokens.ts untuk JS-relevant tokens.
+   ══════════════════════════════════════════════════════ */
+
+/* ── Dark (default) ── */
+:root {
+  --bg  : #0F1117;
+  --bg2 : #181C27;
+  --bg3 : #1E2235;
+  --bg4 : #252B40;
+  --border : #252B40;
+  --border2: #1E2235;
+  --scrollbar: #252B40;
+
+  --zc-krs: #3B82F6;
+  --zc-slk: #F97316;
+  --zc    : var(--zc-krs);
+  --zcdim : #3B82F622;
+
+  --c-lunas: #22C55E;
+  --c-belum: #EF4444;
+  --c-free : #3B82F6;
+
+  --txt : #FFFFFF;
+  --txt2: #A1A8C1;
+  --txt3: #6B7494;
+  --txt4: #4A5270;
+  --txt5: #2D3452;
+
+  --card : #181C27;
+  --card2: #1E2235;
+
+  --sidebar-w: 250px;
+  --header-h : 56px;
+
+  --fs-display: 18px;
+  --fs-heading: 15px;
+  --fs-body   : 13px;
+  --fs-data   : 13px;
+  --fs-caption: 11px;
+  --fs-label  : 10px;
+  --fs-micro  :  9px;
+
+  --lh-heading: 1.2;
+  --lh-body   : 1.6;
+  --lh-caption: 1.5;
+
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3: 16px;
+  --sp-4: 24px;
+  --sp-5: 32px;
+  --sp-6: 40px;
+  --sp-7: 48px;
+
+  --r-xs  :  4px;
+  --r-sm  :  8px;
+  --r-md  : 12px;
+  --r-lg  : 16px;
+  --r-xl  : 20px;
+  --r-full: 9999px;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08);
+  --shadow-z : 0 4px 20px rgba(59,130,246,.25);
+
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --ease-out   : cubic-bezier(.0,.0,.2,1);
+  --ease-in    : cubic-bezier(.4,.0,1,1);
+  --ease-smooth: cubic-bezier(.4,.0,.2,1);
+
+  --t-fast  : 120ms;
+  --t-base  : 200ms;
+  --t-slow  : 320ms;
+  --t-spring: 400ms;
+
+  --t-fast-smooth  : 120ms cubic-bezier(.4,.0,.2,1);
+  --t-base-smooth  : 200ms cubic-bezier(.4,.0,.2,1);
+  --t-slow-smooth  : 320ms cubic-bezier(.4,.0,.2,1);
+  --t-spring-anim  : 400ms cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── Light ── */
+body.light {
+  --bg  : #F8FAFC;
+  --bg2 : #FFFFFF;
+  --bg3 : #F0F4F8;
+  --bg4 : #E4EAF0;
+  --border : #E4EAF0;
+  --border2: #EEF2F7;
+  --scrollbar: #C8D0E0;
+
+  --txt : #0F1117;
+  --txt2: #374151;
+  --txt3: #6B7280;
+  --txt4: #9CA3AF;
+  --txt5: #D1D5DB;
+
+  --card : #FFFFFF;
+  --card2: #F0F4F8;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.08);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.16),0 0 0 1px rgba(0,0,0,.08);
+  --shadow-z : 0 4px 20px rgba(59,130,246,.15);
+  --zcdim: #3B82F618;
+}

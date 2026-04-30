@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <!-- Background iOS-style rounded rect -->
+  <rect width="512" height="512" rx="116" ry="116" fill="url(#bg)"/>
+  <!-- WiFi arcs — menghadap atas, titik di bawah, center 256,310 -->
+  <!-- Arc 1 — terluar -->
+  <path d="M96,232 Q96,118 256,118 Q416,118 416,232"
+        fill="none" stroke="white" stroke-width="52"
+        stroke-linecap="round" opacity="1"/>
+  <!-- Arc 2 — tengah -->
+  <path d="M148,272 Q148,182 256,182 Q364,182 364,272"
+        fill="none" stroke="white" stroke-width="52"
+        stroke-linecap="round" opacity="1"/>
+  <!-- Arc 3 — terdalam -->
+  <path d="M200,312 Q200,252 256,252 Q312,252 312,312"
+        fill="none" stroke="white" stroke-width="52"
+        stroke-linecap="round" opacity="1"/>
+  <!-- Titik bawah -->
+  <circle cx="256" cy="390" r="34" fill="white"/>
+</svg>

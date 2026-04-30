@@ -6,10 +6,14 @@ import type { AppData } from '@/types';
 import { MONTHS } from './constants';
 import { getPay, isFree, getZoneTotal, isLunas, getArrears } from './helpers';
 
-// CDN-loaded libraries accessed via window (jsPDF, XLSX)
+// CDN-loaded libraries (jsPDF + SheetJS) — no TypeScript definitions available,
+// intentional use of any for external CDN globals.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface WindowWithLibs extends Window {
-  jspdf: { jsPDF: new (...args: unknown[]) => unknown };
-  XLSX: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  jspdf: { jsPDF: new (...args: any[]) => any };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  XLSX: any;
 }
 const win = (typeof window !== 'undefined' ? window : {}) as WindowWithLibs;
 

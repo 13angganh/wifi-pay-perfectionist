@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import type { FilterStatus } from '@/types';
 import {
   ClipboardList, CheckCircle2, Clock, Gift,
-  Search, X, Smartphone,
+  Search, X,
   CheckCheck, XCircle, Users,
 } from 'lucide-react';
 
@@ -24,7 +24,6 @@ export default function EntryView() {
     activeZone, selYear, selMonth, setSelYear, setSelMonth,
     search, setSearch,
     filterStatus, setFilter,
-    deferredPrompt,
     setEntryScrollTop,
     globalLocked,
     syncStatus,
@@ -142,16 +141,6 @@ export default function EntryView() {
 
   return (
     <div onScroll={handleScroll}>
-      {/* PWA install banner */}
-      {deferredPrompt && (
-        <div className="inst-banner">
-          <div className="inst-txt" style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <Smartphone size={14} />
-            {t('entry.title')} — Install
-          </div>
-          <button className="inst-btn" onClick={() => { (deferredPrompt as any).prompt(); }}>Install</button>
-        </div>
-      )}
 
       {/* Batch mode header */}
       {batchMode ? (

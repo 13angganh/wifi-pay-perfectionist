@@ -24,7 +24,7 @@ ChartJS.register(
 );
 
 export default function GrafikView() {
-  const { appData, activeZone, selYear, setSelYear, darkMode } = useAppStore();
+  const { appData, activeZone, selYear, setSelYear, theme } = useAppStore();
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
@@ -82,7 +82,7 @@ export default function GrafikView() {
   const mperiodPct = p2Total > 0 ? Math.round(((p1Total - p2Total) / p2Total) * 100) : null;
 
   // ── Chart theming ──
-  const { gridColor, tickColor, legendColor, tooltipBg, tooltipBorder, titleColor, bodyColor } = chartTheme(darkMode);
+  const { gridColor, tickColor, legendColor, tooltipBg, tooltipBorder, titleColor, bodyColor } = chartTheme(theme !== 'light');
 
   const baseScales = {
     x: {

@@ -103,6 +103,13 @@ const id: Record<string, string> = {
   'settings.pin'             : 'Keamanan PIN',
   'settings.zones'           : 'Manajemen Zona',
   'settings.language'        : 'Bahasa',
+  'settings.theme'           : 'Tema Tampilan',
+  'settings.theme.light'     : 'Terang',
+  'settings.theme.dark'      : 'Gelap',
+  'settings.theme.gold'      : 'Emas',
+  'settings.theme.lightDesc' : 'Tampilan terang, cocok untuk siang hari',
+  'settings.theme.darkDesc'  : 'Tampilan gelap, nyaman untuk mata',
+  'settings.theme.goldDesc'  : 'Tampilan elegan dengan aksen emas premium',
   'settings.export'          : 'Export Data',
   'settings.autoDate'        : 'Tanggal Otomatis',
   'settings.quickPay'        : 'Quick Pay Amount',
@@ -357,6 +364,9 @@ const id: Record<string, string> = {
   'app.backOnline'               : 'Kembali online',
   'app.updateAvailable'          : 'Ada versi terbaru WiFi Pay!',
   'app.updateNow'                : 'Update Sekarang',
+  'pwa.installTitle'             : 'Pasang WiFi Pay',
+  'pwa.installDesc'              : 'Tambahkan ke layar beranda untuk akses cepat',
+  'pwa.installBtn'               : 'Pasang',
 
   // Header entry lock
   'header.entryLocked'           : 'Entry dikunci',

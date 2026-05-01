@@ -31,12 +31,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [uid, router]);
 
-  // Terapkan dark/light ke body
-  const { darkMode } = useAppStore();
-  useEffect(() => {
-    document.body.classList.toggle('light', !darkMode);
-  }, [darkMode]);
-
   if (!uid) return <LoadingScreen />;
 
   return <AppShell>{children}</AppShell>;

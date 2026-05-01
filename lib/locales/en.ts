@@ -103,6 +103,13 @@ const en: Record<string, string> = {
   'settings.pin'             : 'PIN Security',
   'settings.zones'           : 'Zone Management',
   'settings.language'        : 'Language',
+  'settings.theme'           : 'Display Theme',
+  'settings.theme.light'     : 'Light',
+  'settings.theme.dark'      : 'Dark',
+  'settings.theme.gold'      : 'Gold',
+  'settings.theme.lightDesc' : 'Bright display, great for daytime use',
+  'settings.theme.darkDesc'  : 'Dark display, easy on the eyes',
+  'settings.theme.goldDesc'  : 'Elegant display with premium gold accents',
   'settings.export'          : 'Export Data',
   'settings.autoDate'        : 'Auto Date',
   'settings.quickPay'        : 'Quick Pay Amount',
@@ -357,6 +364,9 @@ const en: Record<string, string> = {
   'app.backOnline'               : 'Back online',
   'app.updateAvailable'          : 'New version of WiFi Pay available!',
   'app.updateNow'                : 'Update Now',
+  'pwa.installTitle'             : 'Install WiFi Pay',
+  'pwa.installDesc'              : 'Add to home screen for quick access',
+  'pwa.installBtn'               : 'Install',
 
   // Header entry lock
   'header.entryLocked'           : 'Entry locked',

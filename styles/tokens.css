@@ -111,3 +111,49 @@ body.light {
   --shadow-z : 0 4px 20px rgba(59,130,246,.15);
   --zcdim: #3B82F618;
 }
+
+/* ── Gold / Emas ── */
+body.gold {
+  /* Background — hitam hangat, bukan hitam dingin */
+  --bg  : #0C0A06;
+  --bg2 : #141008;
+  --bg3 : #1C1610;
+  --bg4 : #241D12;
+  --border : rgba(201,149,42,0.15);
+  --border2: rgba(201,149,42,0.08);
+  --scrollbar: #2a2010;
+
+  /* Zona: safir gelap (KRS) + tembaga (SLK) — tetap bisa dibedakan */
+  --zc-krs: #4d9de0;
+  --zc-slk: #d4870f;
+  --zc    : var(--zc-krs);
+  --zcdim : rgba(201,149,42,0.12);
+
+  /* Status — tidak berubah agar tetap intuitif */
+  --c-lunas: #22C55E;
+  --c-belum: #EF4444;
+  --c-free : #94a3b8;
+
+  /* Teks — putih gading hangat */
+  --txt : #F5EAD6;
+  --txt2: #C4AA80;
+  --txt3: #8A7055;
+  --txt4: #5A4830;
+  --txt5: #2E2218;
+
+  --card : #141008;
+  --card2: #1C1610;
+
+  /* Shadow — hangat keemasan */
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.6);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.5), 0 0 0 1px rgba(201,149,42,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.6), 0 0 0 1px rgba(201,149,42,0.12);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(201,149,42,0.16);
+  --shadow-z : 0 4px 20px rgba(201,149,42,0.20);
+
+  /* Aksen utama — emas medium */
+  --gold        : #C9952A;
+  --gold-bright : #E8B84B;
+  --gold-dim    : rgba(201,149,42,0.15);
+  --gold-border : rgba(201,149,42,0.35);
+}

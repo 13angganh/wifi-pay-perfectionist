@@ -1,4 +1,4 @@
-// components/layout/Header.tsx — Fase 4: sync pill + Lucide + touch target
+// components/layout/Header.tsx — Fase 4: sync pill + Lucide + 3-mode theme cycle
 'use client';
 
 import { useState } from 'react';
@@ -8,9 +8,10 @@ import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
 import { useT } from '@/hooks/useT';
 import {
-  Wifi, Menu, Lock, LockOpen, Search, Sun, Moon,
+  Wifi, Menu, Lock, LockOpen, Search, Sun, Moon, Sparkles,
   Cloud, RotateCw, AlertTriangle, WifiOff,
 } from 'lucide-react';
+import type { ThemeMode } from '@/store/slices/uiSlice';
 
 interface Props { onToggleSidebar: () => void; }
 
@@ -18,13 +19,26 @@ export default function Header({ onToggleSidebar }: Props) {
   const {
     activeZone, setZone,
     globalLocked, setGlobalLocked,
-    syncStatus, darkMode, toggleTheme,
+    syncStatus, theme, setTheme,
     appData, uid, setSyncStatus,
     settings, setAppData,
   } = useAppStore();
 
   const [searchOpen, setSearchOpen] = useState(false);
   const t = useT();
+
+  // Cycle: dark → light → gold → dark
+  function cycleTheme() {
+    const next: Record<ThemeMode, ThemeMode> = { dark: 'light', light: 'gold', gold: 'dark' };
+    const toasts: Record<ThemeMode, string> = {
+      light: settings.language === 'en' ? 'Light mode' : 'Mode Terang',
+      dark:  settings.language === 'en' ? 'Dark mode'  : 'Mode Gelap',
+      gold:  settings.language === 'en' ? 'Gold mode'  : 'Mode Emas',
+    };
+    const n = next[theme];
+    setTheme(n);
+    showToast(toasts[n]);
+  }
 
   function handleZone(z: string) {
     setZone(z);
@@ -170,16 +184,18 @@ export default function Header({ onToggleSidebar }: Props) {
             <Search size={16} strokeWidth={1.5} />
           </button>
 
-          {/* Toggle tema */}
+          {/* Toggle tema — klik untuk cycle dark→light→gold→dark */}
           <button
             className="hbtn"
             style={{ minWidth:40, minHeight:40, display:'flex', alignItems:'center', justifyContent:'center' }}
-            onClick={toggleTheme}
-            aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
-            title={darkMode ? 'Mode terang' : 'Mode gelap'}
+            onClick={cycleTheme}
+            aria-label={t('settings.theme')}
+            title={theme === 'light' ? t('settings.theme.light') : theme === 'gold' ? t('settings.theme.gold') : t('settings.theme.dark')}
           >
-            {darkMode
+            {theme === 'light'
               ? <Sun size={16} strokeWidth={1.5} />
+              : theme === 'gold'
+              ? <Sparkles size={16} strokeWidth={1.5} style={{ color: '#C9952A' }} />
               : <Moon size={16} strokeWidth={1.5} />
             }
           </button>

@@ -48,14 +48,14 @@ export default function EntryView() {
     return sum + (tarif ?? 0);
   }, 0);
 
-  type FilterType = 'all' | 'paid' | 'unpaid' | 'free';
-  const filterStatus2 = filterStatus as FilterType;
+  type FilterType = FilterStatus; // alias untuk backward compat chip key type
+  const filterStatus2 = filterStatus;
 
   const filtered = mems.filter(name => {
     if (!fuzzyMatch(name, search)) return false;
-    if (filterStatus2 === 'paid')   return isLunas(appData, activeZone, name, selYear, selMonth) && !isFree(appData, activeZone, name, selYear, selMonth);
-    if (filterStatus2 === 'unpaid') return getPay(appData, activeZone, name, selYear, selMonth) === null && !isFree(appData, activeZone, name, selYear, selMonth);
-    if (filterStatus2 === 'free')   return isFree(appData, activeZone, name, selYear, selMonth);
+    if (filterStatus === 'paid')   return isLunas(appData, activeZone, name, selYear, selMonth) && !isFree(appData, activeZone, name, selYear, selMonth);
+    if (filterStatus === 'unpaid') return getPay(appData, activeZone, name, selYear, selMonth) === null && !isFree(appData, activeZone, name, selYear, selMonth);
+    if (filterStatus === 'free')   return isFree(appData, activeZone, name, selYear, selMonth);
     return true;
   });
 

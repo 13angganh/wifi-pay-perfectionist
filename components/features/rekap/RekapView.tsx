@@ -244,7 +244,7 @@ export default function RekapView() {
 
       {/* Batch hint bar */}
       {batchColIdx !== null && (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.25)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--zcdim)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10 }}>
           <div style={{ fontSize:12, color:'var(--zc)' }}>
             <strong>{MONTH_NAMES[batchColIdx]}</strong> — {t('rekap.batchHint')}
           </div>
@@ -276,7 +276,7 @@ export default function RekapView() {
                 <th key={m} style={{
                   minWidth:38,
                   color: batchColIdx === mi ? 'var(--zc)' : undefined,
-                  background: batchColIdx === mi ? 'rgba(59,130,246,0.1)' : undefined,
+                  background: batchColIdx === mi ? 'var(--zcdim)' : undefined,
                   borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : undefined,
                   transition:'all var(--t-base)',
                 }}>
@@ -315,7 +315,7 @@ export default function RekapView() {
                       pointerEvents: isDimmed ? 'none' : undefined,
                       outline: isSelected ? '2px solid var(--zc)' : undefined,
                       outlineOffset: '-2px',
-                      background: isSelected ? 'rgba(59,130,246,0.18)' : undefined,
+                      background: isSelected ? 'var(--zcdim)' : undefined,
                       position: 'relative',
                       transition: 'opacity var(--t-base), background var(--t-fast)',
                       userSelect: 'none',

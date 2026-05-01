@@ -146,8 +146,7 @@ export default function LoginPage() {
               onClick={handleLanjutkan}
               disabled={loading}
               style={{
-                background:'#3B82F6',
-                boxShadow:'0 4px 16px rgba(59,130,246,0.3)',
+                
               }}
             >
               {loading ? t('common.loading') : t('login.continue')}
@@ -214,8 +213,7 @@ export default function LoginPage() {
               onClick={handleLogin}
               disabled={loading}
               style={{
-                background:'#3B82F6',
-                boxShadow:'0 4px 16px rgba(59,130,246,0.3)',
+                
               }}
             >
               {loading ? t('common.loading') : t('login.submit')}
@@ -227,7 +225,7 @@ export default function LoginPage() {
             <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
               {t('login.noAccount')}{' '}
               <span
-                style={{ color:'#3B82F6', cursor:'pointer' }}
+                style={{ color:'var(--zc)', cursor:'pointer' }}
                 onClick={() => { setState('register'); setErr(''); }}
               >
                 {t('login.registerHere')}
@@ -272,8 +270,7 @@ export default function LoginPage() {
               onClick={handleRegister}
               disabled={rLoading}
               style={{
-                background:'#3B82F6',
-                boxShadow:'0 4px 16px rgba(59,130,246,0.3)',
+                
               }}
             >
               {rLoading ? t('common.loading') : t('login.registerSubmit')}
@@ -285,7 +282,7 @@ export default function LoginPage() {
             <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
               {t('login.hasAccount')}{' '}
               <span
-                style={{ color:'#3B82F6', cursor:'pointer' }}
+                style={{ color:'var(--zc)', cursor:'pointer' }}
                 onClick={() => { setState('form'); setRErr(''); }}
               >
                 {t('login.loginHere')}

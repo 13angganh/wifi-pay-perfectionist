@@ -12,7 +12,7 @@ const badgeVariants = cva(
       variant: {
         lunas:   'bg-[#22C55E22] text-[var(--c-lunas)] border border-[#22C55E33]',
         belum:   'bg-[#EF444422] text-[var(--c-belum)] border border-[#EF444433]',
-        free:    'bg-[#3B82F622] text-[var(--c-free)]  border border-[#3B82F633]',
+        free:    'bg-[var(--bg3)] text-[var(--c-free)] border border-[var(--border)]',
         zone:    'bg-[var(--zcdim)] text-[var(--zc)] border border-[var(--zc)]33',
         neutral: 'bg-[var(--bg3)] text-[var(--txt2)] border border-[var(--border)]',
         warning: 'bg-[#F9731622] text-[#F97316] border border-[#F9731633]',

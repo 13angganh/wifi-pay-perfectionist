@@ -56,14 +56,14 @@ export default function SettingsAppSection() {
     },
   ];
 
-  function handleTheme(t: ThemeMode) {
-    setTheme(t);
+  function handleTheme(mode: ThemeMode) {
+    setTheme(mode);
     const labels: Record<ThemeMode, string> = {
       light: settings.language === 'en' ? 'Light mode' : 'Mode Terang',
       dark:  settings.language === 'en' ? 'Dark mode'  : 'Mode Gelap',
       gold:  settings.language === 'en' ? 'Gold mode'  : 'Mode Emas',
     };
-    showToast(labels[t]);
+    showToast(labels[mode]);
   }
 
   return (

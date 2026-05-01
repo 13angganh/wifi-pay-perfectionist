@@ -281,7 +281,7 @@ export default function MembersView() {
             {(Object.entries(sortLabels) as [SortMode,string][]).map(([k,l]) => (
             <button key={k} onClick={() => setSortMode(k)}
                 style={{ padding:'4px 9px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer', fontSize:10,
-                  background:sortMode===k?'var(--zc-krs)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)' }}>{l}</button>
+                  background:sortMode===k?'var(--zc)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)' }}>{l}</button>
             ))}
           </div>
 
@@ -309,7 +309,7 @@ export default function MembersView() {
                     {/* Baris 1: nomor, ID, nama, badge */}
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: (!membersLocked || ipStr) ? 5 : 0 }}>
                       <span style={{ fontSize:10, color:'var(--txt4)', width:18, flexShrink:0 }}>{i+1}</span>
-                      <span style={{ ...badgeStyle, background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.15)', color: info.id ? 'var(--zc-krs)' : 'var(--txt4)' }}>{idStr}</span>
+                      <span style={{ ...badgeStyle, background:'var(--zcdim)', border:'1px solid var(--border)', color: info.id ? 'var(--zc)' : 'var(--txt4)' }}>{idStr}</span>
                       <span style={{ fontSize:12, flex:1, cursor:'pointer', color:'var(--txt)', fontWeight:500 }} onClick={() => openRiwayat(zone, name)}>{name}</span>
                       {isFreeNow && <span style={{ ...badgeStyle, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} strokeWidth={1.5} />Free</span>}
                       {info.tarif && <span style={{ ...badgeStyle, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)' }}>{rp(info.tarif as number)}</span>}
@@ -323,7 +323,7 @@ export default function MembersView() {
                           href={ipStr.startsWith('http') ? ipStr : 'http://'+ipStr}
                           target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()}
-                          style={{ fontSize:10, color:'var(--zc-krs)', textDecoration:'none', fontFamily:"'DM Mono',monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
+                          style={{ fontSize:10, color:'var(--zc)', textDecoration:'none', fontFamily:"'DM Mono',monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
                         >
                           {ipStr}
                         </a>
@@ -343,7 +343,7 @@ export default function MembersView() {
                           </button>
                           <button onClick={() => openEdit(name)}
                             aria-label={`Edit member: ${name}`}
-                            style={{ background:'none', border:'1px solid rgba(59,130,246,0.3)', color:'var(--zc-krs)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, fontFamily:"'DM Mono',monospace", minHeight:28 }}>
+                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, fontFamily:"'DM Mono',monospace", minHeight:28 }}>
                             Edit
                           </button>
                           <button onClick={() => deleteMember(name)}

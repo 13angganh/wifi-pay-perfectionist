@@ -222,7 +222,7 @@ export default function DashboardView() {
         {totalFree > 0 && (
           <div style={{
             display:'flex', alignItems:'center', justifyContent:'space-between',
-            background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.15)',
+            background:'var(--zcdim)', border:'1px solid var(--border)',
             borderRadius:'var(--r-sm)', padding:'7px 10px',
           }}>
             <span style={{ fontSize:10, color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>

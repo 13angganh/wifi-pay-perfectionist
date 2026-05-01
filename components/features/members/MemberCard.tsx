@@ -213,7 +213,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   // Badge status (top row)
   let tagEl: React.ReactNode;
   if (freeCur)
-    tagEl = <span className="mc-tag" style={{ background:'rgba(59,130,246,0.12)', color:'var(--c-free)', border:'1px solid rgba(59,130,246,0.25)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
+    tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
   else if (val !== null && val > 0)
     tagEl = <span className="mc-tag tpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><CheckCircle2 size={9} /></span>;
   else if (val === 0)

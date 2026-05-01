@@ -152,12 +152,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const {
-    sidebarOpen, setSidebar, setView, theme, appData,
+    sidebarOpen, setSidebar, setView, theme, setTheme, appData,
     setDeferredPrompt, setUpdateBanner, showUpdateBanner,
     deferredPrompt,
     settings,
   } = useAppStore();
-  const { setTheme } = useAppStore();
+
   const t = useT();
 
   useIdleTimeout(settings.pinTimeoutMinutes);

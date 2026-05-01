@@ -236,8 +236,8 @@ export default function TunggakanView() {
             return (
               <div key={name} className="tcard" style={{
                 borderLeft:'3px solid var(--c-free)',
-                borderColor:'rgba(59,130,246,0.15)',
-                background:'rgba(59,130,246,0.04)',
+                borderColor:'var(--border)',
+                background:'var(--bg3)',
                 borderRadius:'var(--r-md)',
               }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>

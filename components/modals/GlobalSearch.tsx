@@ -109,9 +109,9 @@ export default function GlobalSearch({ open, onClose }: Props) {
               {/* Zona badge */}
               <span style={{
                 fontSize:9, padding:'2px 7px', borderRadius:'var(--r-xs)', fontWeight:600, flexShrink:0,
-                background: r.z === 'KRS' ? 'rgba(59,130,246,0.15)' : 'rgba(249,115,22,0.15)',
+                background: r.z === 'KRS' ? 'var(--zcdim)' : 'rgba(249,115,22,0.10)',
                 color: r.z === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)',
-                border: `1px solid ${r.z === 'KRS' ? 'rgba(59,130,246,0.2)' : 'rgba(249,115,22,0.2)'}`,
+                border: `1px solid ${r.z === 'KRS' ? 'rgba(var(--zc-rgb,59,130,246),0.25)' : 'rgba(249,115,22,0.25)'}`,
                 fontFamily:"'DM Mono',monospace",
               }}>
                 {r.z}

@@ -116,7 +116,7 @@ export default function PinLock() {
             background: d ? 'var(--zc)' : 'transparent',
             border: d ? '2px solid var(--zc)' : '2px solid var(--txt4)',
             transition:'all .15s var(--ease-out)',
-            boxShadow: d ? '0 0 8px rgba(59,130,246,0.4)' : 'none',
+            boxShadow: d ? '0 0 10px var(--zcdim)' : 'none',
           }} />
         ))}
       </div>

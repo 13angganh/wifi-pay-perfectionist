@@ -104,12 +104,21 @@ body.light {
   --card : #FFFFFF;
   --card2: #F0F4F8;
 
+  --zc-krs: #2563EB;
+  --zc-slk: #EA6F00;
+  --zc    : var(--zc-krs);
+  --zcdim : rgba(37,99,235,0.10);
+
+  --c-lunas: #16A34A;
+  --c-belum: #DC2626;
+  --c-free : #64748b;
+
   --shadow-xs: 0 1px 2px rgba(0,0,0,.08);
   --shadow-sm: 0 2px 8px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.04);
   --shadow-md: 0 4px 16px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,.16),0 0 0 1px rgba(0,0,0,.08);
-  --shadow-z : 0 4px 20px rgba(59,130,246,.15);
-  --zcdim: #3B82F618;
+  --shadow-z : 0 4px 20px rgba(37,99,235,.18);
+  --zcdim    : rgba(37,99,235,0.10);
 }
 
 /* ── Gold / Emas ── */

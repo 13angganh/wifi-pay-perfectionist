@@ -1,6 +1,6 @@
 // public/sw.js — WiFi Pay Next PWA Service Worker
-const CACHE = "wifipay-next-v1";
-const ASSETS = ["/", "/dashboard", "/manifest.json"];
+const CACHE = "wifipay-next-v2";
+const ASSETS = ["/", "/dashboard", "/manifest.json", "/icon-192.png", "/icon-512.png", "/icon-192-maskable.png", "/icon-512-maskable.png", "/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(

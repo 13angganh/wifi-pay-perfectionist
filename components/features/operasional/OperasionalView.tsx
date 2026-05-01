@@ -147,7 +147,7 @@ export default function OperasionalView() {
         ))}
 
         <button onClick={addItem}
-          style={{ width:'100%', background:'var(--bg3)', border:'1px dashed rgba(59,130,246,0.35)', color:'var(--zc-krs)', padding:9, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:FS_BODY, marginTop:6, fontFamily:FONT }}>
+          style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', padding:9, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:FS_BODY, marginTop:6, fontFamily:FONT }}>
           {t('ops.addItem')}
         </button>
       </div>

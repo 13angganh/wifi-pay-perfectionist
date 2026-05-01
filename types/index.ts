@@ -63,7 +63,7 @@ export interface CustomZone {
   color: string;  // hex color, e.g. '#3B82F6'
 }
 export type ViewName = 'dashboard' | 'entry' | 'rekap' | 'tunggakan' | 'grafik' | 'log' | 'members' | 'operasional' | 'settings';
-export type FilterStatus = 'all' | 'paid' | 'unpaid';
+export type FilterStatus = 'all' | 'paid' | 'unpaid' | 'free';
 export type ShareType = 'monthly' | 'yearly';
 export type ShareFormat = 'pdf' | 'excel';
 export type ExportFormat = 'json' | 'csv' | 'excel';

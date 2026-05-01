@@ -161,7 +161,7 @@ export default function SettingsZoneSection() {
                   <div style={{ flex:1 }}>
                     <div style={{ fontFamily:"'DM Mono',monospace", fontSize:13, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
                       {z}
-                      {isCustom && <span style={{ fontSize:9, background:'rgba(139,92,246,0.15)', color:'#A78BFA', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>Custom</span>}
+                      {isCustom && <span style={{ fontSize:9, background:'var(--zcdim)', color:'var(--zc)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>Custom</span>}
                       {isHidden && <span style={{ fontSize:9, background:'rgba(255,255,255,0.06)', color:'var(--txt4)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>{t('settings.zona.hidden')}</span>}
                     </div>
                     <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>{memCount} {t('common.members')}</div>
@@ -228,7 +228,7 @@ export default function SettingsZoneSection() {
               </div>
             </div>
           ) : (
-            <button onClick={() => setAddZonaOpen(true)} style={{ width:'100%', background:'var(--bg3)', border:'1px dashed rgba(139,92,246,0.4)', color:'#A78BFA', borderRadius:'var(--r-sm)', padding:'9px', fontSize:12, cursor:'pointer', marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <button onClick={() => setAddZonaOpen(true)} style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', borderRadius:'var(--r-sm)', padding:'9px', fontSize:12, cursor:'pointer', marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <Plus size={13} strokeWidth={1.5} /> {t('settings.addZone')}
             </button>
           )}

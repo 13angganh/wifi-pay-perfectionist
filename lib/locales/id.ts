@@ -398,7 +398,7 @@ const id: Record<string, string> = {
   'members.permDelete': 'Hapus permanen',
   'members.permDeleteNote': 'Tidak bisa dikembalikan!',
   'members.permDeleteYes': 'Ya, Hapus Permanen',
-  'login.continue': 'Lanjutkan',
+  'login.continue': 'Masuk sebagai akun ini',
   'login.or': 'atau',
   'login.continuePrompt': 'Masuk untuk melanjutkan',
   'login.requiredFields': 'Semua field wajib diisi',

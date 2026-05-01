@@ -398,7 +398,7 @@ const en: Record<string, string> = {
   'members.permDelete': 'Permanently delete',
   'members.permDeleteNote': 'Cannot be undone!',
   'members.permDeleteYes': 'Yes, Delete Permanently',
-  'login.continue': 'Continue',
+  'login.continue': 'Sign in as this account',
   'login.or': 'or',
   'login.continuePrompt': 'Sign in to continue',
   'login.requiredFields': 'All fields are required',

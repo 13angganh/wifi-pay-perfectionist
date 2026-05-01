@@ -4,7 +4,7 @@
 import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { useT } from '@/hooks/useT';
-import { Globe, Calendar, Check, Wifi, Sun, Moon, Sparkles } from 'lucide-react';
+import { Globe, Calendar, Check, Sun, Moon, Sparkles } from 'lucide-react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
 
 export default function SettingsAppSection() {
@@ -157,8 +157,11 @@ export default function SettingsAppSection() {
       {/* App Info */}
       <div style={{ ...cardStyle, textAlign:'center' }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-          <div style={{ color: theme === 'gold' ? '#C9952A' : 'var(--zc)', marginBottom:6 }}>
-            <Wifi size={22} strokeWidth={1.5} />
+          <div style={{
+            width:52, height:52, borderRadius:13, overflow:'hidden',
+            marginBottom:6, boxShadow:'0 4px 16px rgba(201,149,42,0.2)',
+          }}>
+            <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
           </div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>WiFi Pay</div>
           <div style={{ fontSize:11, color:'var(--txt4)', lineHeight:2 }}>

@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Wifi, Delete } from 'lucide-react';
+import { Delete } from 'lucide-react';
 
 export default function PinLock() {
   const { settings, setPinUnlocked, pinUnlocked } = useAppStore();
@@ -81,11 +81,10 @@ export default function PinLock() {
       {/* Logo */}
       <div style={{
         width:72, height:72, borderRadius:20, marginBottom:20,
-        background:'linear-gradient(135deg,#3B82F6,#1D4ED8)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        boxShadow:'0 8px 32px rgba(59,130,246,0.4), 0 0 0 1px rgba(255,255,255,0.06)',
+        overflow:'hidden',
+        boxShadow:'0 8px 32px rgba(201,149,42,0.25), 0 0 0 1px rgba(255,255,255,0.06)',
       }}>
-        <Wifi size={34} color="#fff" strokeWidth={1.5} />
+        <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
       </div>
 
       {/* Title */}

@@ -8,7 +8,6 @@ import { PAGE_TITLES } from '@/lib/constants';
 import { useT } from '@/hooks/useT';
 import type { ViewName } from '@/types';
 import {
-  Wifi,
   LayoutDashboard,
   CreditCard,
   BarChart3,
@@ -66,10 +65,10 @@ export default function Sidebar({ onNavigate }: Props) {
       {/* Header — Logo + nama app saja */}
       <div className="sb-header">
         <div className="sb-logo" style={{
-          background:'linear-gradient(135deg,var(--zc),color-mix(in srgb,var(--zc) 70%,#000))',
-          display:'flex', alignItems:'center', justifyContent:'center',
+          overflow:'hidden', padding:0,
+          boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
         }}>
-          <Wifi size={18} color="#fff" strokeWidth={1.5} />
+          <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         </div>
         <div>
           <div className="sb-app-name">WiFi Pay</div>

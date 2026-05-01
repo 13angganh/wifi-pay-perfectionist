@@ -8,7 +8,7 @@ import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
 import { useT } from '@/hooks/useT';
 import {
-  Wifi, Menu, Lock, LockOpen, Search, Sun, Moon, Sparkles,
+  Menu, Lock, LockOpen, Search, Sun, Moon, Sparkles,
   Cloud, RotateCw, AlertTriangle, WifiOff,
 } from 'lucide-react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
@@ -97,11 +97,10 @@ export default function Header({ onToggleSidebar }: Props) {
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{
               width:30, height:30, borderRadius:8,
-              background:'linear-gradient(135deg,var(--zc),color-mix(in srgb,var(--zc) 70%,#000))',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              flexShrink:0, boxShadow:'var(--shadow-z)',
+              overflow:'hidden', flexShrink:0,
+              boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
             }}>
-              <Wifi size={16} color="#fff" strokeWidth={1.5} />
+              <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             </div>
             <div>
               <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>

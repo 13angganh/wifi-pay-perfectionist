@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogin, doRegister, loginRemembered } from '@/hooks/useAuth';
 import { getSavedCred } from '@/lib/helpers';
-import { Wifi, User } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 
 type LoginState = 'remembered' | 'form' | 'register';
@@ -87,16 +86,15 @@ export default function LoginPage() {
       padding:24, zIndex:200,
       overflowY:'auto',
     }}>
-      {/* Logo dengan glow */}
+      {/* Logo gambar nyata */}
       <div style={{
-        width:72, height:72,
-        background:'linear-gradient(135deg,#3B82F6,#1D4ED8)',
+        width:80, height:80,
         borderRadius:20,
-        display:'flex', alignItems:'center', justifyContent:'center',
+        overflow:'hidden',
         marginBottom:16,
-        boxShadow:'0 8px 32px rgba(59,130,246,0.4), 0 0 0 1px rgba(255,255,255,0.06)',
+        boxShadow:'0 8px 32px rgba(201,149,42,0.3), 0 0 0 1px rgba(255,255,255,0.06)',
       }}>
-        <Wifi size={34} color="#fff" strokeWidth={1.5} />
+        <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
       </div>
 
       <div style={{
@@ -122,14 +120,13 @@ export default function LoginPage() {
             {/* Greeting hero */}
             <div style={{ textAlign:'center', marginBottom:24 }}>
               <div style={{
-                width:52, height:52,
-                background:'linear-gradient(135deg,#3B82F6,#1D4ED8)',
-                borderRadius:'50%',
-                display:'flex', alignItems:'center', justifyContent:'center',
+                width:56, height:56,
+                borderRadius:14,
+                overflow:'hidden',
                 margin:'0 auto 14px',
-                boxShadow:'0 4px 16px rgba(59,130,246,0.3)',
+                boxShadow:'0 4px 16px rgba(201,149,42,0.25)',
               }}>
-                <User size={24} color="#fff" strokeWidth={1.5} />
+                <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               </div>
               <div style={{
                 fontFamily:"'Syne',sans-serif", fontWeight:800,

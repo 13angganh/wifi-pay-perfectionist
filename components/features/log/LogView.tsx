@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { fuzzyMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { ScrollText, Search, User, X, RotateCcw } from 'lucide-react';
@@ -17,7 +17,7 @@ export default function LogView() {
   const [logName,  setLogName]  = useState('');
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const logs = appData.activityLog || [];
 
@@ -107,7 +107,7 @@ export default function LogView() {
         </div>
       ) : (
         <>
-          <div style={{ fontSize:10, color:'var(--txt3)', margin:'10px 0', letterSpacing:'.06em', fontFamily:"'DM Sans',sans-serif" }}>
+          <div style={{ fontSize:10, color:'var(--txt3)', margin:'10px 0', letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>
             {filtered.length} dari {logs.length} {t('log.autoDelete')}
           </div>
 

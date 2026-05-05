@@ -1,0 +1,56 @@
+/* ══════════════════════════════════════════════════════
+   styles/components.modal.css — Modal, Toast, Confirm, Riwayat
+   Dipecah dari components.css (task 1.15)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Toast ── */
+.toast { position: fixed; top: calc(var(--header-h) + 8px); left: 50%; transform: translateX(-50%); padding: 9px 14px; border-radius: var(--r-sm); font-family: var(--font-sans), sans-serif; font-size: 12px; font-weight: 500; z-index: 9999; white-space: nowrap; pointer-events: none; display: inline-flex; align-items: center; gap: 7px; animation: tSlideDown .25s var(--ease-spring); backdrop-filter: blur(8px); box-shadow: var(--shadow-md); }
+.tok  { background: rgba(15,42,26,.92); color: var(--c-lunas); border: 1px solid rgba(34,197,94,.25); }
+.terr { background: rgba(31,13,13,.92); color: var(--c-belum); border: 1px solid rgba(239,68,68,.25); }
+.tinfo{ background: rgba(24,28,39,.92); color: var(--txt2); border: 1px solid var(--border); }
+
+/* ── Modal ── */
+.modal-bg  { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); z-index: 300; display: flex; align-items: flex-end; animation: modalBgIn var(--t-base-smooth); }
+.modal-bg.center { align-items: center; justify-content: center; padding: 20px; }
+.modal { background: rgba(24,28,39,.92); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(16px); border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 20px; width: 100%; max-height: 85vh; overflow-y: auto; animation: modalSlideUp var(--t-slow-smooth); box-shadow: var(--shadow-lg); }
+.modal.center { border-radius: var(--r-lg); max-width: 380px; width: 100%; animation: modalScaleIn var(--t-spring-anim); }
+.modal-handle { width: 36px; height: 4px; border-radius: var(--r-full); background: var(--txt4); margin: 0 auto 16px; }
+.modal-title  { font-family: var(--font-sans), sans-serif; font-weight: 800; font-size: 15px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; color: var(--txt); }
+.modal-close  { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 4px; border-radius: var(--r-sm); transition: color var(--t-fast-smooth); display: flex; align-items: center; min-width: 32px; min-height: 32px; justify-content: center; }
+.modal-close:hover { color: var(--txt); }
+.modal-row    { margin-bottom: 12px; }
+.modal-label  { font-family: var(--font-sans), sans-serif; font-size: 10px; color: var(--txt3); letter-spacing: .06em; margin-bottom: 5px; }
+.modal-select { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--txt); padding: 10px 12px; border-radius: var(--r-sm); font-family: var(--font-sans), sans-serif; font-size: 13px; transition: border-color var(--t-fast-smooth); min-height: 40px; }
+.modal-select:focus { border-color: var(--zc); }
+.fmt-btn      { flex: 1; padding: 10px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt2); cursor: pointer; font-family: var(--font-sans), sans-serif; font-size: 12px; text-align: center; transition: all var(--t-fast-smooth); min-height: 40px; }
+.fmt-btn:hover{ border-color: var(--txt4); color: var(--txt); }
+.fmt-btn.on   { border-color: var(--zc); color: var(--zc); background: var(--zcdim); }
+.modal-action { width: 100%; padding: 12px; border-radius: var(--r-sm); border: none; background: var(--zc); color: #fff; font-family: var(--font-sans), sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity var(--t-fast-smooth), transform var(--t-fast-smooth); box-shadow: var(--shadow-z); min-height: 44px; }
+.modal-action:hover  { opacity: .9; }
+.modal-action:active { opacity: .75; transform: scale(.98); }
+
+/* ── Confirm ── */
+.confirm-box { background: rgba(24,28,39,.95); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(16px); border-radius: var(--r-lg); padding: 22px; width: 100%; max-width: 320px; text-align: center; box-shadow: var(--shadow-lg); animation: modalScaleIn var(--t-spring-anim); }
+.confirm-icon { display: flex; justify-content: center; margin-bottom: 10px; color: var(--txt3); }
+.confirm-msg  { font-family: var(--font-sans), sans-serif; font-size: 13px; color: var(--txt); margin-bottom: 18px; line-height: 1.7; }
+.confirm-yes  { flex: 1; padding: 11px; border-radius: var(--r-sm); border: none; background: var(--c-belum); color: #fff; font-family: var(--font-sans), sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all var(--t-fast-smooth); min-height: 44px; }
+.confirm-yes:hover  { opacity: .9; }
+.confirm-yes:active { opacity: .75; transform: scale(.97); }
+.confirm-no   { flex: 1; padding: 11px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt2); font-family: var(--font-sans), sans-serif; font-size: 13px; cursor: pointer; transition: all var(--t-fast-smooth); min-height: 44px; }
+.confirm-no:hover { border-color: var(--txt4); color: var(--txt); }
+
+/* ── Riwayat Modal ── */
+.riwayat-box     { background: rgba(24,28,39,.92); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(16px); border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 16px 20px 20px; width: 100%; max-height: 85vh; overflow-y: auto; animation: modalSlideUp var(--t-slow-smooth); box-shadow: var(--shadow-lg); }
+.rw-month-row    { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); transition: background var(--t-fast-smooth); border-radius: var(--r-xs); cursor: pointer; }
+.rw-month-row:last-child { border-bottom: none; }
+.rw-month-row:hover { background: var(--bg3); padding-left: 6px; padding-right: 6px; }
+.rw-year-tab     { background: var(--bg3); border: 1px solid var(--border); color: var(--txt3); padding: 5px 14px; border-radius: var(--r-full); cursor: pointer; font-family: var(--font-sans), sans-serif; font-size: 11px; white-space: nowrap; transition: all var(--t-fast-smooth); min-height: 32px; display: inline-flex; align-items: center; }
+.rw-year-tab:hover  { border-color: var(--txt4); color: var(--txt2); }
+.rw-year-tab.active { background: var(--zc); color: #fff; border-color: var(--zc); box-shadow: var(--shadow-z); }
+
+/* ── Global Search ── */
+.gsr-item       { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: border-color var(--t-fast-smooth), transform var(--t-fast-smooth), box-shadow var(--t-fast-smooth); }
+.gsr-item:hover { border-color: var(--border2); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.gsr-item:active{ opacity: .7; transform: translateY(0); }
+.gsr-name   { font-family: var(--font-mono), monospace; font-size: 13px; font-weight: 600; flex: 1; color: var(--txt); }
+.gsr-detail { font-family: var(--font-sans), sans-serif; font-size: 10px; color: var(--txt4); text-align: right; }

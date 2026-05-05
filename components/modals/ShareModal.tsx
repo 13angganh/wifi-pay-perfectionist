@@ -3,22 +3,22 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { generatePDF, generateExcel } from '@/lib/export';
 import { showToast } from '@/components/ui/Toast';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function ShareModal({ open, onClose }: Props) {
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const { appData, activeZone, selYear, selMonth, shareType, setShareType, shareFmt, setShareFmt } = useAppStore();
   const [zone, setZone] = useState<string>(activeZone);
   const [year,  setYear]  = useState(selYear);
   const [month, setMonth] = useState(selMonth);
   const [busy,  setBusy]  = useState(false);
 
-  if (!open) return null;
 
   async function doShare() {
     setBusy(true);
@@ -39,14 +39,18 @@ export default function ShareModal({ open, onClose }: Props) {
       }, 1000);
       showToast('File siap, WhatsApp dibuka!');
       onClose();
-    } catch (e) {
+    } catch {
       showToast('Gagal generate file','err');
     } finally { setBusy(false); }
   }
 
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <AnimatePresence>
+      {open && (
+    <motion.div className="modal-bg" onClick={onClose}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div className="modal" onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}>
         <div className="modal-title">Share Rekap <button className="modal-close" aria-label="Tutup modal share" onClick={onClose}><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
 
         {/* Tipe */}
@@ -101,7 +105,9 @@ export default function ShareModal({ open, onClose }: Props) {
         <button className="modal-action" onClick={doShare} disabled={busy}>
           {busy ? 'Membuat...' : 'Generate & Share via WhatsApp'}
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

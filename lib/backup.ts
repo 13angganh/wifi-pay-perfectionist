@@ -3,6 +3,7 @@
 
 import type { AppData } from '@/types';
 import { doJSONBackup } from './export';
+import { showToast } from '@/components/ui/Toast'; // task 1.06
 
 export function checkAutoBackup(data: AppData): void {
   if (typeof window === 'undefined') return;
@@ -24,10 +25,9 @@ export function checkAutoBackup(data: AppData): void {
 
   if (alreadyBackedUpThisMonth) return;
 
-  // Auto backup setelah 5 detik dengan toast info
+  // task 1.06: tampilkan toast setelah backup selesai
   setTimeout(() => {
     doJSONBackup(data);
-    // toast dipanggil dari doJSONBackup via localStorage timestamp
-    // tidak import showToast di sini untuk hindari circular dep
+    showToast('Auto backup berhasil diunduh', 'ok');
   }, 5000);
 }

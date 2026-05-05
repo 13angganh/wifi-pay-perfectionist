@@ -2,21 +2,42 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getZoneTotal, rp } from '@/lib/helpers'
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
-import { X, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { OpsItem } from '@/types';
 
 // Font dan ukuran konsisten untuk semua elemen
-const FONT    = "'DM Mono',monospace";
+const FONT    = "var(--font-mono),monospace";
 const FS_BODY = 12;  // font size semua input dan label
 const FS_VAL  = 12;  // font size semua nilai result — SAMA semua
 const FS_LBL  = 11;  // font size label result
+
+// ── ResultRow top-level (task 4.11) ──
+function ResultRow({ label, value, color, highlight }: { label:string; value:string; color:string; highlight?:boolean }) {
+  return (
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+      padding: highlight ? '10px 12px' : '8px 0',
+      borderBottom: highlight ? 'none' : '1px solid var(--border)',
+      background: highlight ? 'rgba(34,197,94,0.06)' : 'transparent',
+      borderRadius: highlight ? 'var(--r-sm)' : 0,
+      marginTop: highlight ? 6 : 0,
+      border: highlight ? '1px solid rgba(34,197,94,0.2)' : undefined,
+    }}>
+      <span style={{ fontSize:FS_LBL, color: highlight ? 'var(--c-lunas)' : 'var(--txt3)', fontFamily:FONT, fontWeight: highlight ? 700 : 400 }}>
+        {label}
+      </span>
+      <span style={{ fontSize:FS_VAL, color, fontFamily:FONT, fontWeight:600 }}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export default function OperasionalView() {
   const { appData, setAppData, uid, userEmail, opsYear, opsMonth, setOpsYear, setOpsMonth, setSyncStatus } = useAppStore();
@@ -24,7 +45,7 @@ export default function OperasionalView() {
   const opsKey  = `${opsYear}_${opsMonth}`;
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const opsData = appData.operasional?.[opsKey] || { items: [] };
   const items   = opsData.items || [];
 
@@ -62,7 +83,7 @@ export default function OperasionalView() {
 
   function deleteItem(i: number) {
     const item = items[i];
-    showConfirm('[DEL]', `${t('action.delete')} <b>${item?.label || 'item'}</b>?`, t('action.confirm'), async () => {
+    showConfirm('[DEL]', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.confirm'), async () => {
       await persist(updatedData(items.filter((_, idx) => idx !== i)));
       showToast(t('common.deleted'), 'err');
     });
@@ -78,26 +99,7 @@ export default function OperasionalView() {
     outline:'none',
   };
 
-  // Style konsisten untuk semua baris result
-  function ResultRow({ label, value, color, highlight }: { label:string; value:string; color:string; highlight?:boolean }) {
-    return (
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
-        padding: highlight ? '10px 12px' : '8px 0',
-        borderBottom: highlight ? 'none' : '1px solid var(--border)',
-        background: highlight ? 'rgba(34,197,94,0.06)' : 'transparent',
-        borderRadius: highlight ? 'var(--r-sm)' : 0,
-        marginTop: highlight ? 6 : 0,
-        border: highlight ? '1px solid rgba(34,197,94,0.2)' : undefined,
-      }}>
-        <span style={{ fontSize:FS_LBL, color: highlight ? 'var(--c-lunas)' : 'var(--txt3)', fontFamily:FONT, fontWeight: highlight ? 700 : 400 }}>
-          {label}
-        </span>
-        <span style={{ fontSize:FS_VAL, color, fontFamily:FONT, fontWeight:600 }}>
-          {value}
-        </span>
-      </div>
-    );
-  }
+  // Style konsisten untuk semua baris result — ResultRow dipindah ke top-level
 
   return (
     <div>

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getArrears, isFree } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import {
@@ -24,7 +24,7 @@ export default function TunggakanView() {
   const [agingFilter, setAgingFilter] = useState<AgingFilter>('total');
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const mems = activeZone === 'KRS' ? appData.krsMembers : appData.slkMembers;
 
@@ -75,9 +75,9 @@ export default function TunggakanView() {
       {/* Mode tabs */}
       <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:20, border:'1px solid var(--border)' }}>
         {([
-          ['nakal', <AlertCircle size={12} />, t('tunggakan.nakal'), allArrears.length, 'var(--c-belum)'],
-          ['rajin', <Star size={12} />,        t('tunggakan.rajin'),   rajin.length,       'var(--c-lunas)'],
-          ['free',  <Gift size={12} />,         t('status.free'),    freeList.length,    'var(--c-free)'],
+          ['nakal', <AlertCircle key="ic" size={12} />, t('tunggakan.nakal'), allArrears.length, 'var(--c-belum)'],
+          ['rajin', <Star key="ic" size={12} />,        t('tunggakan.rajin'),   rajin.length,       'var(--c-lunas)'],
+          ['free',  <Gift key="ic" size={12} />,         t('status.free'),    freeList.length,    'var(--c-free)'],
         ] as const).map(([m, icon, label, cnt, color]) => (
           <button
             key={m}
@@ -103,10 +103,10 @@ export default function TunggakanView() {
           overflowX:'auto', paddingBottom:2,
         }}>
           {([
-            ['total',  <AlertTriangle size={11} />, t('tunggakan.filter.total'),   allArrears.length,  'var(--txt2)',   'var(--bg3)', 'var(--border)'],
-            ['baru',   <Clock size={11} />,          t('tunggakan.filter.new'),    agingBaru.length,   '#FFC107',       '#1a1500',   '#FFC10733'],
-            ['segera', <AlertCircle size={11} />,    t('tunggakan.filter.soon'),  agingSegera.length, '#F97316',       '#1a0d00',   '#F9731633'],
-            ['kritis', <Flame size={11} />,           t('tunggakan.filter.critical'),  agingKritis.length, 'var(--c-belum)','rgba(239,68,68,0.08)', 'rgba(239,68,68,0.25)'],
+            ['total',  <AlertTriangle key="ic" size={11} />, t('tunggakan.filter.total'),   allArrears.length,  'var(--txt2)',   'var(--bg3)', 'var(--border)'],
+            ['baru',   <Clock key="ic" size={11} />,          t('tunggakan.filter.new'),    agingBaru.length,   '#FFC107',       '#1a1500',   '#FFC10733'],
+            ['segera', <AlertCircle key="ic" size={11} />,    t('tunggakan.filter.soon'),  agingSegera.length, '#F97316',       '#1a0d00',   '#F9731633'],
+            ['kritis', <Flame key="ic" size={11} />,           t('tunggakan.filter.critical'),  agingKritis.length, 'var(--c-belum)','rgba(239,68,68,0.08)', 'rgba(239,68,68,0.25)'],
           ] as const).map(([key, icon, label, cnt, textColor, bgColor, borderColor]) => (
             <button
               key={key}

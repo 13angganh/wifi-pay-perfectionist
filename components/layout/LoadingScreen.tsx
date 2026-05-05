@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
+import Image from 'next/image';
 export default function LoadingScreen() {
   // Minimum 1.8 detik supaya tidak terlalu cepat
   const [visible, setVisible] = useState(true);
@@ -29,16 +29,19 @@ export default function LoadingScreen() {
         boxShadow:'0 8px 40px rgba(201,149,42,0.25), 0 0 0 1px rgba(255,255,255,0.06)',
         animation:'lsPulse 2s ease-in-out infinite',
       }}>
-        <img
+        <Image
           src="/icon-512.png"
           alt="WiFi Pay"
+          width={512}
+          height={512}
           style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+          priority
         />
       </div>
 
       {/* Nama app saja, tanpa subtitle */}
       <div style={{
-        fontFamily:"'Syne',sans-serif",
+        fontFamily:"var(--font-sans),sans-serif",
         fontWeight:800,
         fontSize:26,
         letterSpacing:'-0.03em',

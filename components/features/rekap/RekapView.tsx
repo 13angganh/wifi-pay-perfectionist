@@ -3,7 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp, getKey, fuzzyMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
@@ -28,7 +28,7 @@ export default function RekapView() {
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const inputDirty   = useRef(false);
   const modalClosing = useRef(false);
@@ -135,7 +135,7 @@ export default function RekapView() {
     exitBatch();
   }
 
-  function BatchSheet() {
+  const batchSheet = (() => {
     if (batchColIdx === null || batchSelected.length === 0) return null;
     const mi = batchColIdx;
     const previewItems = batchSelected.map(name => {
@@ -168,7 +168,7 @@ export default function RekapView() {
           </div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>
                 {batchSelected.length} {t('rekap.batchSelected')}
               </div>
               <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{MONTH_NAMES[mi]} {selYear} · {activeZone}</div>
@@ -180,10 +180,10 @@ export default function RekapView() {
           <div style={{ overflowY:'auto', flex:1, padding:'10px 16px' }}>
             {previewItems.map(({ name, amt, hasTarif }) => (
               <div key={name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontFamily:"'DM Mono',monospace", fontSize:13, color:'var(--txt)' }}>{name}</div>
+                <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:13, color:'var(--txt)' }}>{name}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   {!hasTarif && <span style={{ fontSize:9, color:'var(--txt4)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:'var(--r-xs)' }}>default</span>}
-                  <span style={{ fontFamily:"'DM Mono',monospace", fontSize:12, fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
+                  <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:12, fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
                 </div>
               </div>
             ))}
@@ -191,7 +191,7 @@ export default function RekapView() {
           <div style={{ padding:'12px 16px 20px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
               <span style={{ fontSize:11, color:'var(--txt3)' }}>{t('common.total')}</span>
-              <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:16, color:'var(--zc)' }}>{rp(total)}</span>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--zc)' }}>{rp(total)}</span>
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button onClick={exitBatch} style={{ flex:1, padding:'10px', borderRadius:'var(--r-sm)', border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'var(--txt2)', cursor:'pointer', fontSize:13, transition:'all var(--t-fast)' }}>
@@ -209,7 +209,7 @@ export default function RekapView() {
         </div>
       </div>
     );
-  }
+  })();
 
   return (
     <div>
@@ -341,7 +341,7 @@ export default function RekapView() {
                   <td className="stk" style={{ left:0, fontSize:10, color:'var(--txt5)', paddingLeft:8, minWidth:22 }}>{i + 1}</td>
                   <td className="stk" style={{ left:22, minWidth:95, maxWidth:95, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"'Syne',sans-serif", fontWeight:700 }}>{rowTotal.toLocaleString('id-ID')}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal.toLocaleString('id-ID')}</td>
                 </tr>
               );
             })}
@@ -361,7 +361,7 @@ export default function RekapView() {
                   </td>
                 );
               })}
-              <td style={{ color:'var(--zc)', fontFamily:"'Syne',sans-serif", fontWeight:800 }}>{rp(grand)}</td>
+              <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:800 }}>{rp(grand)}</td>
             </tr>
           </tfoot>
         </table>
@@ -374,7 +374,7 @@ export default function RekapView() {
       )} {/* end loading/empty/data conditional */}
 
       <RekapModal inputDirty={inputDirty} modalClosing={modalClosing} onClose={closeModal} />
-      <BatchSheet />
+      {batchSheet}
     </div>
   );
 }

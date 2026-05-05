@@ -14,7 +14,7 @@ export default function SettingsView() {
 
   return (
     <div>
-      <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'var(--fs-display)', marginBottom:16, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
+      <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', marginBottom:16, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
         <Settings size={18} strokeWidth={1.5} /> {t('settings.pageTitle')}
       </div>
 

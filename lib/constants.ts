@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import type { ViewName } from '@/types';
 
-export const MONTHS    = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+// task 1.10: MONTHS adalah canonical ID — "Agu" (bukan "Agt"). MONTHS_ID dihapus (duplikat).
+export const MONTHS    = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 export const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-export const MONTHS_ID = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+// MONTHS_ID dihapus — gunakan MONTHS langsung untuk bahasa Indonesia
 
 // BUG-003 fix: getYears() dievaluasi runtime setiap kali dipanggil — tidak frozen di build time
 export function getYears(): number[] {

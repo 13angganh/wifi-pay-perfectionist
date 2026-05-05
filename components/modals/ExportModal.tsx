@@ -6,18 +6,15 @@ import { useAppStore } from '@/store/useAppStore';
 import { getYears } from '@/lib/constants';
 import { doJSONBackup, generateExcel } from '@/lib/export';
 import { showToast } from '@/components/ui/Toast';
-import { importToDB } from '@/lib/db';
-import type { AppData } from '@/types';
-import { DEFAULT_APP_DATA } from '@/lib/db';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function ExportModal({ open, onClose }: Props) {
-  const { appData, setAppData, uid, selYear, expFmt, setExpFmt, setSyncStatus } = useAppStore();
+  const { appData, selYear, expFmt, setExpFmt } = useAppStore();
   const [zone, setZone] = useState('KRS');
   const [year, setYear] = useState(selYear);
 
-  if (!open) return null;
 
   function doExport() {
     onClose();
@@ -33,8 +30,12 @@ export default function ExportModal({ open, onClose }: Props) {
   }
 
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <AnimatePresence>
+      {open && (
+    <motion.div className="modal-bg" onClick={onClose}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div className="modal" onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}>
         <div className="modal-title">Export Data <button className="modal-close" aria-label="Tutup modal export" onClick={onClose}><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
 
         <div className="modal-row">
@@ -67,7 +68,9 @@ export default function ExportModal({ open, onClose }: Props) {
         )}
 
         <button className="modal-action" onClick={doExport}>Download</button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -4,6 +4,6 @@ import { useAppStore } from '@/store/useAppStore';
 import DashboardView from '@/components/features/dashboard/DashboardView';
 export default function DashboardPage() {
   const { setView } = useAppStore();
-  useEffect(()=>{ setView('dashboard'); },[]);
+  useEffect(()=>{ setView('dashboard'); },[setView]);
   return <DashboardView />;
 }

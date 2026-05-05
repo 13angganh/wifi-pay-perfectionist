@@ -3,7 +3,7 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
-import { type ReactNode, type HTMLAttributes } from 'react';
+import { type HTMLAttributes } from 'react';
 
 const cardVariants = cva(
   'rounded-[var(--r-md)] transition-all duration-[var(--t-fast)] ease-[var(--ease-out)]',

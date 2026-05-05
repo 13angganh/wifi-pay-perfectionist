@@ -149,3 +149,27 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 ---
 
 *WiFi Pay Next v11.2 · [@13angganh](https://github.com/13angganh)*
+
+---
+
+## Technical Debt — Dark Mode Implementation
+
+**Status:** Terdokumentasi, tidak direfactor (task 3.05 — Fase 3)
+
+### Perbedaan implementasi vs spec
+
+| | Spec (`prompt-personal.md`) | Implementasi app |
+|---|---|---|
+| Default | `:root` = light | `:root` = dark |
+| Dark override | `.dark` class | (sudah default) |
+| Light override | — | `body.light` class |
+| Gold override | — | `body.gold` class |
+
+### Alasan tidak direfactor
+
+App sudah berjalan dengan implementasi ini. Refactor ke spec memerlukan:
+- Invert semua nilai token di `:root`
+- Rename semua `body.light` → `body:not(.dark)` atau sejenisnya
+- Risiko regresi visual tinggi di seluruh halaman
+
+**Keputusan:** Pertahankan implementasi yang ada. Catat di sini agar developer berikutnya tidak bingung.

@@ -4,6 +4,6 @@ import { useAppStore } from '@/store/useAppStore';
 import OperasionalView from '@/components/features/operasional/OperasionalView';
 export default function Page() {
   const { setView } = useAppStore();
-  useEffect(() => { setView('operasional'); }, []);
+  useEffect(() => { setView('operasional'); }, [setView]);
   return <OperasionalView />;
 }

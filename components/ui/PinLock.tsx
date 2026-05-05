@@ -1,6 +1,7 @@
-// components/ui/PinLock.tsx — Fase 4: redesign premium, numpad 56x56px
 'use client';
 
+import Image from 'next/image';
+// components/ui/PinLock.tsx — Fase 4: redesign premium, numpad 56x56px
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { Delete } from 'lucide-react';
@@ -17,6 +18,7 @@ export default function PinLock() {
     useRef<HTMLInputElement>(null),
   ];
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { refs[0].current?.focus(); }, []);
 
   if (!settings.pinEnabled || pinUnlocked) return null;
@@ -84,12 +86,12 @@ export default function PinLock() {
         overflow:'hidden',
         boxShadow:'0 8px 32px rgba(201,149,42,0.25), 0 0 0 1px rgba(255,255,255,0.06)',
       }}>
-        <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
       </div>
 
       {/* Title */}
       <div style={{
-        fontFamily:"'Syne',sans-serif", fontWeight:800,
+        fontFamily:"var(--font-sans),sans-serif", fontWeight:800,
         fontSize:22, color:'var(--txt)',
         letterSpacing:'-0.02em', marginBottom:6,
       }}>
@@ -159,7 +161,7 @@ export default function PinLock() {
                 display:'flex', alignItems:'center', justifyContent:'center',
                 cursor:'pointer',
                 transition:'all var(--t-fast) var(--ease-smooth)',
-                fontFamily: isDel ? undefined : "'DM Mono',monospace",
+                fontFamily: isDel ? undefined : "var(--font-mono),monospace",
                 fontWeight:600, fontSize:22,
                 boxShadow:'var(--shadow-xs)',
                 WebkitTapHighlightColor:'transparent',

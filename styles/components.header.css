@@ -1,0 +1,44 @@
+/* ══════════════════════════════════════════════════════
+   styles/components.header.css — Header, Sidebar, Nav
+   Dipecah dari components.css (task 1.15)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Sync Pill ── */
+.sync-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-full); font-family: var(--font-sans), sans-serif; font-size: 11px; font-weight: 500; transition: all var(--t-base-smooth); min-height: 28px; }
+.sync-pill.ok      { background: rgba(34,197,94,0.10); color: var(--c-lunas); border: 1px solid rgba(34,197,94,.2); }
+.sync-pill.loading { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%); background-size: 400% 100%; color: #FACC15; border: 1px solid rgba(250,204,21,.2); animation: syncShimmer 1.4s ease-in-out infinite; }
+.sync-pill.err     { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.2); animation: syncShake .4s ease-in-out; }
+.sync-pill.error   { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.2); animation: syncShake .4s ease-in-out; }
+.sync-pill.offline { background: var(--bg3); color: var(--txt3); border: 1px solid var(--border); }
+.sync-pill svg     { flex-shrink: 0; }
+.sync-spin         { animation: spin .9s linear infinite; }
+
+/* ── Header Buttons ── */
+.hbtn { padding: 6px 12px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt2); cursor: pointer; font-family: var(--font-sans), sans-serif; font-size: 11px; transition: all var(--t-fast-smooth); white-space: nowrap; min-height: 32px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.hbtn:hover  { border-color: var(--txt4); color: var(--txt); }
+.hbtn:active { opacity: .7; transform: scale(.96); }
+
+/* ── Zone Switch ── */
+.zone-sw { display: flex; gap: 5px; }
+.zbtn { background: var(--bg3); border: 1px solid var(--border); color: var(--txt3); padding: 5px 14px; border-radius: var(--r-full); cursor: pointer; font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 500; transition: all var(--t-fast-smooth); min-height: 32px; }
+.zbtn:hover { border-color: var(--txt4); color: var(--txt2); }
+.zbtn.krs { background: rgba(59,130,246,.15); color: #3B82F6; border-color: rgba(59,130,246,.3); }
+.zbtn.slk { background: rgba(249,115,22,.15); color: #F97316; border-color: rgba(249,115,22,.3); }
+.zbtn.custom { background: rgba(var(--zc-rgb),.15); color: var(--zc); border-color: rgba(var(--zc-rgb),.3); }
+
+/* ── Sidebar nav active override ── */
+.sb-item.on { border-left: 2px solid var(--zc); padding-left: 14px; background: var(--zcdim); color: var(--zc); }
+.sb-user-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--txt2); cursor: pointer; padding: 6px 10px; border-radius: var(--r-sm); transition: all var(--t-fast-smooth); display: flex; align-items: center; justify-content: center; gap: 5px; font-family: var(--font-sans), sans-serif; font-size: 11px; font-weight: 500; min-height: 34px; }
+.sb-user-btn:hover { color: var(--txt); border-color: var(--txt4); background: var(--bg4); }
+.sb-user-btn:active { opacity: .7; }
+.sb-user-btn.danger { color: var(--c-belum); border-color: rgba(239,68,68,.2); background: rgba(239,68,68,.06); }
+.sb-user-btn.danger:hover { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); }
+
+/* ── Banners ── */
+.update-banner  { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--bg2); border-bottom: 1px solid rgba(34,197,94,.3); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lock-banner    { display: none; background: rgba(239,68,68,0.10); border-bottom: 1px solid rgba(239,68,68,.2); padding: 8px 16px; align-items: center; gap: 8px; flex-shrink: 0; }
+.lock-banner.show { display: flex; }
+.offline-banner { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-family: var(--font-sans), sans-serif; font-size: 12px; color: var(--txt3); flex-shrink: 0; }
+.offline-banner svg { flex-shrink: 0; }
+.inst-banner    { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,.2); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-xs); }
+.inst-txt       { flex: 1; font-family: var(--font-sans), sans-serif; font-size: 11px; color: var(--c-lunas); line-height: 1.5; }

@@ -1,10 +1,10 @@
 // components/features/members/MemberCard.tsx — Fase 4: left border + Lucide + micro-interact + batch
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
-import { getPay, isFree, isLunas, rp } from '@/lib/helpers';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
+import { getPay, isFree, rp } from '@/lib/helpers';
 import { saveDB } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
@@ -42,7 +42,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const [riwOpen, setRiwOpen] = useState(false);
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const inputDirty   = useRef(false);
   const isCollapsing = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -139,9 +139,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     if (tarifMember && amt > tarifMember) {
       showConfirm(
         '!',
-        `${t('entry.confirmHighNominal')}<br><span style="font-size:11px;color:var(--txt3)">${name} · ${rp(tarifMember)} → ${rp(amt)}</span>`,
+        t('entry.confirmHighNominal'),
         t('action.confirm'),
         () => doQuickPay(amt),
+        { description: `${name} · ${rp(tarifMember)} → ${rp(amt)}` }
       );
       return;
     }
@@ -153,7 +154,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     if (entryVal === null) return;
     showConfirm(
       'X',
-      `Hapus pembayaran <b>${name}</b>?<br><span style="font-size:11px;color:var(--txt3)">${MONTH_NAMES[cardMonth]} ${cardYear} · ${entryVal > 0 ? rp(entryVal) : t('rekap.accumulation')}</span>`,
+      `Hapus pembayaran ${name}?`,
       t('membercard.deleteYes'),
       async () => {
         const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
@@ -161,7 +162,8 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         delete newData.payments[k];
         await persist(newData, `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`);
         showToast(`${name} dihapus`, 'err');
-      }
+      },
+      { description: `${MONTH_NAMES[cardMonth]} ${cardYear} · ${entryVal > 0 ? rp(entryVal) : t('rekap.accumulation')}` }
     );
   }
 

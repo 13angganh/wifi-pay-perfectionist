@@ -1,11 +1,30 @@
-// components/features/settings/SettingsAppSection.tsx — Fase 4: 3-mode theme (Sun/Moon/Sparkles)
 'use client';
 
+import Image from 'next/image';
+// components/features/settings/SettingsAppSection.tsx — Fase 4: 3-mode theme (Sun/Moon/Sparkles)
 import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { useT } from '@/hooks/useT';
 import { Globe, Calendar, Check, Sun, Moon, Sparkles } from 'lucide-react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
+import type React from 'react';
+
+// ── ToggleChip top-level (task 4.11) ──
+function ToggleChip({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) {
+  return (
+    <button onClick={onClick} style={{
+      flex:1, padding:'8px', borderRadius:'var(--r-sm)',
+      border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
+      background: active ? 'var(--zcdim)' : 'var(--bg3)',
+      color: active ? 'var(--zc)' : 'var(--txt2)',
+      cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
+      transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
+    }}>
+      {active && <Check size={11} />}
+      {label}
+    </button>
+  );
+}
 
 export default function SettingsAppSection() {
   const { settings, updateSettings, theme, setTheme } = useAppStore();
@@ -15,22 +34,6 @@ export default function SettingsAppSection() {
     background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)',
     padding:16, marginBottom:10, boxShadow:'var(--shadow-xs)',
   };
-
-  function ToggleChip({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) {
-    return (
-      <button onClick={onClick} style={{
-        flex:1, padding:'8px', borderRadius:'var(--r-sm)',
-        border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
-        background: active ? 'var(--zcdim)' : 'var(--bg3)',
-        color: active ? 'var(--zc)' : 'var(--txt2)',
-        cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
-        transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
-      }}>
-        {active && <Check size={11} />}
-        {label}
-      </button>
-    );
-  }
 
   const themes: { key: ThemeMode; labelId: string; labelEn: string; icon: React.ReactNode; desc: string }[] = [
     {
@@ -77,7 +80,7 @@ export default function SettingsAppSection() {
              : <Moon size={16} strokeWidth={1.5} />}
           </div>
           <div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
               {t('settings.theme')}
             </div>
             <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
@@ -111,7 +114,7 @@ export default function SettingsAppSection() {
                 cursor:'pointer',
                 transition:'all var(--t-fast)',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:5,
-                fontFamily:"'DM Sans',sans-serif",
+                fontFamily:"var(--font-sans),sans-serif",
                 fontSize:11, fontWeight: theme === th.key ? 700 : 400,
               }}
             >
@@ -126,7 +129,7 @@ export default function SettingsAppSection() {
       <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Globe size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.language')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.language')}</div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <ToggleChip label="Indonesia" active={settings.language !== 'en'} onClick={() => { updateSettings({ ...settings, language: 'id' }); showToast('Bahasa: Indonesia'); }} />
@@ -139,7 +142,7 @@ export default function SettingsAppSection() {
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Calendar size={16} strokeWidth={1.5} /></div>
           <div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.autoDate')}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.autoDate')}</div>
             <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
               {settings.autoDate ? t('settings.autoDate.descAuto') : t('settings.autoDate.descManual')}
             </div>
@@ -161,9 +164,9 @@ export default function SettingsAppSection() {
             width:52, height:52, borderRadius:13, overflow:'hidden',
             marginBottom:6, boxShadow:'0 4px 16px rgba(201,149,42,0.2)',
           }}>
-            <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+            <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
           </div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>WiFi Pay</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>WiFi Pay</div>
           <div style={{ fontSize:11, color:'var(--txt4)', lineHeight:2 }}>
             <div>{t('settings.version')} v11.2 Next</div>
             <div>Firebase: wifi-pay-online</div>

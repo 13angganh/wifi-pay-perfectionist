@@ -101,7 +101,7 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
     activeZone: z, search: '', filterStatus: 'all',
     expandedCard: null, entryCardYear: {}, entryCardMonth: {},
   }),
-  setView: (v) => set((s) => ({
+  setView: (v) => set(() => ({
     currentView: v, expandedCard: null,
     search: '', filterStatus: 'all',
     entryScrollTop: 0, rekapExpanded: null,

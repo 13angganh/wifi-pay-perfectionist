@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════
 // app/(app)/layout.tsx — Protected app layout
-// Auth guard + Firebase listener + AppShell
+// Fase 2: Hapus setTimeout 1500ms, pakai authChecked dari Firebase callback
 // ══════════════════════════════════════════
 'use client';
 
@@ -13,25 +13,24 @@ import AppShell from '@/components/layout/AppShell';
 import LoadingScreen from '@/components/layout/LoadingScreen';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const router   = useRouter();
-  const { uid }  = useAppStore();
+  const router       = useRouter();
+  const { uid, authChecked } = useAppStore();
 
-  // Aktifkan auth listener
+  // Aktifkan auth listener (set authChecked saat callback pertama)
   useAuth();
   // Aktifkan Firebase realtime listener
   useAppData();
 
   useEffect(() => {
-    if (uid === null) {
-      // Belum ada uid — tunggu sebentar, jika masih null redirect ke login
-      const t = setTimeout(() => {
-        if (!useAppStore.getState().uid) router.replace('/login');
-      }, 1500);
-      return () => clearTimeout(t);
+    // Tunggu Firebase konfirmasi auth state sebelum redirect
+    // authChecked = true berarti onAuthStateChanged sudah fire pertama kali
+    if (authChecked && !uid) {
+      router.replace('/login');
     }
-  }, [uid, router]);
+  }, [authChecked, uid, router]);
 
-  if (!uid) return <LoadingScreen />;
+  // Tampilkan loading sampai Firebase konfirmasi state
+  if (!authChecked || !uid) return <LoadingScreen />;
 
   return <AppShell>{children}</AppShell>;
 }

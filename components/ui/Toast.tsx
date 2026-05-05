@@ -65,7 +65,7 @@ export default function Toast() {
             border:'1px solid rgba(255,255,255,0.08)',
             boxShadow:'var(--shadow-md)',
             color:'var(--txt)',
-            fontSize:13, fontFamily:"'DM Sans',sans-serif",
+            fontSize:13, fontFamily:"var(--font-sans),sans-serif",
             whiteSpace:'nowrap', maxWidth:'90vw',
             overflow:'hidden', textOverflow:'ellipsis',
             animation: t.visible

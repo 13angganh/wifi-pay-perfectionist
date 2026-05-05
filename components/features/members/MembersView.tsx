@@ -5,14 +5,14 @@ import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { useState, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+
 import { isFree, rp } from '@/lib/helpers';
 import { persistPayment } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import FreeMemberModal from '@/components/modals/FreeMemberModal';
 import RiwayatModal    from '@/components/modals/RiwayatModal';
-import { Users, Trash2, Search, X, Gift, Lock, LockOpen } from 'lucide-react';
+import { Users, Trash2, X, Gift, Lock, LockOpen } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Zone } from '@/types';
@@ -42,8 +42,6 @@ export default function MembersView() {
   const [riwOpen,  setRiwOpen]  = useState(false);
 
   const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const zone = newMemberZone;
   const zc   = zone === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)';
 
@@ -103,8 +101,8 @@ export default function MembersView() {
     const idx  = list.indexOf(origName);
     if (idx === -1) { showToast(t('members.notFound'),'err'); return; }
     if (newName !== origName && list.includes(newName)) { showToast(t('members.nameDuplicate'),'err'); return; }
-    let newPayments   = { ...appData.payments };
-    let newMemberInfo = { ...(appData.memberInfo||{}) };
+    const newPayments   = { ...appData.payments };
+    const newMemberInfo = { ...(appData.memberInfo||{}) };
     if (newName !== origName) {
       list[idx] = newName; list.sort();
       Object.keys(newPayments).filter(k => k.startsWith(`${zone}__${origName}__`)).forEach(k => {
@@ -125,7 +123,7 @@ export default function MembersView() {
   }
 
   async function deleteMember(name: string) {
-    showConfirm('[DEL]',`${t('members.delete')} <b>${name}</b>?<br><span style="font-size:11px;color:var(--txt3)">${t('members.deleteNote')}</span>`,t('membercard.deleteYes'),async()=>{
+    showConfirm('[DEL]', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
       const list     = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
       const filtered = list.filter(m => m !== name);
       const mk       = `${zone}__${name}`;
@@ -136,7 +134,7 @@ export default function MembersView() {
         deletedMembers:{ ...(appData.deletedMembers||{}), [mk]:{ zone,name,deletedAt:Date.now(),payments:mp } } };
       await persist(nd, `[DEL] ${tLog('log.action.deleteMember')} ${zone} - ${name}`);
       showToast(`${name} ${t('common.deleted')}`,'err');
-    });
+    }, { description: t('members.deleteNote') });
   }
 
   async function restoreMember(key: string) {
@@ -152,16 +150,16 @@ export default function MembersView() {
 
   async function permanentDelete(key: string) {
     const d = appData.deletedMembers?.[key]; if(!d) return;
-    showConfirm('[PURGE]',`${t('members.permDelete')} <b>${d.name}</b>?<br><span style="font-size:11px;color:#e05c5c">${t('members.permDeleteNote')}</span>`,t('members.permDeleteYes'),async()=>{
+    showConfirm('[PURGE]', `${t('members.permDelete')} ${d.name}?`, t('members.permDeleteYes'), async () => {
       const nd = { ...appData, deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
       await persist(nd, `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
       showToast(`${d.name} ${t('members.deleted')}`,'err');
-    });
+    }, { description: t('members.permDeleteNote'), highlightColor: '#e05c5c' });
   }
 
   // Sort
   const getInfo = (n: string) => appData.memberInfo?.[zone+'__'+n] || {};
-  let mems = zone==='KRS' ? [...appData.krsMembers] : zone==='SLK' ? [...appData.slkMembers] : [...(appData.zoneMembers?.[zone] ?? [])];
+  const mems = zone==='KRS' ? [...appData.krsMembers] : zone==='SLK' ? [...appData.slkMembers] : [...(appData.zoneMembers?.[zone] ?? [])];
   const sortFns: Record<SortMode,(a:string,b:string)=>number> = {
     'name-asc':  (a,b) => a.localeCompare(b),
     'name-desc': (a,b) => b.localeCompare(a),
@@ -176,7 +174,7 @@ export default function MembersView() {
   const sortLabels: Record<SortMode,string> = { 'name-asc':'A-Z','name-desc':'Z-A','id-asc':'ID ↑','id-desc':'ID ↓','ip-asc':'IP ↑','ip-desc':'IP ↓' };
 
   const badgeStyle: React.CSSProperties = {
-    fontSize:9, padding:'2px 6px', borderRadius:4, flexShrink:0, fontFamily:"'DM Mono',monospace",
+    fontSize:9, padding:'2px 6px', borderRadius:4, flexShrink:0, fontFamily:"var(--font-mono),monospace",
   };
 
   return (
@@ -259,14 +257,17 @@ export default function MembersView() {
                 </div>
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.customerId').toUpperCase()}</div>
+                  {/* eslint-disable-next-line react-hooks/refs */}
                   <input ref={addRef.id} className="af-input" placeholder={t('common.optional')} autoComplete="off" />
                 </div>
                 <div style={{ gridColumn:'span 2' }}>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
+                  {/* eslint-disable-next-line react-hooks/refs */}
                   <input ref={addRef.ip} className="af-input" placeholder="192.168.x.x atau http://..." autoComplete="off" />
                 </div>
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
+                  {/* eslint-disable-next-line react-hooks/refs */}
                   <input ref={addRef.tarif} type="number" inputMode="numeric" className="af-input" placeholder="100" autoComplete="off" />
                 </div>
               </div>
@@ -323,7 +324,7 @@ export default function MembersView() {
                           href={ipStr.startsWith('http') ? ipStr : 'http://'+ipStr}
                           target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()}
-                          style={{ fontSize:10, color:'var(--zc)', textDecoration:'none', fontFamily:"'DM Mono',monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
+                          style={{ fontSize:10, color:'var(--zc)', textDecoration:'none', fontFamily:"var(--font-mono),monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
                         >
                           {ipStr}
                         </a>
@@ -343,7 +344,7 @@ export default function MembersView() {
                           </button>
                           <button onClick={() => openEdit(name)}
                             aria-label={`Edit member: ${name}`}
-                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, fontFamily:"'DM Mono',monospace", minHeight:28 }}>
+                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, fontFamily:"var(--font-mono),monospace", minHeight:28 }}>
                             Edit
                           </button>
                           <button onClick={() => deleteMember(name)}
@@ -382,7 +383,7 @@ export default function MembersView() {
                   placeholder={ph}
                   value={editData[field]}
                   onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-                  style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:13, fontFamily:"'DM Mono',monospace" }}
+                  style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:13, fontFamily:"var(--font-mono),monospace" }}
                 />
               </div>
             ))}

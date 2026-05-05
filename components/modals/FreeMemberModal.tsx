@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { saveDB } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { Gift, CreditCard, X, Check } from 'lucide-react';
 import { useT } from '@/hooks/useT';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { Zone } from '@/types';
 
 interface Props {
@@ -22,28 +23,31 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   const { appData, setAppData, uid, userEmail, setSyncStatus } = useAppStore();
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const existing = appData.freeMembers?.[zone+'__'+name];
-  const now = new Date();
+  const thisYear  = new Date().getFullYear();
+  const thisMonth = new Date().getMonth();
 
-  const [fromYear,  setFromYear]  = useState(existing?.fromYear  ?? now.getFullYear());
-  const [fromMonth, setFromMonth] = useState(existing?.fromMonth ?? now.getMonth());
-  const [toYear,    setToYear]    = useState(existing?.toYear    ?? now.getFullYear());
+  const [fromYear,  setFromYear]  = useState(existing?.fromYear  ?? thisYear);
+  const [fromMonth, setFromMonth] = useState(existing?.fromMonth ?? thisMonth);
+  const [toYear,    setToYear]    = useState(existing?.toYear    ?? thisYear);
   const [toMonth,   setToMonth]   = useState(existing?.toMonth   ?? 11);
   const [noEnd,     setNoEnd]     = useState(existing ? existing.toYear === undefined : false);
 
   useEffect(() => {
     if (!open) return;
     const fm = appData.freeMembers?.[zone+'__'+name];
-    setFromYear(fm?.fromYear  ?? now.getFullYear());
-    setFromMonth(fm?.fromMonth ?? now.getMonth());
-    setToYear(fm?.toYear      ?? now.getFullYear());
+    const y = new Date().getFullYear();
+    const m = new Date().getMonth();
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setFromYear(fm?.fromYear  ?? y);
+    setFromMonth(fm?.fromMonth ?? m);
+    setToYear(fm?.toYear      ?? y);
     setToMonth(fm?.toMonth    ?? 11);
     setNoEnd(fm ? fm.toYear === undefined : false);
-  }, [open, zone, name]);
-
-  if (!open) return null;
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [open, zone, name, appData.freeMembers]);
 
   async function persist(newData: typeof appData, action: string, detail: string) {
     setAppData(newData);
@@ -76,7 +80,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   function handleRemove() {
     showConfirm(
       '[PAY]',
-      `${t('freemodal.removeConfirm')} <b>${name}</b>?<br><span style="font-size:11px;color:var(--txt3)">${t('freemodal.removeNote')}</span>`,
+      `${t('freemodal.removeConfirm')} ${name}?`,
       t('freemodal.removeYes'),
       async () => {
         const key     = zone + '__' + name;
@@ -85,7 +89,8 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         await persist({ ...appData, freeMembers: newFree }, `[PAY] Kembalikan ke Berbayar ${zone} - ${name}`, 'Free member dihapus');
         showToast(`${name} ${t('freemodal.removed')}`);
         onClose();
-      }
+      },
+      { description: t('freemodal.removeNote') }
     );
   }
 
@@ -96,19 +101,17 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   };
 
   return (
-    <div
+    <AnimatePresence>
+      {open && (
+    <motion.div
       style={{ display:'flex', position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(8px)', zIndex:9000, alignItems:'center', justifyContent:'center' }}
       onClick={onClose}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
     >
-      <div
-        style={{
-          background:'rgba(24,28,39,0.95)', backdropFilter:'blur(16px)',
-          border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-lg)',
-          padding:20, width:'min(360px,95vw)', maxHeight:'85vh', overflowY:'auto',
-          boxShadow:'var(--shadow-lg)',
-          animation:'modalScaleIn var(--t-base) var(--ease-spring)',
-        }}
+      <motion.div
+        style={{ background:'rgba(24,28,39,0.95)', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-lg)', padding:20, width:'min(360px,95vw)', maxHeight:'85vh', overflowY:'auto', boxShadow:'var(--shadow-lg)' }}
         onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
       >
         {/* Drag handle */}
         <div style={{ display:'flex', justifyContent:'center', paddingBottom:14 }}>
@@ -117,7 +120,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
 
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
             <Gift size={16} strokeWidth={1.5} color="var(--c-free)" />
             Free Member: {name}
           </div>
@@ -132,7 +135,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
 
         {/* Dari */}
         <div style={{ marginBottom:12 }}>
-          <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"'DM Sans',sans-serif" }}>{t("freemodal.startFrom").toUpperCase()}</div>
+          <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.startFrom").toUpperCase()}</div>
           <div style={{ display:'flex', gap:6 }}>
             <select style={cs} value={fromYear}  onChange={e => setFromYear(+e.target.value)}>
               {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -156,7 +159,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         {/* Sampai */}
         {!noEnd && (
           <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"'DM Sans',sans-serif" }}>{t("freemodal.until").toUpperCase()}</div>
+            <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.until").toUpperCase()}</div>
             <div style={{ display:'flex', gap:6 }}>
               <select style={cs} value={toYear}  onChange={e => setToYear(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -191,7 +194,9 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
             {t('action.cancel')}
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

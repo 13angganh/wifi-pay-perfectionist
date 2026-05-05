@@ -18,7 +18,7 @@ export default function LockBanner() {
       borderBottom:'1px solid rgba(239,68,68,0.16)',
     }}>
       <Lock size={13} strokeWidth={1.5} style={{ color:'var(--c-belum)', flexShrink:0 }} />
-      <span style={{ fontSize:12, color:'var(--c-belum)', flex:1, fontFamily:"'DM Sans',sans-serif" }}>
+      <span style={{ fontSize:12, color:'var(--c-belum)', flex:1, fontFamily:"var(--font-sans),sans-serif" }}>
         {t('lockbanner.message')}
       </span>
       <button
@@ -30,7 +30,7 @@ export default function LockBanner() {
           borderRadius:'var(--r-sm)',
           cursor:'pointer', fontSize:11,
           flexShrink:0,
-          fontFamily:"'DM Sans',sans-serif",
+          fontFamily:"var(--font-sans),sans-serif",
           fontWeight:500,
           minHeight:28,
           transition:'opacity var(--t-fast) var(--ease-smooth)',

@@ -5,11 +5,11 @@
 
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { listenDB, saveDB, DEFAULT_APP_DATA } from '@/lib/db';
+import { listenDB, saveDB } from '@/lib/db';
 import { AppData, ActivityLog } from '@/types';
 
 export function useAppData() {
-  const { uid, userEmail, setAppData, setSyncStatus, setGlobalLocked, setLockedEntries } = useAppStore();
+  const { uid, setAppData, setSyncStatus, setGlobalLocked, setLockedEntries } = useAppStore();
   const unsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -36,6 +36,7 @@ export function useAppData() {
 
     unsubRef.current = unsub;
     return () => { unsub(); unsubRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 }
 

@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { showToast } from '@/components/ui/Toast';
 import { getZoneTotal, isLunas, isFree, getPay, getArrears, rp } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
@@ -18,13 +18,27 @@ import {
   Share2, Wallet, Minus,
 } from 'lucide-react';
 
+// ── PctBadge — top-level component (task 4.11: react-hooks/static-components) ──
+function PctBadge({ pct, prevMonthLabel }: { pct: number | null; prevMonthLabel: string }) {
+  if (pct === null) return null;
+  const up = pct >= 0;
+  return (
+    <span style={{ fontSize:9, fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
+      {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+      {Math.abs(pct)}% vs {prevMonthLabel}
+    </span>
+  );
+}
+
 export default function DashboardView() {
   const router = useRouter();
   const { appData, syncStatus, selYear, selMonth, setSelYear, setSelMonth, setView } = useAppStore();
   const dy = selYear; const dm = selMonth;
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+
+  function nav(v: ViewName) { setView(v); router.push('/' + v); }
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   // ── Income ──
   const krsTotal    = getZoneTotal(appData, 'KRS', dy, dm);
@@ -72,19 +86,6 @@ export default function DashboardView() {
   const backupLbl  = lastBackup ? new Date(+lastBackup).toLocaleDateString('id-ID') : t('common.noData');
   const bulanLbl   = `${MONTH_NAMES[dm]} ${dy}`;
 
-  function nav(v: ViewName) { setView(v); router.push('/' + v); }
-
-  function PctBadge({ pct }: { pct: number | null }) {
-    if (pct === null) return null;
-    const up = pct >= 0;
-    return (
-      <span style={{ fontSize:9, fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
-        {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-        {Math.abs(pct)}% vs {MONTH_NAMES[prevDm]}
-      </span>
-    );
-  }
-
   const card = {
     background:'var(--bg2)',
     border:'1px solid rgba(255,255,255,0.05)',
@@ -100,7 +101,7 @@ export default function DashboardView() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <LayoutDashboard size={16} style={{ color:'var(--txt3)' }} />
-          <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>Dashboard</span>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>Dashboard</span>
         </div>
         <div style={{ display:'flex', gap:5 }}>
           <select className="cs" style={{ fontSize:11, padding:'5px 8px' }} value={dm} onChange={e => setSelMonth(+e.target.value)}>
@@ -138,7 +139,7 @@ export default function DashboardView() {
           {t('dashboard.thisMonth')}
         </div>
         <div style={{
-          fontFamily:"'Syne',sans-serif",
+          fontFamily:"var(--font-sans),sans-serif",
           fontSize:'clamp(22px,6vw,32px)',
           fontWeight:800,
           color:'var(--c-lunas)',
@@ -148,7 +149,7 @@ export default function DashboardView() {
           {rp(totalIncome)}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <PctBadge pct={totalPct} />
+          <PctBadge pct={totalPct} prevMonthLabel={MONTH_NAMES[prevDm]} />
           {totalOps > 0 && (
             <span style={{ fontSize:10, color:'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
               <Minus size={10} /> Ops: {rp(totalOps)} →
@@ -172,10 +173,10 @@ export default function DashboardView() {
             padding:'14px 14px',
           }}>
             <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
-              {zone} <PctBadge pct={pct2 as number | null} />
+              {zone} <PctBadge pct={pct2 as number | null} prevMonthLabel={MONTH_NAMES[prevDm]} />
             </div>
             <div style={{
-              fontFamily:"'Syne',sans-serif",
+              fontFamily:"var(--font-sans),sans-serif",
               fontSize:'clamp(12px,3.8vw,15px)',
               fontWeight:800,
               color: color as string,
@@ -215,7 +216,7 @@ export default function DashboardView() {
           ] as const).map(([label, val, color]) => (
             <div key={label} style={{ flex:1, background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
               <div style={{ fontSize:9, color:'var(--txt4)' }}>{label}</div>
-              <div style={{ fontSize:20, fontWeight:800, fontFamily:"'Syne',sans-serif", color: color as string }}>{val}</div>
+              <div style={{ fontSize:20, fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: color as string }}>{val}</div>
             </div>
           ))}
         </div>
@@ -253,7 +254,7 @@ export default function DashboardView() {
               borderBottom: i < top5.length - 1 ? '1px solid var(--border2)' : 'none',
             }}>
               <div>
-                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"'DM Mono',monospace" }}>{t2.name}</span>
+                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{t2.name}</span>
                 <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:6 }}>{t2.z}</span>
               </div>
               <div style={{ textAlign:'right' }}>

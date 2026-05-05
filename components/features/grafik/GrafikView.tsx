@@ -7,10 +7,12 @@ import {
   CategoryScale, LinearScale,
   BarElement, LineElement, PointElement, ArcElement,
   Tooltip, Legend, Filler,
+  type TooltipItem,
+  type ChartOptions,
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, getZoneTotal, isLunas, isFree, rp } from '@/lib/helpers';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useT } from '@/hooks/useT';
@@ -23,12 +25,23 @@ ChartJS.register(
   Tooltip, Legend, Filler
 );
 
+// ── PctBadge top-level (task 4.11) ──
+function GrafikPctBadge({ pct }: { pct: number | null }) {
+  if (!pct) return null;
+  return (
+    <span style={{ fontSize:10, fontWeight:600, color: pct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:6, display:'inline-flex', alignItems:'center', gap:2 }}>
+      {pct >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+      {Math.abs(pct)}%
+    </span>
+  );
+}
+
 export default function GrafikView() {
   const { appData, activeZone, selYear, setSelYear, theme } = useAppStore();
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const [donutMonth, setDonutMonth] = useState(new Date().getMonth());
   const [p1Year,  setP1Year]  = useState(new Date().getFullYear());
   const [p1Month, setP1Month] = useState(new Date().getMonth() === 0 ? 11 : new Date().getMonth() - 1);
@@ -87,13 +100,13 @@ export default function GrafikView() {
   const baseScales = {
     x: {
       grid: { color: gridColor },
-      ticks: { color: tickColor, font: { family: 'DM Mono', size: 10 } },
+      ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 10 } },
     },
     y: {
       grid: { color: gridColor },
       ticks: {
         color: tickColor,
-        font: { family: 'DM Mono', size: 10 },
+        font: { family: 'JetBrains Mono', size: 10 },
         callback: (v: string | number) => 'Rp ' + (Number(v) * 1000).toLocaleString('id-ID'),
       },
     },
@@ -108,7 +121,8 @@ export default function GrafikView() {
     padding: 10,
     cornerRadius: 8,
     callbacks: {
-      label: (ctx: any) => `Rp ${(ctx.raw * 1000).toLocaleString('id-ID')}`,
+      // Chart.js TooltipItem — any justified: react-chartjs-2 typings do not expose raw as typed generic
+      label: (ctx: TooltipItem<'bar'>) => `Rp ${((ctx.raw as number) * 1000).toLocaleString('id-ID')}`,
     },
   };
 
@@ -159,7 +173,7 @@ export default function GrafikView() {
     plugins: {
       legend: {
         display: true,
-        labels: { color: legendColor, font: { family: 'DM Mono', size: 10 }, boxWidth: 10, padding: 14 },
+        labels: { color: legendColor, font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10, padding: 14 },
       },
       tooltip: baseTooltip,
     },
@@ -183,12 +197,12 @@ export default function GrafikView() {
     plugins: {
       legend: {
         display: true, position: 'bottom' as const,
-        labels: { color: tickColor, font: { family: 'DM Mono', size: 10 }, padding: 12, boxWidth: 10 },
+        labels: { color: tickColor, font: { family: 'JetBrains Mono', size: 10 }, padding: 12, boxWidth: 10 },
       },
       tooltip: {
         backgroundColor: tooltipBg,
         borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-        callbacks: { label: (ctx: any) => `${ctx.label}: ${ctx.raw}` },
+        callbacks: { label: (ctx: TooltipItem<'doughnut'>) => `${ctx.label}: ${ctx.raw}` },
       },
     },
     cutout: '68%',
@@ -215,24 +229,14 @@ export default function GrafikView() {
       tooltip: {
         backgroundColor: tooltipBg,
         borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-        callbacks: { label: (ctx: any) => `Rp ${(ctx.raw * 1000).toLocaleString('id-ID')}` },
+        callbacks: { label: (ctx: TooltipItem<'line'>) => `Rp ${((ctx.raw as number) * 1000).toLocaleString('id-ID')}` }
       },
     },
     scales: {
-      x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'DM Mono', size: 11 } } },
-      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'DM Mono', size: 10 }, callback: (v: string | number) => 'Rp ' + (Number(v) * 1000).toLocaleString('id-ID') } },
+      x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 11 } } },
+      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'JetBrains Mono', size: 10 }, callback: (v: string | number) => 'Rp ' + (Number(v) * 1000).toLocaleString('id-ID') } },
     },
   };
-
-  function PctBadge({ pct }: { pct: number | null }) {
-    if (!pct) return null;
-    return (
-      <span style={{ fontSize:10, fontWeight:600, color: pct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:6, display:'inline-flex', alignItems:'center', gap:2 }}>
-        {pct >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-        {Math.abs(pct)}%
-      </span>
-    );
-  }
 
   const selStyle: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
@@ -251,15 +255,15 @@ export default function GrafikView() {
       {/* Stat cards */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"'DM Sans',sans-serif" }}>
-            {t('common.total').toUpperCase()} {selYear}<PctBadge pct={curYPct} />
+          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>
+            {t('common.total').toUpperCase()} {selYear}<GrafikPctBadge pct={curYPct} />
           </div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:zc }}>{rp(mTotal)}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:15, fontWeight:800, color:zc }}>{rp(mTotal)}</div>
           <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{t('grafik.avgMonth')}: {rp(mAvg)}</div>
         </div>
         <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"'DM Sans',sans-serif" }}>{t('grafik.vsLastYear').toUpperCase()}<PctBadge pct={curYPct} /></div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:'var(--txt2)' }}>{rp(prevYTotal)}</div>
+          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.vsLastYear').toUpperCase()}<GrafikPctBadge pct={curYPct} /></div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:15, fontWeight:800, color:'var(--txt2)' }}>{rp(prevYTotal)}</div>
           <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{t('common.year')} {selYear - 1}</div>
         </div>
       </div>
@@ -276,7 +280,7 @@ export default function GrafikView() {
           )}
         </div>
         <div className="chart-wrap">
-          <Bar data={monthlyData} options={baseOptions as any} />
+          <Bar data={monthlyData} options={baseOptions as ChartOptions<'bar'>} />
         </div>
       </div>
 
@@ -284,7 +288,7 @@ export default function GrafikView() {
       <div className="chart-box">
         <div className="chart-title">KRS vs SLK {selYear}</div>
         <div className="chart-wrap">
-          <Line data={compareData} options={compareOptions as any} />
+          <Line data={compareData} options={compareOptions as ChartOptions<'line'>} />
         </div>
       </div>
 
@@ -303,7 +307,7 @@ export default function GrafikView() {
             { label: t('status.free'),  val: donutStat.free,  color:'var(--c-free)' },
           ].map(d => (
             <div key={d.label} style={{ flex:1, textAlign:'center', background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 4px', border:`1px solid ${d.color}22` }}>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
               <div style={{ fontSize:9, color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
             </div>
           ))}
@@ -317,17 +321,17 @@ export default function GrafikView() {
       <div className="chart-box">
         <div className="chart-title">{t('grafik.yearly').toUpperCase()} · {activeZone}</div>
         <div className="chart-wrap">
-          <Line data={yearlyData} options={baseOptions as any} />
+          <Line data={yearlyData} options={baseOptions as ChartOptions<'line'>} />
         </div>
       </div>
 
       {/* Card proyeksi */}
       {proyeksi > 0 && (
         <div style={{ background:'var(--bg2)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'var(--r-md)', padding:14, marginBottom:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"'DM Sans',sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
+          <div style={{ fontSize:9, color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
               <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{nextMonthLabel} {selYear}</div>
             </div>
             <div style={{ textAlign:'right' }}>
@@ -352,7 +356,7 @@ export default function GrafikView() {
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
           </div>
           <div>
             <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
@@ -364,7 +368,7 @@ export default function GrafikView() {
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
           </div>
         </div>
         {mperiodPct !== null && (
@@ -374,7 +378,7 @@ export default function GrafikView() {
           </div>
         )}
         <div style={{ position:'relative', height:160 }}>
-          <Bar data={mperiodChartData} options={mperiodOptions as any} />
+          <Bar data={mperiodChartData} options={mperiodOptions as ChartOptions<'bar'>} />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap');
+/* task 1.13: @import Google Fonts dihapus — font diload via <link> di app/layout.tsx */
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════════

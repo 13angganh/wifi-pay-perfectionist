@@ -2,7 +2,7 @@
 // Import tidak pakai modal — trigger via file input tersembunyi
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { importToDB } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
@@ -15,7 +15,12 @@ export function triggerImport() { _triggerImport?.(); }
 export default function ImportInput() {
   const ref = useRef<HTMLInputElement>(null);
   const { uid, setAppData, setSyncStatus } = useAppStore();
-  _triggerImport = () => ref.current?.click();
+
+  // Assign trigger ref outside render to avoid react-hooks/globals violation
+  useEffect(() => {
+    _triggerImport = () => ref.current?.click();
+    return () => { _triggerImport = null; };
+  }, []);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -52,13 +57,13 @@ export default function ImportInput() {
             await importToDB(uid, imported);
             setSyncStatus('ok');
             showToast('Cloud sync selesai!', 'ok');
-          } catch (err: any) {
+          } catch (err) {
             setSyncStatus('err');
-            showToast('Sync gagal: '+err.message,'err');
+            showToast('Sync gagal: '+((err as Error).message ?? String(err)),'err');
           }
         }
-      } catch (err: any) {
-        showToast('Gagal baca file: '+err.message,'err');
+      } catch (err) {
+        showToast('Gagal baca file: '+((err as Error).message ?? String(err)),'err');
       }
     };
     reader.readAsText(file);

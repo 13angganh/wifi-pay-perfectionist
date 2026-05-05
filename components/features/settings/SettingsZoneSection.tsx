@@ -51,14 +51,15 @@ export default function SettingsZoneSection() {
     if (newName.length > 6) { showToast(t('zona.nameTooLong'), 'err'); return; }
     showConfirm(
       '',
-      `Ganti nama zona <b>${oldZone}</b> → <b>${newName}</b>?<br><span style="font-size:11px;color:var(--txt3)">${t('zona.renameNote')}</span>`,
+      `Ganti nama zona ${oldZone} → ${newName}?`,
       t('zona.renameYes'),
       () => {
         const zoneNames = settings.zoneNames ?? {};
         updateSettings({ ...settings, zoneNames: { ...zoneNames, [oldZone]: newName } });
         showToast(`Zona ${oldZone} ${t('zona.renamed')} ${newName}`);
         setEditingZona(null);
-      }
+      },
+      { description: t('zona.renameNote') }
     );
   }
 
@@ -68,17 +69,17 @@ export default function SettingsZoneSection() {
                    : z === 'SLK' ? appData.slkMembers.length
                    : (appData.zoneMembers?.[z] ?? []).length;
     if (!isHidden && memCount > 0) {
-      showConfirm('', `Sembunyikan zona <b>${z}</b>?<br><span style="font-size:11px;color:var(--txt3)">${z} ${memCount} ${t('zona.hideConfirmWithMembers')}</span>`, t('zona.hideYes'), () => {
+      showConfirm('', `Sembunyikan zona ${z}?`, t('zona.hideYes'), () => {
         saveHiddenZones([...zonaHidden, z]);
         showToast(`Zona ${z} ${t('zona.hidden')}`);
-      });
+      }, { description: `${z} ${memCount} ${t('zona.hideConfirmWithMembers')}` });
     } else if (!isHidden) {
-      showConfirm('', `Sembunyikan zona <b>${z}</b>?`, t('zona.hideYes'), () => {
+      showConfirm('', `Sembunyikan zona ${z}?`, t('zona.hideYes'), () => {
         saveHiddenZones([...zonaHidden, z]);
         showToast(`Zona ${z} ${t('zona.hidden')}`);
       });
     } else {
-      showConfirm('', `Tampilkan kembali zona <b>${z}</b>?`, t('zona.showYes'), () => {
+      showConfirm('', `Tampilkan kembali zona ${z}?`, t('zona.showYes'), () => {
         saveHiddenZones(zonaHidden.filter(h => h !== z));
         showToast(`Zona ${z} ${t('zona.shown')}`);
       });
@@ -102,16 +103,21 @@ export default function SettingsZoneSection() {
     const memCount = (appData.zoneMembers?.[key] ?? []).length;
     showConfirm(
       '',
-      `Hapus zona <b>${key}</b>?${memCount > 0 ? `<br><span style="font-size:11px;color:var(--c-belum)">${memCount} ${t('zona.deleteHasMembers')}</span>` : ''}`,
+      `Hapus zona ${key}?`,
       t('zona.deleteYes'),
       () => {
         updateSettings({ ...settings, customZones: customZones.filter(z => z.key !== key) });
         if (appData.zoneMembers?.[key]) {
-          const { [key]: _, ...rest } = appData.zoneMembers;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [key]: _del, ...rest } = appData.zoneMembers;
           persistData({ ...appData, zoneMembers: rest }, `[DEL] Hapus zona ${key}`, '');
         }
         showToast(`Zona ${key} ${t('zona.deleted')}`);
-      }
+      },
+      memCount > 0 ? {
+        description: `${memCount} ${t('zona.deleteHasMembers')}`,
+        highlightColor: 'var(--c-belum)',
+      } : undefined
     );
   }
 
@@ -124,7 +130,7 @@ export default function SettingsZoneSection() {
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ color:'var(--zc)' }}><Settings size={16} strokeWidth={1.5} /></div>
           <div style={{ textAlign:'left' }}>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13 }}>{t('settings.zones')}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13 }}>{t('settings.zones')}</div>
             <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{t('settings.zonesNote').split('.')[0]}</div>
           </div>
         </div>
@@ -154,12 +160,12 @@ export default function SettingsZoneSection() {
                   <input autoFocus value={editZonaVal}
                     onChange={e => setEditZonaVal(e.target.value.toUpperCase())}
                     onKeyDown={e => { if (e.key === 'Enter') saveEditZona(z); if (e.key === 'Escape') setEditingZona(null); }}
-                    style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--zc)', color:'var(--txt)', padding:'4px 8px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"'DM Mono',monospace" }}
+                    style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--zc)', color:'var(--txt)', padding:'4px 8px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"var(--font-mono),monospace" }}
                     maxLength={6}
                   />
                 ) : (
                   <div style={{ flex:1 }}>
-                    <div style={{ fontFamily:"'DM Mono',monospace", fontSize:13, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+                    <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:13, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
                       {z}
                       {isCustom && <span style={{ fontSize:9, background:'var(--zcdim)', color:'var(--zc)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>Custom</span>}
                       {isHidden && <span style={{ fontSize:9, background:'rgba(255,255,255,0.06)', color:'var(--txt4)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>{t('settings.zona.hidden')}</span>}
@@ -208,7 +214,7 @@ export default function SettingsZoneSection() {
                   onKeyDown={e => { if (e.key === 'Enter') addZona(); if (e.key === 'Escape') setAddZonaOpen(false); }}
                   placeholder={t('settings.zona.namePlaceholder')}
                   maxLength={6}
-                  style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)', padding:'8px 10px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"'DM Mono',monospace", outline:'none' }}
+                  style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)', padding:'8px 10px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"var(--font-mono),monospace", outline:'none' }}
                 />
                 <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                   <label style={{ fontSize:10, color:'var(--txt3)' }}>{t('settings.zona.color')}:</label>

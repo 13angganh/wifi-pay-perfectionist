@@ -4,7 +4,6 @@
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogout, switchAccount } from '@/hooks/useAuth';
-import { X } from 'lucide-react';
 
 interface Props { open: boolean; onClose: () => void; }
 

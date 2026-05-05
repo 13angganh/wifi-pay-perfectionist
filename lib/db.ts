@@ -11,6 +11,7 @@ import { cleanOldEditLogs } from './helpers';
 export const DEFAULT_APP_DATA: AppData = {
   krsMembers:     [...DEFAULT_KRS],
   slkMembers:     [...DEFAULT_SLK],
+  zoneMembers:    {}, // task 1.02
   payments:       {},
   memberInfo:     {},
   activityLog:    [],
@@ -40,6 +41,7 @@ export function listenDB(
       const raw: AppData = {
         krsMembers:     val.krsMembers     || [],
         slkMembers:     val.slkMembers     || [],
+        zoneMembers:    val.zoneMembers    || {}, // task 1.03
         payments:       val.payments       || {},
         memberInfo:     val.memberInfo     || {},
         activityLog:    val.activityLog    || [],
@@ -102,6 +104,33 @@ export async function persistPayment(
     _lockedEntries: lockedEntries,
   };
   await saveDB(uid, safeData, logEntry, userEmail);
+}
+
+
+// ── task 3.04: Granular write — update satu payment key saja ──
+// Dipakai oleh EntryView/MemberCard saat bayar/edit nominal bulan tertentu.
+// Jauh lebih efisien dari saveDB() yang menulis seluruh AppData (~50KB+).
+export async function updatePayment(
+  uid:   string,
+  key:   string,   // format dari fbKey(zone, name, year, month)
+  value: number | null,
+): Promise<void> {
+  // null → hapus key dari Firebase (anggap belum bayar)
+  const patch: Record<string, number | null> = { [key]: value };
+  await update(ref(db, `users/${uid}/data/payments`), patch);
+}
+
+// ── task 3.04: Granular write — update lock state saja ──
+// Dipakai oleh lock/unlock action tanpa memerlukan full AppData write.
+export async function updateLockState(
+  uid:          string,
+  globalLocked: boolean,
+  lockedEntries: Record<string, boolean>,
+): Promise<void> {
+  await update(ref(db, `users/${uid}/data`), {
+    _globalLocked:  globalLocked,
+    _lockedEntries: lockedEntries,
+  });
 }
 
 // ── Import data (chunked untuk payments besar) ──

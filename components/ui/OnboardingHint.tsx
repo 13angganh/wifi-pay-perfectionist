@@ -57,11 +57,13 @@ export default function OnboardingHint({ forceShow }: Props) {
   const [exiting, setExiting]   = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (forceShow) { setVisible(true); return; }
     try {
       const done = localStorage.getItem(STORAGE_KEY);
       if (!done) setVisible(true);
     } catch { /* private mode — skip */ }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [forceShow]);
 
   function dismiss() {
@@ -142,13 +144,13 @@ export default function OnboardingHint({ forceShow }: Props) {
         <div style={{ textAlign:'center', padding:'0 8px' }}>
           <div style={{ marginBottom:14 }}>{hint.icon}</div>
           <div style={{
-            fontFamily:"'Syne',sans-serif", fontWeight:800,
+            fontFamily:"var(--font-sans),sans-serif", fontWeight:800,
             fontSize:16, color:'var(--txt)', marginBottom:8,
           }}>
             {hint.title}
           </div>
           <div style={{
-            fontFamily:"'DM Sans',sans-serif",
+            fontFamily:"var(--font-sans),sans-serif",
             fontSize:13, color:'var(--txt2)', lineHeight:1.55,
             marginBottom:20,
           }}>
@@ -175,7 +177,7 @@ export default function OnboardingHint({ forceShow }: Props) {
             style={{
               background:'var(--zc)', color:'#fff', border:'none',
               borderRadius:'var(--r-md)', padding:'9px 20px',
-              fontFamily:"'DM Sans',sans-serif", fontWeight:600,
+              fontFamily:"var(--font-sans),sans-serif", fontWeight:600,
               fontSize:13, cursor:'pointer',
               minWidth:80,
               transition:'opacity var(--t-fast)',
@@ -192,7 +194,7 @@ export default function OnboardingHint({ forceShow }: Props) {
             style={{
               display:'block', width:'100%', marginTop:12,
               background:'none', border:'none',
-              fontFamily:"'DM Sans',sans-serif",
+              fontFamily:"var(--font-sans),sans-serif",
               fontSize:11, color:'var(--txt4)',
               cursor:'pointer', textAlign:'center',
             }}

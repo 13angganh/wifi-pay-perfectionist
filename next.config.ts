@@ -2,8 +2,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // reactStrictMode false agar Firebase listener tidak double-fire di dev
-  reactStrictMode: false,
+  // Fase 2: reactStrictMode diaktifkan kembali
+  // Firebase listener sudah idempotent — cleanup unsub() ada di semua useEffect
+  reactStrictMode: true,
   async headers() {
     return [
       {

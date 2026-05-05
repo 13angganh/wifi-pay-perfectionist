@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { persistPayment } from '@/lib/db';
@@ -65,7 +65,7 @@ export default function EntryView() {
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const chips: { key: FilterType; icon: React.ReactNode; label: string; count?: number }[] = [
     { key: 'all',    icon: <ClipboardList size={12} />, label: t('common.all') },
     { key: 'paid',   icon: <CheckCircle2  size={12} />, label: t('status.lunas'),  count: paid },
@@ -129,7 +129,7 @@ export default function EntryView() {
 
   useEffect(() => {
     if (!batchMode) setBatchPeriod(selYear, selMonth);
-  }, [selYear, selMonth, batchMode]);
+  }, [selYear, selMonth, batchMode, setBatchPeriod]);
 
   const batchPreview = batchSelected.map(name => {
     const info  = appData.memberInfo?.[activeZone + '__' + name] || {};
@@ -159,7 +159,7 @@ export default function EntryView() {
               <X size={18} />
             </button>
             <div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:14, color:'var(--txt)' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, color:'var(--txt)' }}>
                 {batchSelected.length} {t('nav.members')}
               </div>
               <div style={{ fontSize:10, color:'var(--txt3)' }}>
@@ -215,7 +215,7 @@ export default function EntryView() {
         }}>
           <div>
             <div style={{ fontSize:9, color:'rgba(239,68,68,0.6)', letterSpacing:'.06em', textTransform:'uppercase' }}>{t('entry.potentialUnpaid')}</div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:16, fontWeight:800, color:'var(--c-belum)' }}>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:16, fontWeight:800, color:'var(--c-belum)' }}>
               {rp(potensiUnpaid)}
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function EntryView() {
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 padding:'8px 0', borderBottom:'1px solid var(--border2)',
               }}>
-                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"'DM Mono',monospace" }}>{name}</span>
+                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</span>
                 <span style={{ fontSize:12, fontWeight:600, color: tarif ? 'var(--c-lunas)' : 'var(--txt4)' }}>
                   {tarif ? rp(tarif) : <span style={{ fontSize:10 }}>{t('entry.noTarifShort')}</span>}
                 </span>
@@ -339,7 +339,7 @@ export default function EntryView() {
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, marginBottom:16 }}>
             <span style={{ fontSize:11, color:'var(--txt3)' }}>Total</span>
-            <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>
+            <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>
               {rp(batchPreview.reduce((s, { tarif }) => s + (tarif || 0), 0))}
             </span>
           </div>

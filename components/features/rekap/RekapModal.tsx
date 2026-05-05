@@ -1,9 +1,9 @@
 // components/features/rekap/RekapModal.tsx — Sub-component dipecah dari RekapView (Fase 3)
 'use client';
 
-import { useRef } from 'react';
+import { } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS_EN, MONTHS_ID } from '@/lib/constants';
+import { MONTHS_EN, MONTHS } from '@/lib/constants';
 import { getPay, isFree, rp, getKey } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
@@ -11,6 +11,7 @@ import { persistPayment } from '@/lib/db';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { X, Gift, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface RekapModalProps {
   inputDirty: React.MutableRefObject<boolean>;
@@ -30,7 +31,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   if (!rekapExpanded) return null;
   const { name, month } = rekapExpanded;
@@ -76,6 +77,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   async function manualPay(val: string) {
     if (!inputDirty.current) return;
     if (modalClosing.current) return;
+    // eslint-disable-next-line react-hooks/immutability
     inputDirty.current = false;
     if (locked) { showToast(t('rekap.dateLocked'), 'err'); return; }
     const k       = getKey(activeZone, name, selYear, month);
@@ -101,7 +103,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     if (curVal === null) return;
     showConfirm(
       '[DEL]',
-      `${t('rekap.deletePayment')} <b>${name}</b>?<br><span style="font-size:11px;color:var(--txt3)">${MONTH_NAMES[month]} ${selYear} · ${curVal > 0 ? rp(curVal) : t('rekap.accumulation')}</span>`,
+      `${t('rekap.deletePayment')} ${name}?`,
       t('membercard.deleteYes'),
       async () => {
         const k       = getKey(activeZone, name, selYear, month);
@@ -110,16 +112,18 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
         showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
         onClose();
-      }
+      },
+      { description: `${MONTH_NAMES[month]} ${selYear} · ${curVal > 0 ? rp(curVal) : t('rekap.accumulation')}` }
     );
   }
 
   return (
-    <div
+    <motion.div
       style={{ position:'fixed', inset:0, zIndex:8000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop: Math.round(window.innerHeight * 0.18), background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
       onClick={onClose}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
     >
-      <div
+      <motion.div
         style={{
           background:'rgba(24,28,39,0.92)', backdropFilter:'blur(16px)',
           border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-lg)',
@@ -127,13 +131,14 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
           overflow:'hidden', animation:'modalScaleIn var(--t-base) var(--ease-spring)',
         }}
         onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
       >
         <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:4 }}>
           <div style={{ width:32, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div>
-            <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"'DM Mono',monospace" }}>{name}</div>
+            <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
             <div style={{ fontSize:10, color:'var(--zc)', marginTop:2 }}>{activeZone} · {MONTH_NAMES[month]} {selYear}</div>
           </div>
           <button onClick={onClose} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -161,11 +166,11 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
                   placeholder="0"
                   defaultValue={entryVal !== null ? String(entryVal) : ''}
                   style={{ flex:1, minWidth:0 }}
-                  onChange={() => { inputDirty.current = true; }}
+                  onChange={() => { inputDirty.current = true; }} // eslint-disable-line react-hooks/immutability
                   onBlur={e => manualPay(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
-                      inputDirty.current = true;
+                      inputDirty.current = true; // eslint-disable-line react-hooks/immutability
                       manualPay((e.target as HTMLInputElement).value);
                     }
                   }}
@@ -190,7 +195,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
             </>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

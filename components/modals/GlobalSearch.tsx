@@ -8,6 +8,7 @@ import { getPay, isFree, rp, fuzzyMatch } from '@/lib/helpers';
 import { Search, X, Gift, CheckCircle2, XCircle } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -19,10 +20,9 @@ export default function GlobalSearch({ open, onClose }: Props) {
   const t = useT();
 
   useEffect(() => {
-    if (open) { setQ(''); setTimeout(() => inputRef.current?.focus(), 50); }
+    if (open) { setQ(''); setTimeout(() => inputRef.current?.focus(), 50); } // eslint-disable-line react-hooks/set-state-in-effect
   }, [open]);
 
-  if (!open) return null;
 
   const results: {
     z: 'KRS'|'SLK'; name: string;
@@ -50,9 +50,12 @@ export default function GlobalSearch({ open, onClose }: Props) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)', display:'flex', flexDirection:'column', padding:'16px 14px', animation:'modalBgIn .18s ease' }}>
+    <AnimatePresence>
+      {open && (
+    <motion.div style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)', display:'flex', flexDirection:'column', padding:'16px 14px' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
       {/* Search input */}
-      <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:'env(safe-area-inset-top)', animation:'modalSlideUp .22s cubic-bezier(.4,0,.2,1)' }}>
+      <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:'env(safe-area-inset-top)' }}>
         <div style={{ flex:1, position:'relative', display:'flex', alignItems:'center' }}>
           <Search size={15} style={{ position:'absolute', left:12, color:'var(--txt4)', pointerEvents:'none' }} />
           <input
@@ -61,7 +64,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
               width:'100%', background:'rgba(24,28,39,0.95)', backdropFilter:'blur(16px)',
               border:'1px solid rgba(255,255,255,0.1)', color:'var(--txt)',
               padding:'12px 16px 12px 38px', borderRadius:'var(--r-md)',
-              fontSize:14, fontFamily:"'DM Mono',monospace", outline:'none',
+              fontSize:14, fontFamily:"var(--font-mono),monospace", outline:'none',
               transition:'border-color var(--t-fast)', boxShadow:'var(--shadow-md)',
             }}
             placeholder={t("globalsearch.placeholder")}
@@ -112,7 +115,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
                 background: r.z === 'KRS' ? 'var(--zcdim)' : 'rgba(249,115,22,0.10)',
                 color: r.z === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)',
                 border: `1px solid ${r.z === 'KRS' ? 'rgba(var(--zc-rgb,59,130,246),0.25)' : 'rgba(249,115,22,0.25)'}`,
-                fontFamily:"'DM Mono',monospace",
+                fontFamily:"var(--font-mono),monospace",
               }}>
                 {r.z}
               </span>
@@ -120,7 +123,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
               {/* Nama + info */}
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="gsr-name">{r.name}</div>
-                {r.id && <div style={{ fontSize:9, color:'var(--txt4)', fontFamily:"'DM Mono',monospace" }}>{r.id}{r.ip ? ' · ' + r.ip : ''}</div>}
+                {r.id && <div style={{ fontSize:9, color:'var(--txt4)', fontFamily:"var(--font-mono),monospace" }}>{r.id}{r.ip ? ' · ' + r.ip : ''}</div>}
               </div>
 
               {/* Status */}
@@ -148,6 +151,8 @@ export default function GlobalSearch({ open, onClose }: Props) {
           );
         })}
       </div>
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

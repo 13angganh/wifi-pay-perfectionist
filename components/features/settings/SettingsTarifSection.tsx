@@ -6,17 +6,72 @@ import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { useT } from '@/hooks/useT';
-import { MONTHS_EN, MONTHS_ID, getYears } from '@/lib/constants';
+import { MONTHS_EN, MONTHS, getYears } from '@/lib/constants';
+import type React from 'react';
 import { doJSONBackup, doWASummary, generatePDF, generateExcel } from '@/lib/export';
 import {
   Download, FileText, Table2, Share2, MessageCircle, ChevronDown, ChevronUp, Check, Zap,
 } from 'lucide-react';
 
+// ── Top-level sub-components (task 4.11: react-hooks/static-components) ──
+
+function ToggleChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      flex:1, padding:'8px', borderRadius:'var(--r-sm)',
+      border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
+      background: active ? 'var(--zcdim)' : 'var(--bg3)',
+      color: active ? 'var(--zc)' : 'var(--txt2)',
+      cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
+      transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
+    }}>
+      {active && <Check size={11} />}
+      {label}
+    </button>
+  );
+}
+
+const selStyleBase: React.CSSProperties = {
+  background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
+  padding:'8px 10px', borderRadius:'var(--r-sm)', fontSize:12, flex:1,
+};
+
+function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, setMonth, showAll, monthNames }: {
+  zone: 'KRS'|'SLK'|'ALL'; setZone: (z: 'KRS'|'SLK'|'ALL') => void;
+  type: 'monthly'|'yearly'; setType: (t: 'monthly'|'yearly') => void;
+  year: number; setYear: (y: number) => void;
+  month: number; setMonth: (m: number) => void;
+  showAll?: boolean;
+  monthNames: string[];
+}) {
+  return (
+    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
+      <select style={{ ...selStyleBase, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as 'KRS'|'SLK'|'ALL')}>
+        <option value="KRS">KRS</option>
+        <option value="SLK">SLK</option>
+        {showAll && <option value="ALL">ALL</option>}
+      </select>
+      <select style={{ ...selStyleBase, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'monthly'|'yearly')}>
+        <option value="monthly">Bulanan</option>
+        <option value="yearly">Tahunan</option>
+      </select>
+      {type === 'monthly' && (
+        <select style={{ ...selStyleBase, flex:'none', minWidth:80 }} value={month} onChange={e => setMonth(+e.target.value)}>
+          {monthNames.map((m: string, i: number) => <option key={i} value={i}>{m}</option>)}
+        </select>
+      )}
+      <select style={{ ...selStyleBase, flex:'none', minWidth:68 }} value={year} onChange={e => setYear(+e.target.value)}>
+        {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
+  );
+}
+
 export default function SettingsTarifSection() {
   const { settings, updateSettings, appData } = useAppStore();
   const t = useT();
   const lang = settings.language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const [newAmounts, setNewAmounts] = useState(settings.quickAmounts.join(', '));
   const [expOpen,  setExpOpen]  = useState(false);
@@ -91,8 +146,9 @@ export default function SettingsTarifSection() {
           showToast(t('settings.export.fileDownloaded'));
         }
       }
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') showToast(t('settings.export.fileError'), 'err');
+    } catch (e: unknown) {
+      const name = e && typeof e === 'object' && 'name' in e ? (e as { name: string }).name : '';
+      if (name !== 'AbortError') showToast(t('settings.export.fileError'), 'err');
     }
   }
 
@@ -105,59 +161,13 @@ export default function SettingsTarifSection() {
     padding:16, marginBottom:10, boxShadow:'var(--shadow-xs)',
   };
 
-  function ToggleChip({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) {
-    return (
-      <button onClick={onClick} style={{
-        flex:1, padding:'8px', borderRadius:'var(--r-sm)',
-        border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
-        background: active ? 'var(--zcdim)' : 'var(--bg3)',
-        color: active ? 'var(--zc)' : 'var(--txt2)',
-        cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
-        transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
-      }}>
-        {active && <Check size={11} />}
-        {label}
-      </button>
-    );
-  }
-
-  function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, setMonth, showAll }: {
-    zone:'KRS'|'SLK'|'ALL'; setZone:(z:'KRS'|'SLK'|'ALL')=>void;
-    type:'monthly'|'yearly'; setType:(t:'monthly'|'yearly')=>void;
-    year:number; setYear:(y:number)=>void;
-    month:number; setMonth:(m:number)=>void;
-    showAll?: boolean;
-  }) {
-    return (
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
-        <select style={{ ...selStyle, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as 'KRS'|'SLK'|'ALL')}>
-          <option value="KRS">KRS</option>
-          <option value="SLK">SLK</option>
-          {showAll && <option value="ALL">ALL</option>}
-        </select>
-        <select style={{ ...selStyle, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'monthly'|'yearly')}>
-          <option value="monthly">{t('settings.export.monthly')}</option>
-          <option value="yearly">{t('settings.export.yearly')}</option>
-        </select>
-        {type === 'monthly' && (
-          <select style={{ ...selStyle, flex:'none', minWidth:80 }} value={month} onChange={e => setMonth(+e.target.value)}>
-            {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-          </select>
-        )}
-        <select style={{ ...selStyle, flex:'none', minWidth:68 }} value={year} onChange={e => setYear(+e.target.value)}>
-          {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
-    );
-  }
-
   return (
     <>
       {/* Export Data */}
       <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Download size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.export')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.export')}</div>
         </div>
 
         <button
@@ -179,7 +189,7 @@ export default function SettingsTarifSection() {
         </button>
         {expOpen && (
           <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <ExportSelectors zone={expZone} setZone={setExpZone} type={expType} setType={setExpType} year={expYear} setYear={setExpYear} month={expMonth} setMonth={setExpMonth} showAll />
+            <ExportSelectors monthNames={MONTH_NAMES} zone={expZone} setZone={setExpZone} type={expType} setType={setExpType} year={expYear} setYear={setExpYear} month={expMonth} setMonth={setExpMonth} showAll />
             <div style={{ display:'flex', gap:6, marginTop:10 }}>
               <button onClick={handleDownloadPDF} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
                 <FileText size={12} /> PDF
@@ -196,7 +206,7 @@ export default function SettingsTarifSection() {
       <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Share2 size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
         </div>
 
         <button onClick={() => setWaOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${waOpen ? 'var(--zc)' : 'var(--border)'}`, background: waOpen ? 'var(--zcdim)' : 'var(--bg3)', color: waOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}>
@@ -231,7 +241,7 @@ export default function SettingsTarifSection() {
               <ToggleChip label="PDF" active={sfFmt==='pdf'} onClick={() => setSfFmt('pdf')} />
               <ToggleChip label="Excel" active={sfFmt==='excel'} onClick={() => setSfFmt('excel')} />
             </div>
-            <ExportSelectors zone={sfZone} setZone={setSfZone} type={sfType} setType={setSfType} year={sfYear} setYear={setSfYear} month={sfMonth} setMonth={setSfMonth} showAll={sfFmt==='pdf'} />
+            <ExportSelectors monthNames={MONTH_NAMES} zone={sfZone} setZone={setSfZone} type={sfType} setType={setSfType} year={sfYear} setYear={setSfYear} month={sfMonth} setMonth={setSfMonth} showAll={sfFmt==='pdf'} />
             <button onClick={handleShareFile} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <Share2 size={13} /> {t('settings.generateShare')}
             </button>
@@ -244,21 +254,21 @@ export default function SettingsTarifSection() {
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Zap size={16} strokeWidth={1.5} /></div>
           <div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.quickPay')}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.quickPay')}</div>
             <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{t('settings.quickPayDesc')}</div>
           </div>
         </div>
         <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.quickPayLabel')}</div>
         <input
           className="lf-input"
-          style={{ marginBottom:0, textAlign:'left', letterSpacing:'normal', fontFamily:"'DM Mono',monospace" }}
+          style={{ marginBottom:0, textAlign:'left', letterSpacing:'normal', fontFamily:"var(--font-mono),monospace" }}
           value={newAmounts}
           onChange={e => setNewAmounts(e.target.value)}
           placeholder="50, 80, 90, 100, 150, 200"
         />
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:8 }}>
           {settings.quickAmounts.map(a => (
-            <span key={a} style={{ background:'var(--bg3)', border:'1px solid var(--zc)', color:'var(--zc)', padding:'3px 10px', borderRadius:'var(--r-xs)', fontSize:11, fontFamily:"'DM Mono',monospace" }}>{a}</span>
+            <span key={a} style={{ background:'var(--bg3)', border:'1px solid var(--zc)', color:'var(--zc)', padding:'3px 10px', borderRadius:'var(--r-xs)', fontSize:11, fontFamily:"var(--font-mono),monospace" }}>{a}</span>
           ))}
         </div>
         <button onClick={saveAmounts} style={{

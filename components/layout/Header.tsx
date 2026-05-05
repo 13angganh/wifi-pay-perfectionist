@@ -1,6 +1,7 @@
-// components/layout/Header.tsx — Fase 4: sync pill + Lucide + 3-mode theme cycle
 'use client';
 
+import Image from 'next/image';
+// components/layout/Header.tsx — Fase 4: sync pill + Lucide + 3-mode theme cycle
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { saveDB } from '@/lib/db';
@@ -100,10 +101,10 @@ export default function Header({ onToggleSidebar }: Props) {
               overflow:'hidden', flexShrink:0,
               boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
             }}>
-              <img src="/icon-512.png" alt="WiFi Pay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             </div>
             <div>
-              <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>
                 WiFi Pay
               </div>
               <div style={{ fontSize:9, color:'var(--txt4)' }}>v11.2 Next</div>

@@ -1,13 +1,14 @@
-// components/modals/RiwayatModal.tsx — Fase 4: EmptyState + cleanup
+// components/modals/RiwayatModal.tsx — Fase 3: Framer Motion bottom sheet
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, getYears, MONTHS_EN, MONTHS_ID } from '@/lib/constants';
+import { MONTHS, getYears, MONTHS_EN } from '@/lib/constants';
 import { getPay, isFree, rp } from '@/lib/helpers';
 import { ChevronLeft, ChevronRight, X, Gift, CheckCircle2, XCircle, Calendar } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -21,7 +22,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
   const lang = settings.language ?? 'id';
   const t = useT();
 
-  if (!open || !riwayatName) return null;
+  if (!riwayatName) return null;
 
   const info     = appData.memberInfo?.[riwayatZone+'__'+riwayatName] || {};
   const minYear  = getYears()[0];
@@ -30,7 +31,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
   let lunas = 0; let totalVal = 0;
 
   const rows = MONTHS.map((mName, mi) => {
-    const displayName = (lang === 'en' ? MONTHS_EN : MONTHS_ID)[mi] || mName;
+    const displayName = (lang === 'en' ? MONTHS_EN : MONTHS)[mi] || mName;
     const v    = getPay(appData, riwayatZone, riwayatName, riwayatYear, mi);
     const free = isFree(appData, riwayatZone, riwayatName, riwayatYear, mi);
     const tgl  = (info[`date_${riwayatYear}_${mi}`] as string) || '';
@@ -45,7 +46,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
       lunas++;
     } else if (v !== null && v > 0) {
       statusEl = (
-        <span style={{ color:'var(--c-lunas)', fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>
+        <span style={{ color:'var(--c-lunas)', fontSize:11, fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
           {rp(v)}
         </span>
       );
@@ -76,7 +77,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
           onClose();
         }}>
         <div>
-          <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"'DM Mono',monospace" }}>{displayName} {riwayatYear}</div>
+          <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName} {riwayatYear}</div>
           {tgl && <div style={{ fontSize:9, color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
         </div>
         {statusEl}
@@ -87,12 +88,18 @@ export default function RiwayatModal({ open, onClose }: Props) {
   const totalMonths = 12;
 
   return (
-    <div
+    <AnimatePresence>
+      {open && (
+    <motion.div
       id="riwayat-modal"
       style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(8px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
       onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     >
-      <div
+      <motion.div
         className="riwayat-box"
         id="riwayat-box-inner"
         style={{
@@ -102,6 +109,10 @@ export default function RiwayatModal({ open, onClose }: Props) {
           boxShadow:'var(--shadow-lg)',
         }}
         onClick={e => e.stopPropagation()}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ duration: 0.28, ease: [0, 0, 0.2, 1] }}
       >
         {/* Drag handle */}
         <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6 }}>
@@ -110,7 +121,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
 
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 16px 14px' }}>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
             <Calendar size={15} strokeWidth={1.5} color="var(--zc)" />
             {riwayatName}
             <span style={{ fontSize:11, fontWeight:400, color:'var(--txt3)' }}>({riwayatZone})</span>
@@ -141,7 +152,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>{riwayatYear}</span>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>{riwayatYear}</span>
           <button
             onClick={() => riwayatYear < maxYear && setRiwayatYear(riwayatYear + 1)}
             disabled={riwayatYear >= maxYear}
@@ -154,8 +165,8 @@ export default function RiwayatModal({ open, onClose }: Props) {
 
         {/* Summary bar */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10, marginLeft:16, marginRight:16 }}>
-          <span style={{ fontSize:11, color:'var(--txt3)', fontFamily:"'DM Sans',sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
-          <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
+          <span style={{ fontSize:11, color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
         </div>
 
         {/* Rows */}
@@ -164,7 +175,9 @@ export default function RiwayatModal({ open, onClose }: Props) {
             <EmptyState icon={Calendar} title={t('common.noData')} description={`${t('riwayat.noHistory')} ${riwayatYear}`} size="md" />
           ) : rows}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

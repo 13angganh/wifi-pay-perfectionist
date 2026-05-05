@@ -4,6 +4,6 @@ import { useAppStore } from '@/store/useAppStore';
 import LogView from '@/components/features/log/LogView';
 export default function Page() {
   const { setView } = useAppStore();
-  useEffect(() => { setView('log'); }, []);
+  useEffect(() => { setView('log'); }, [setView]);
   return <LogView />;
 }

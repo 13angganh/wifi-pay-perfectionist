@@ -5,7 +5,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
-import { getPay, isLunas, isFree, fuzzyMatch } from '@/lib/helpers';
+import { getPay, isLunas, isFree, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { MONTHS, MONTHS_EN } from '@/lib/constants';
 
 export function useEntry() {
@@ -19,7 +19,7 @@ export function useEntry() {
 
   const lang        = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
-  const mems        = activeZone === 'KRS' ? appData.krsMembers : appData.slkMembers;
+  const mems        = getMembersForZone(activeZone, appData); // FIX: custom zone support
 
   const freeCount = mems.filter(m => isFree(appData, activeZone, m, selYear, selMonth)).length;
   const paid      = mems.filter(m => isLunas(appData, activeZone, m, selYear, selMonth) && !isFree(appData, activeZone, m, selYear, selMonth)).length;

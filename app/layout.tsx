@@ -2,9 +2,12 @@
 // app/layout.tsx — Root layout
 // task 3.01: Ganti Google Fonts <link> manual → next/font/google
 //            Inter (sans) + JetBrains Mono (mono) sesuai spec prompt-personal.md
+// Sesi Fix: Tambah Analytics + SpeedInsights + anti-FOUC script
 // ══════════════════════════════════════════
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 const inter = Inter({
@@ -33,6 +36,19 @@ export const viewport: Viewport = {
   themeColor: '#121212',
 };
 
+// Anti-FOUC: baca preferensi tema dari localStorage SEBELUM hydration
+// Mencegah flash warna dari dark → light (atau sebaliknya) saat load
+const antiFOUC = `
+(function() {
+  try {
+    var t = localStorage.getItem('wp_theme');
+    if (t === 'light') document.body.classList.add('light');
+    else if (t === 'dark') document.body.classList.remove('light');
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.body.classList.add('light');
+  } catch(e) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${inter.variable} ${jetbrainsMono.variable}`}>
@@ -40,9 +56,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Anti-FOUC: jalankan sebelum render body */}
+        <script dangerouslySetInnerHTML={{ __html: antiFOUC }} />
       </head>
       <body suppressHydrationWarning>
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

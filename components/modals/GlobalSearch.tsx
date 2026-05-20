@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { getPay, isFree, rp, fuzzyMatch } from '@/lib/helpers';
+import { getPay, isFree, rp, fuzzyMatch, getAllActiveZones, getMembersForZone } from '@/lib/helpers';
 import { Search, X, Gift, CheckCircle2, XCircle } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,7 +14,7 @@ interface Props { open: boolean; onClose: () => void; }
 
 export default function GlobalSearch({ open, onClose }: Props) {
   const router = useRouter();
-  const { appData, selYear, selMonth, setView, setZone, setExpandedCard } = useAppStore();
+  const { appData, selYear, selMonth, setView, setZone, setExpandedCard, settings } = useAppStore();
   const [q, setQ] = useState('');
   const inputRef   = useRef<HTMLInputElement>(null);
   const t = useT();
@@ -25,13 +25,13 @@ export default function GlobalSearch({ open, onClose }: Props) {
 
 
   const results: {
-    z: 'KRS'|'SLK'; name: string;
+    z: string; name: string;
     paid: boolean; free: boolean; val: number|null;
     id?: string; ip?: string; tarif?: number;
   }[] = [];
 
-  for (const z of ['KRS','SLK'] as const) {
-    const mems = z === 'KRS' ? appData.krsMembers : appData.slkMembers;
+  for (const z of getAllActiveZones(settings)) { // FIX: custom zone support
+    const mems = getMembersForZone(z, appData);
     for (const name of mems) {
       if (!q.trim() || fuzzyMatch(name, q)) {
         const info = appData.memberInfo?.[z+'__'+name] || {};
@@ -41,7 +41,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
     }
   }
 
-  function gotoMember(z: 'KRS'|'SLK', name: string) {
+  function gotoMember(z: string, name: string) {
     setZone(z);
     setView('entry');
     setExpandedCard(name);

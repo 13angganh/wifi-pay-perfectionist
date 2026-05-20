@@ -18,3 +18,21 @@
 @keyframes ripple-anim  { from { transform: scale(0); opacity: .4 } to { transform: scale(2.5); opacity: 0 } }
 @keyframes numMorphIn   { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
 @keyframes slideUp      { from { transform: translateY(100%); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+/* ── Content fade-in (skeleton → data) ── */
+@keyframes fadeContent {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeContent 0.25s ease-out both;
+}
+
+/* ── Stagger helper classes ── */
+.stagger-1  { animation-delay: 0.03s; }
+.stagger-2  { animation-delay: 0.06s; }
+.stagger-3  { animation-delay: 0.09s; }
+
+/* ── Scroll shadow gradient ── */
+@keyframes shadowFadeIn  { from { opacity:0 } to { opacity:1 } }
+@keyframes shadowFadeOut { from { opacity:1 } to { opacity:0 } }

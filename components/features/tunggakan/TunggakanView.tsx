@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { getArrears, isFree } from '@/lib/helpers';
+import { getArrears, isFree, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import {
   AlertTriangle, Star, Gift, CheckCircle2,
@@ -26,7 +26,7 @@ export default function TunggakanView() {
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
-  const mems = activeZone === 'KRS' ? appData.krsMembers : appData.slkMembers;
+  const mems = getMembersForZone(activeZone, appData); // FIX: custom zone support
 
   // Nunggak
   const allArrears = mems.map(name => {

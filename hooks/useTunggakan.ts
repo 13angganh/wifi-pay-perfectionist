@@ -5,7 +5,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
-import { getArrears, isFree, fuzzyMatch } from '@/lib/helpers';
+import { getArrears, isFree, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { MONTHS, MONTHS_EN } from '@/lib/constants';
 
 export interface TunggakanItem {
@@ -25,7 +25,7 @@ export function useTunggakan() {
 
   const items: TunggakanItem[] = [];
   for (const zone of zones) {
-    const mems = zone === 'KRS' ? appData.krsMembers : appData.slkMembers;
+    const mems = getMembersForZone(zone, appData); // FIX: custom zone support
     for (const name of mems) {
       if (!fuzzyMatch(name, search)) continue;
       const unpaid = getArrears(appData, zone, name, selYear, selMonth)

@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "users": {
+      "g0ulGcxSG3SdE3k6rJBvaGGJfna2": {
+        ".read":  "auth != null && auth.uid === 'g0ulGcxSG3SdE3k6rJBvaGGJfna2'",
+        ".write": "auth != null && auth.uid === 'g0ulGcxSG3SdE3k6rJBvaGGJfna2'"
+      },
+      "$other": {
+        ".read":  false,
+        ".write": false
+      }
+    },
+    "$other": {
+      ".read":  false,
+      ".write": false
+    }
+  }
+}

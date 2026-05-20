@@ -4,7 +4,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { useAppStore } from '@/store/useAppStore';
@@ -37,6 +37,14 @@ if (typeof window !== 'undefined') {
 function OfflineBanner() {
   const { offline, show } = useOfflineDetect();
   const t = useT();
+
+  // Scroll shadow — tampilkan gradient bottom jika masih ada konten di bawah
+  const [showScrollFade, setShowScrollFade] = useState(true);
+  function handleContentScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+    setShowScrollFade(!atBottom);
+  }
   if (!show) return null;
   return (
     <div
@@ -74,6 +82,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   } = useAppStore();
 
   const t = useT();
+
+  // Scroll shadow — tampilkan gradient bottom jika masih ada konten di bawah
+  const [showScrollFade, setShowScrollFade] = useState(true);
+  function handleContentScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+    setShowScrollFade(!atBottom);
+  }
 
   useIdleTimeout(settings.pinTimeoutMinutes);
   usePWA(); // task 1.15: hook hasil pecah dari AppShell
@@ -142,16 +158,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <Header onToggleSidebar={() => setSidebar(!sidebarOpen)} />
           <LockBanner />
           <OfflineBanner />
-          <div
-            id="content"
-            style={{
-              flex:1, overflowY:'auto',
-              WebkitOverflowScrolling:'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-              padding:'12px 12px 24px',
-              background:'var(--bg)',
-            }}
-          >
-            {children}
+          <div style={{ flex:1, position:'relative', display:'flex', flexDirection:'column', minHeight:0 }}>
+            <div
+              id="content"
+              style={{
+                flex:1, overflowY:'auto',
+                WebkitOverflowScrolling:'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+                padding:'12px 12px 0',
+                paddingBottom:'max(24px, env(safe-area-inset-bottom))',
+                background:'var(--bg)',
+              }}
+              onScroll={handleContentScroll}
+            >
+              {children}
+            </div>
+            {/* Scroll shadow — gradient bawah menandakan ada konten lebih */}
+            {showScrollFade && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position:'absolute', bottom:0, left:0, right:0, height:36,
+                  background:'linear-gradient(to bottom, transparent, var(--bg))',
+                  pointerEvents:'none',
+                  transition:'opacity var(--t-base)',
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

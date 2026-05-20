@@ -27,6 +27,30 @@ interface Props {
   onBatchToggle?: () => void;
 }
 
+// ── Search highlight helper ──
+// Highlight substring yang cocok dengan query pencarian
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query || query.trim().length === 0) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase().trim());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{
+        background: 'var(--zcdim)',
+        color: 'var(--zc)',
+        borderRadius: 2,
+        padding: '0 1px',
+        fontWeight: 700,
+        fontStyle: 'normal',
+      }}>
+        {text.slice(idx, idx + query.trim().length)}
+      </mark>
+      {text.slice(idx + query.trim().length)}
+    </>
+  );
+}
+
 export default function MemberCard({ name, index, batchMode = false, batchSelected = false, onLongPress, onBatchToggle }: Props) {
   const {
     appData, setAppData, uid, userEmail,
@@ -36,7 +60,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     globalLocked, lockedEntries,
     setSyncStatus,
     setRiwayatZone, setRiwayatName, setRiwayatYear,
-    settings,
+    settings, search,
   } = useAppStore();
 
   const [riwOpen, setRiwOpen] = useState(false);
@@ -272,7 +296,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
           <span className="mc-num">{index + 1}</span>
           {idEl}
-          <span className="mc-name">{name}</span>
+          <span className="mc-name"><HighlightText text={name} query={search} /></span>
           {val !== null && (
             val === 0
               ? <span style={{ fontSize:10, color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>

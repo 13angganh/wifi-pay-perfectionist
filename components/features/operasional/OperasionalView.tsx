@@ -32,7 +32,8 @@ function ResultRow({ label, value, color, highlight }: { label:string; value:str
       <span style={{ fontSize:FS_LBL, color: highlight ? 'var(--c-lunas)' : 'var(--txt3)', fontFamily:FONT, fontWeight: highlight ? 700 : 400 }}>
         {label}
       </span>
-      <span style={{ fontSize:FS_VAL, color, fontFamily:FONT, fontWeight:600 }}>
+      {/* FIX: minWidth memastikan kolom nilai rata kanan lurus di semua baris */}
+      <span style={{ fontSize:FS_VAL, color, fontFamily:FONT, fontWeight:600, textAlign:'right', minWidth:110 }}>
         {value}
       </span>
     </div>

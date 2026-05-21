@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { doLogin, doRegister, getRememberedEmail, switchAccount } from '@/hooks/useAuth';
+import { doLogin, doRegister, doLogout, switchAccount, getRememberedCred } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
 
 type LoginState = 'remembered' | 'form' | 'register';
@@ -19,11 +19,11 @@ export default function LoginPage() {
     if (uid) router.replace('/dashboard');
   }, [uid, router]);
 
-  const remembered = typeof window !== 'undefined' ? getRememberedEmail() : null;
+  const remembered = typeof window !== 'undefined' ? getRememberedCred() : null;
 
   const [state,    setState]    = useState<LoginState>(remembered ? 'remembered' : 'form');
   const [email,    setEmail]    = useState(remembered?.email || '');
-  const [pass,     setPass]     = useState('');
+  const [pass,     setPass]     = useState(remembered?.pass || '');
   const [err,      setErr]      = useState('');
   const [loading,  setLoading]  = useState(false);
   const [rEmail,   setREmail]   = useState('');
@@ -32,12 +32,29 @@ export default function LoginPage() {
   const [rErr,     setRErr]     = useState('');
   const [rLoading, setRLoading] = useState(false);
 
-  // Fase 2: tidak ada loginRemembered — Firebase sudah pakai browserLocalPersistence
-  // Jika ada sesi Firebase yang masih valid, onAuthStateChanged akan auto-set uid
-  // Tombol "Lanjutkan" hanya meminta password untuk login ulang (jika sesi expired)
+  // FIX: handleLanjutkan — auto-login tanpa ketik ulang.
+  // 1. Jika sesi Firebase masih aktif (uid ada) → langsung masuk.
+  // 2. Jika sesi expired tapi kredensial tersimpan → login otomatis di background.
+  // 3. Jika gagal → ke form (email+pass sudah ter-isi, tinggal klik Masuk).
   async function handleLanjutkan() {
-    // Jika Firebase masih punya sesi aktif, uid sudah di-set → redirect otomatis
-    // Jika tidak, minta password
+    // Cek sesi aktif
+    const currentUid = useAppStore.getState().uid;
+    if (currentUid) {
+      router.replace('/dashboard');
+      return;
+    }
+    // Coba auto-login dengan kredensial tersimpan
+    if (remembered?.email && remembered?.pass) {
+      setLoading(true); setErr('');
+      const res = await doLogin(remembered.email, remembered.pass, true);
+      setLoading(false);
+      if (!res.error) {
+        router.replace('/dashboard');
+        return;
+      }
+      // Jika gagal (password berubah, dll) → ke form dengan email+pass ter-isi
+      setErr(res.error);
+    }
     setState('form');
   }
 
@@ -61,8 +78,10 @@ export default function LoginPage() {
   }
 
   async function handleSwitchAccount() {
+    // Sign out Firebase saja, email+pass TETAP tersimpan dan ter-isi di form
+    // User bisa ketik manual jika mau ganti akun berbeda
     await switchAccount();
-    setEmail(''); setPass(''); setErr('');
+    setErr('');
     setState('form');
   }
 

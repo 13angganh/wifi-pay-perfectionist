@@ -28,7 +28,8 @@ export default function Sidebar({ onNavigate }: Props) {
   const { currentView, userName, userEmail, setSidebar } = useAppStore();
 
   async function handleSwitchAccount() {
-    await switchAccount(); // task 1.04
+    // Sign out Firebase saja, kredensial tetap tersimpan
+    await switchAccount();
     router.replace('/login');
     setSidebar(false);
   }

@@ -42,30 +42,40 @@ function clearSessionCookie() {
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-// ── localStorage key untuk remember email (bukan password) ──
+// ── localStorage keys untuk remember kredensial ──
 const KEY_EMAIL = 'wp_remember_email';
 const KEY_NAME  = 'wp_remember_name';
+const KEY_PASS  = 'wp_remember_pass'; // disimpan untuk auto-login jika sesi expired
 
-function saveRememberEmail(email: string, displayName: string) {
+function saveRememberCred(email: string, pass: string, displayName: string) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEY_EMAIL, email);
-  localStorage.setItem(KEY_NAME, displayName || email.split('@')[0]);
+  localStorage.setItem(KEY_NAME,  displayName || email.split('@')[0]);
+  localStorage.setItem(KEY_PASS,  pass);
 }
 
-function clearRememberEmail() {
+function clearRememberCred() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(KEY_EMAIL);
   localStorage.removeItem(KEY_NAME);
-  // Hapus wp_cred lama jika masih ada (migration)
-  localStorage.removeItem('wp_cred');
+  localStorage.removeItem(KEY_PASS);
+  localStorage.removeItem('wp_cred'); // migration lama
 }
 
-export function getRememberedEmail(): { email: string; name: string } | null {
+export function getRememberedCred(): { email: string; name: string; pass: string } | null {
   if (typeof window === 'undefined') return null;
   const email = localStorage.getItem(KEY_EMAIL);
   const name  = localStorage.getItem(KEY_NAME);
-  if (!email) return null;
-  return { email, name: name || email.split('@')[0] };
+  const pass  = localStorage.getItem(KEY_PASS);
+  if (!email || !pass) return null;
+  return { email, name: name || email.split('@')[0], pass };
+}
+
+/** @deprecated gunakan getRememberedCred() */
+export function getRememberedEmail(): { email: string; name: string } | null {
+  const cred = getRememberedCred();
+  if (!cred) return null;
+  return { email: cred.email, name: cred.name };
 }
 
 // ── Auth listener hook ──
@@ -100,7 +110,8 @@ export async function doLogin(
     await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithEmailAndPassword(auth, email, pass);
     if (remember) {
-      saveRememberEmail(email, result.user.displayName || email.split('@')[0]);
+      // FIX: simpan email + password agar tidak perlu ketik ulang jika sesi expired
+      saveRememberCred(email, pass, result.user.displayName || email.split('@')[0]);
     }
     return {};
   } catch (e: unknown) {
@@ -118,21 +129,24 @@ export async function doRegister(
     await setPersistence(auth, browserLocalPersistence);
     const result = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(result.user, { displayName: name });
-    saveRememberEmail(email, name);
+    saveRememberCred(email, pass, name);
     return {};
   } catch (e: unknown) {
     return { error: friendlyAuthError(getFirebaseCode(e)) };
   }
 }
 
-// ── Logout (email tetap tersimpan untuk pre-fill) ──
+// ── Logout biasa — kredensial TETAP tersimpan untuk auto-login berikutnya ──
 export async function doLogout(): Promise<void> {
   await signOut(auth).catch(() => {});
-  // Cookie di-clear oleh onAuthStateChanged callback (clearSessionCookie dipanggil di sana)
+  // Cookie di-clear oleh onAuthStateChanged callback
+  // email + password TETAP di localStorage → user tidak perlu ketik ulang
 }
 
-// ── Switch account (hapus email tersimpan, force login baru) ──
+// ── Switch account — sign out Firebase, kredensial TETAP tersimpan ──
+// User bisa ketik manual jika mau ganti akun, tapi jika tidak sengaja klik
+// maka tinggal klik "Masuk" lagi tanpa perlu ketik ulang.
 export async function switchAccount(): Promise<void> {
   await signOut(auth).catch(() => {});
-  clearRememberEmail();
+  // TIDAK clearRememberCred() — email+pass tetap tersimpan
 }

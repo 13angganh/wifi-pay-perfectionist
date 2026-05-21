@@ -466,7 +466,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                           quickPay(info.tarif as number);
                         }}
                       >
-                        {isSaving ? <Loader2 size={11} className="spin" /> : `${info.tarif as number}k`}
+                        {isSaving ? <Loader2 size={11} className="spin" /> : `${info.tarif as number}`}
                       </button>
                     ) : (
                       <span style={{ fontSize:9, color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>

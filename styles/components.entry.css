@@ -60,11 +60,11 @@
 .sbtn.ghost:active { opacity: .7; }
 
 /* ── Rekap Table ── */
-.rekap-outer { position: relative; border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-sm); overflow: hidden; }
-.rekap-head  { overflow: hidden; background: var(--bg2); border-bottom: 2px solid var(--border);
+.rekap-outer { position: relative; border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-sm); overflow: visible; }
+.rekap-head  { overflow: hidden; background: var(--bg2); border-bottom: 2px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0;
                position: sticky; top: var(--header-h); z-index: 4; /* Sticky di bawah app header */ }
 .rekap-head .rtable { table-layout: fixed; }
-.rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; border-radius: 0; border: none; box-shadow: none; }
+.rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; border-radius: 0 0 var(--r-md) var(--r-md); border: none; box-shadow: none; }
 .rekap-wrap .rtable { table-layout: fixed; }
 .rtable      { border-collapse: collapse; font-size: 11px; width: 100%; }
 .rtable th   { padding: 9px 8px; font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4); font-weight: 600; letter-spacing: .06em; white-space: nowrap; background: var(--bg2); position: sticky; top: 0; z-index: 3; border-bottom: 2px solid var(--border); }

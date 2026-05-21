@@ -23,7 +23,7 @@ import { ROUTES } from '@/constants/routes';
 
 const SESSION_COOKIE = 'wp_session';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession   = request.cookies.has(SESSION_COOKIE);
 

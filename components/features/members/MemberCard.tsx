@@ -4,6 +4,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp } from '@/lib/helpers';
@@ -529,7 +530,13 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         }
       `}</style>
 
-      <RiwayatModal open={riwOpen} onClose={() => setRiwOpen(false)} />
+      {/* Portal: render di document.body agar tidak terpengaruh CSS transform dari
+          parent motion.div di EntryView — transform menciptakan containing block baru
+          yang mematahkan position:fixed pada semua children. */}
+      {typeof window !== 'undefined' && createPortal(
+        <RiwayatModal open={riwOpen} onClose={() => setRiwOpen(false)} />,
+        document.body
+      )}
     </>
   );
 }

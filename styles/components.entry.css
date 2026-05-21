@@ -136,18 +136,24 @@ body.gold .rtable th { background: var(--bg2); }
   top: 0;
   z-index: 10;
   background: var(--bg2);
+  /* Shadow bawah agar konten body tidak tampak tembus saat scroll */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 1px 0 var(--border);
 }
 .rtable-header th {
-  /* Override position:sticky dari .rtable th karena tidak perlu di sini */
+  /* th di header tabel: tidak perlu sticky karena parent sudah sticky */
   position: static;
   border-bottom: 2px solid var(--border) !important;
   box-shadow: none !important;
+  background: var(--bg2);
 }
+/* Kolom # dan NAMA di header: sticky kiri untuk sinkron dengan body */
 .rtable-header th.stk {
   position: sticky;
-  left: auto;
+  background: var(--bg2);
   will-change: auto;
 }
+body.light .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 0 var(--border); }
+body.gold  .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 1px 0 var(--border); }
 .rekap-scroll-hint { background: linear-gradient(to right, rgba(15,17,23,0), rgba(15,17,23,1)); }
 body.light .rekap-scroll-hint { background: linear-gradient(to right, rgba(248,250,252,0), rgba(248,250,252,1)); }
 body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10,6,0), rgba(12,10,6,1)); }

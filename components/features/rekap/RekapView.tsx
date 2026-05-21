@@ -282,14 +282,14 @@ export default function RekapView() {
         <table className="rtable rtable-header" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
             <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:100, minWidth:100 }} />
-            {MONTHS.map((_, i) => <col key={i} style={{ width:36, minWidth:36 }} />)}
-            <col style={{ width:52, minWidth:52 }} />
+            <col style={{ width:110, minWidth:110 }} />
+            {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
+            <col style={{ width:80, minWidth:80 }} />
           </colgroup>
           <thead>
             <tr>
               <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center', borderBottom:'2px solid var(--border)' }}>#</th>
-              <th className="stk" style={{ left:30, textAlign:'left', width:100, minWidth:100, borderBottom:'2px solid var(--border)' }}>NAMA</th>
+              <th className="stk" style={{ left:30, textAlign:'left', width:110, minWidth:110, borderBottom:'2px solid var(--border)' }}>NAMA</th>
               {MONTH_NAMES.map((m, mi) => (
                 <th key={m} style={{
                   width:36, minWidth:36,
@@ -301,7 +301,7 @@ export default function RekapView() {
                   {m.slice(0, 3)}
                 </th>
               ))}
-              <th style={{ color:'var(--zc)', width:52, minWidth:52, borderBottom:'2px solid var(--border)' }}>{t('common.total')}</th>
+              <th style={{ color:'var(--zc)', width:80, minWidth:80, borderBottom:'2px solid var(--border)' }}>{t('common.total')}</th>
             </tr>
           </thead>
         </table>
@@ -322,9 +322,9 @@ export default function RekapView() {
         <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
             <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:100, minWidth:100 }} />
-            {MONTHS.map((_, i) => <col key={i} style={{ width:36, minWidth:36 }} />)}
-            <col style={{ width:52, minWidth:52 }} />
+            <col style={{ width:110, minWidth:110 }} />
+            {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
+            <col style={{ width:80, minWidth:80 }} />
           </colgroup>
           <tbody>
             {filtered.map((name, i) => {
@@ -342,7 +342,7 @@ export default function RekapView() {
                 const disp = free
                   ? <Gift size={9} style={{ opacity:0.6 }} />
                   : v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
-                  : v !== null ? String(v) : '—';
+                  : v !== null ? (v * 1000).toLocaleString('id-ID') : '—';
 
                 const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
 
@@ -379,16 +379,16 @@ export default function RekapView() {
               return (
                 <tr key={name} data-name={name}>
                   <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
-                  <td className="stk" style={{ left:30, minWidth:100, maxWidth:100, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
+                  <td className="stk" style={{ left:30, minWidth:110, maxWidth:110, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? String(rowTotal) : ''}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
                 </tr>
               );
             })}
           </tbody>
           <tfoot>
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:130 }}>{t('common.total')}</td>
+              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
                 const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
                 return (
@@ -397,7 +397,7 @@ export default function RekapView() {
                     opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 1,
                     transition:'opacity var(--t-base)',
                   }}>
-                    {colTotal > 0 ? String(colTotal) : ''}
+                    {colTotal > 0 ? (colTotal * 1000).toLocaleString('id-ID') : ''}
                   </td>
                 );
               })}

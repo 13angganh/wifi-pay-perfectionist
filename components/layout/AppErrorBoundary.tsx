@@ -6,7 +6,12 @@
 
 import { Component } from 'react';
 import { RotateCcw } from 'lucide-react';
-import * as Sentry from '@sentry/nextjs';
+// @sentry/nextjs tidak diinstall — gunakan stub no-op agar build tidak gagal.
+// Untuk mengaktifkan Sentry, install paket: pnpm add @sentry/nextjs
+const Sentry = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  captureException: (_err: unknown, _ctx?: unknown) => {},
+};
 
 // ─── Static i18n helper untuk class component (tidak bisa pakai hook) ──────────
 function tStatic(key: string): string {

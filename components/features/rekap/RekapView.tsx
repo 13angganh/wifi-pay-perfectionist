@@ -393,8 +393,6 @@ export default function RekapView() {
             </tr>
           </tfoot>
         </table>
-      </div>
-
         </div>{/* /.rekap-wrap */}
       </div>{/* /.rekap-outer */}
       <div style={{ fontSize:10, color:'var(--txt4)', textAlign:'center', marginTop:6 }}>

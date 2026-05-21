@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
-// middleware.ts — Soft session guard (Edge Runtime)
+// proxy.ts — Soft session guard (Edge Runtime)
+// (renamed dari middleware.ts → Next.js 16+ convention)
 // 
 // KEPUTUSAN TEKNIKAL: Middleware ini "soft" (tidak redirect ke /login
 // jika cookie tidak ada) untuk menghindari redirect loop dengan

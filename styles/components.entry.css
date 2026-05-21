@@ -64,23 +64,57 @@
    Karena hanya overflow-x, thead { position:sticky; top:0 } bekerja sempurna. */
 .rekap-outer { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
 .rekap-head  { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
+
+/* rekap-wrap: hanya overflow-x. Overflow-y TIDAK boleh diset (visible/auto/scroll)
+   karena akan memutus sticky thead — biarkan #content parent yang handle scroll vertikal. */
 .rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain;
+               /* touch-action: pan-x — biarkan browser handle scroll horizontal tabel saja */
+               touch-action: pan-x pan-y;
                border: 1px solid var(--border); border-radius: var(--r-md);
                box-shadow: var(--shadow-sm); }
 .rekap-wrap .rtable { table-layout: fixed; }
 .rtable      { border-collapse: collapse; font-size: 11px; width: 100%; }
-.rtable th   { padding: 9px 8px; font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4); font-weight: 600; letter-spacing: .06em; white-space: nowrap; background: var(--bg2); position: sticky; top: 0; z-index: 3; border-bottom: 2px solid var(--border); }
-.rtable th.stk { position: sticky; z-index: 5 !important; background: var(--bg2);
-  /* FIX: GPU layer untuk corner cell (header + sticky left) */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0); }
+
+/* thead sticky: bekerja relatif terhadap scroll container vertikal = #content.
+   top dihitung dari padding #content (12px) + tinggi header app (~56px via CSS var).
+   Gunakan top: 0 karena #content sudah menghitung offset-nya sendiri. */
+.rtable th   {
+  padding: 9px 8px;
+  font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4);
+  font-weight: 600; letter-spacing: .06em; white-space: nowrap;
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-bottom: 2px solid var(--border);
+  /* Pastikan background solid agar baris di bawah tidak tembus */
+  box-shadow: 0 1px 0 var(--border);
+}
+
+/* th.stk = header kolom # dan NAMA: sticky kiri DAN atas sekaligus */
+.rtable th.stk {
+  position: sticky;
+  z-index: 5 !important;
+  background: var(--bg2);
+  /* HAPUS translateZ — ini penyebab blank hitam di Chrome Android.
+     Ganti dengan will-change yang lebih aman. */
+  will-change: transform;
+}
+
 .rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; }
-.rtable td.stk { position: sticky; background: var(--bg2); z-index: 2; text-align: left; font-family: var(--font-mono), monospace; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  /* FIX: cegah transparent flash saat scroll — promote ke GPU compositor layer */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden; }
+
+/* td.stk = kolom # dan NAMA: sticky kiri.
+   HAPUS translateZ & backface-visibility — penyebab utama blank hitam.
+   will-change: transform lebih ringan dan tidak menciptakan stacking context baru. */
+.rtable td.stk {
+  position: sticky;
+  background: var(--bg2);
+  z-index: 2;
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  will-change: transform;
+}
 .rtable tr:nth-child(even) td.stk { background: var(--bg2); }
 .rtable tr:hover td.stk { background: var(--bg2); }
 .rtable tr:nth-child(even) td { background: rgba(255,255,255,.02); }
@@ -91,21 +125,37 @@
 body.light .rtable td.stk { background: var(--bg2); }
 body.light .rtable tr:nth-child(even) td.stk { background: var(--bg2); }
 body.light .rtable tr:hover td.stk { background: var(--bg2); }
+body.gold .rtable td.stk { background: var(--bg2); }
+body.gold .rtable th { background: var(--bg2); }
 .rekap-exp-cell { outline: 2px solid var(--zc); outline-offset: -1px; }
+/* rtable-header: tabel header terpisah di atas body scroll container.
+   th tidak perlu position:sticky karena div parent tidak overflow.
+   Sebaliknya, seluruh div header-wrap yang sticky. */
+.rekap-header-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg2);
+}
+.rtable-header th {
+  /* Override position:sticky dari .rtable th karena tidak perlu di sini */
+  position: static;
+  border-bottom: 2px solid var(--border) !important;
+  box-shadow: none !important;
+}
+.rtable-header th.stk {
+  position: sticky;
+  left: auto;
+  will-change: auto;
+}
 .rekap-scroll-hint { background: linear-gradient(to right, rgba(15,17,23,0), rgba(15,17,23,1)); }
 body.light .rekap-scroll-hint { background: linear-gradient(to right, rgba(248,250,252,0), rgba(248,250,252,1)); }
 body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10,6,0), rgba(12,10,6,1)); }
-
-/* ── Tunggakan ── */
 .tcard       { background: var(--bg2); border: 1px solid rgba(239,68,68,.2); border-left: 2px solid var(--c-belum); border-radius: var(--r-md); padding: 12px; margin-bottom: 6px; transition: border-color var(--t-fast-smooth), box-shadow var(--t-fast-smooth); }
 .tcard:hover { border-color: rgba(239,68,68,.35); box-shadow: 0 2px 12px rgba(239,68,68,.08); }
 .tcard-name   { font-family: var(--font-mono), monospace; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
 .tcard-months { display: flex; gap: 5px; flex-wrap: wrap; }
 .tmonth { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.15); padding: 3px 9px; border-radius: var(--r-full); font-family: var(--font-sans), sans-serif; font-size: 10px; }
-
-/* ── overscroll-behavior: contain di semua scrollable containers ── */
-.rekap-wrap    { overscroll-behavior-x: contain; }
-.rekap-outer   { overscroll-behavior: contain; }
 
 /* ── Spinner icon (Loader2 rotation) ── */
 @keyframes _spin {

@@ -40,7 +40,7 @@
 .confirm-no:hover { border-color: var(--txt4); color: var(--txt); }
 
 /* ── Riwayat Modal ── */
-.riwayat-box     { background: rgba(24,28,39,.92); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(16px); border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 16px 20px 20px; width: 100%; max-height: 85vh; overflow-y: auto; animation: modalSlideUp var(--t-slow-smooth); box-shadow: var(--shadow-lg); }
+.riwayat-box     { background: rgba(24,28,39,.92); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(16px); border-radius: var(--r-lg) var(--r-lg) 0 0; width: 100%; max-height: 88vh; box-shadow: var(--shadow-lg); /* overflow-y dan padding dikontrol via inline style di komponen */ }
 .rw-month-row    { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); transition: background var(--t-fast-smooth); border-radius: var(--r-xs); cursor: pointer; }
 .rw-month-row:last-child { border-bottom: none; }
 .rw-month-row:hover { background: var(--bg3); padding-left: 6px; padding-right: 6px; }

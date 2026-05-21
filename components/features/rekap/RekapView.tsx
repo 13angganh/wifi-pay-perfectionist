@@ -31,6 +31,8 @@ export default function RekapView() {
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const inputDirty   = useRef(false);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef   = useRef<HTMLDivElement>(null);
   const modalClosing = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -266,11 +268,18 @@ export default function RekapView() {
         />
       ) : (
       <>
-      {/* Single table, single scroll container.
-          overflow-x:auto hanya pada .rekap-wrap.
-          Vertical scroll ditangani #content parent — thead sticky:top bekerja sempurna. */}
-      <div className="rekap-wrap">
-        <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
+      {/* Freeze header: tabel header terpisah (tidak dalam overflow-x) + tabel body (overflow-x scroll).
+          Header div mirror scroll position dari body via onScroll.
+          Ini satu-satunya cara andal freeze header + horizontal scroll di Chrome Android. */}
+
+      {/* Tabel header — TIDAK dalam overflow container, jadi sticky top bekerja */}
+      <div
+        ref={headerScrollRef}
+        className="rekap-header-wrap"
+        style={{ overflowX:'hidden', borderRadius:'var(--r-md) var(--r-md) 0 0',
+                 border:'1px solid var(--border)', borderBottom:'none' }}
+      >
+        <table className="rtable rtable-header" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
             <col style={{ width:30, minWidth:30 }} />
             <col style={{ width:100, minWidth:100 }} />
@@ -279,22 +288,44 @@ export default function RekapView() {
           </colgroup>
           <thead>
             <tr>
-              <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center' }}>#</th>
-              <th className="stk" style={{ left:30, textAlign:'left', width:100, minWidth:100 }}>NAMA</th>
+              <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center', borderBottom:'2px solid var(--border)' }}>#</th>
+              <th className="stk" style={{ left:30, textAlign:'left', width:100, minWidth:100, borderBottom:'2px solid var(--border)' }}>NAMA</th>
               {MONTH_NAMES.map((m, mi) => (
                 <th key={m} style={{
                   width:36, minWidth:36,
                   color: batchColIdx === mi ? 'var(--zc)' : undefined,
                   background: batchColIdx === mi ? 'var(--zcdim)' : undefined,
-                  borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : undefined,
+                  borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : '2px solid var(--border)',
                   transition:'all var(--t-base)',
                 }}>
                   {m.slice(0, 3)}
                 </th>
               ))}
-              <th style={{ color:'var(--zc)', width:52, minWidth:52 }}>{t('common.total')}</th>
+              <th style={{ color:'var(--zc)', width:52, minWidth:52, borderBottom:'2px solid var(--border)' }}>{t('common.total')}</th>
             </tr>
           </thead>
+        </table>
+      </div>
+
+      {/* Tabel body — bisa scroll horizontal, header di atas sudah terpisah */}
+      <div
+        ref={bodyScrollRef}
+        className="rekap-wrap"
+        style={{ borderRadius:'0 0 var(--r-md) var(--r-md)', borderTop:'none' }}
+        onScroll={e => {
+          // Sinkronisasi scroll horizontal header dengan body
+          if (headerScrollRef.current) {
+            headerScrollRef.current.scrollLeft = (e.target as HTMLDivElement).scrollLeft;
+          }
+        }}
+      >
+        <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
+          <colgroup>
+            <col style={{ width:30, minWidth:30 }} />
+            <col style={{ width:100, minWidth:100 }} />
+            {MONTHS.map((_, i) => <col key={i} style={{ width:36, minWidth:36 }} />)}
+            <col style={{ width:52, minWidth:52 }} />
+          </colgroup>
           <tbody>
             {filtered.map((name, i) => {
               let rowTotal = 0;
@@ -357,7 +388,7 @@ export default function RekapView() {
           </tbody>
           <tfoot>
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:130, WebkitTransform:'translateZ(0)', transform:'translateZ(0)' }}>{t('common.total')}</td>
+              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:130 }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
                 const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
                 return (

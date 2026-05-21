@@ -89,18 +89,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // UX: Swipe antar zona (KRS ↔ SLK ↔ custom)
-  // rekap: swipe diizinkan tapi hanya jika touch dimulai di LUAR tabel (.rekap-outer)
+  // rekap: swipe DINONAKTIFKAN PENUH — tabel horizontal scroll konflik dengan swipe zona
   // grafik: swipe diizinkan penuh
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
-  const swipeBlockedByTable = useRef(false);
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    // Jangan simpan start jika sedang di halaman rekap — matikan swipe zona
+    if (pathname.includes('/rekap')) return;
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
-    // Cek apakah touch dimulai di dalam tabel rekap — jika ya, block swipe zona
-    const target = e.target as HTMLElement;
-    swipeBlockedByTable.current = !!target.closest('.rekap-outer');
   }
   function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
     if (swipeStartX.current === null || swipeStartY.current === null) return;
@@ -110,8 +108,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     swipeStartY.current = null;
     // Minimal 60px dan gerakan horizontal harus dominan (1.5x lipat vertikal)
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    // Jangan trigger jika swipe dimulai di dalam tabel rekap
-    if (swipeBlockedByTable.current) return;
     const zones   = getAllActiveZones(settings);
     const idx     = zones.indexOf(activeZone);
     if (dx < 0 && idx < zones.length - 1) { setZone(zones[idx + 1] as Zone); haptic.light(); }

@@ -107,6 +107,12 @@ export default function RiwayatModal({ open, onClose }: Props) {
           border:'1px solid rgba(255,255,255,0.08)',
           borderRadius:'var(--r-lg) var(--r-lg) 0 0',
           boxShadow:'var(--shadow-lg)',
+          /* FIX: flex column agar header tidak ikut scroll */
+          display:'flex',
+          flexDirection:'column',
+          maxHeight:'85vh',
+          /* Override overflow-y dari CSS class — scroll ada di inner container */
+          overflowY:'hidden',
         }}
         onClick={e => e.stopPropagation()}
         initial={{ y: '100%' }}
@@ -115,12 +121,12 @@ export default function RiwayatModal({ open, onClose }: Props) {
         transition={{ duration: 0.28, ease: [0, 0, 0.2, 1] }}
       >
         {/* Drag handle */}
-        <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6 }}>
+        <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6, flexShrink:0 }}>
           <div style={{ width:36, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
         </div>
 
-        {/* Header */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 16px 14px' }}>
+        {/* Header — tidak ikut scroll */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 16px 14px', flexShrink:0 }}>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
             <Calendar size={15} strokeWidth={1.5} color="var(--zc)" />
             {riwayatName}
@@ -129,21 +135,21 @@ export default function RiwayatModal({ open, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label={t("action.close")}
-            style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all var(--t-fast)' }}
+            style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all var(--t-fast)', flexShrink:0 }}
           >
             <X size={14} />
           </button>
         </div>
 
-        {/* Year tabs */}
-        <div style={{ display:'flex', gap:6, overflowX:'auto', marginBottom:12, paddingBottom:4, padding:'0 16px 4px' }}>
+        {/* Year tabs — tidak ikut scroll */}
+        <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4, padding:'0 16px 8px', flexShrink:0 }}>
           {getYears().map(y => (
             <button key={y} className={`rw-year-tab ${y===riwayatYear?'active':''}`} onClick={() => setRiwayatYear(y)}>{y}</button>
           ))}
         </div>
 
-        {/* Year nav */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10, padding:'0 16px' }}>
+        {/* Year nav — tidak ikut scroll */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10, padding:'0 16px', flexShrink:0 }}>
           <button
             onClick={() => riwayatYear > minYear && setRiwayatYear(riwayatYear - 1)}
             disabled={riwayatYear <= minYear}
@@ -163,14 +169,14 @@ export default function RiwayatModal({ open, onClose }: Props) {
           </button>
         </div>
 
-        {/* Summary bar */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10, marginLeft:16, marginRight:16 }}>
+        {/* Summary bar — tidak ikut scroll */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
           <span style={{ fontSize:11, color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
           <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
         </div>
 
-        {/* Rows */}
-        <div style={{ padding:'0 16px' }}>
+        {/* Rows — HANYA bagian ini yang scroll */}
+        <div style={{ flex:1, overflowY:'auto', padding:'0 16px 20px', WebkitOverflowScrolling:'touch' as React.CSSProperties['WebkitOverflowScrolling'] }}>
           {rows.length === 0 ? (
             <EmptyState icon={Calendar} title={t('common.noData')} description={`${t('riwayat.noHistory')} ${riwayatYear}`} size="md" />
           ) : rows}

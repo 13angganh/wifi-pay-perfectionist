@@ -33,15 +33,6 @@ export default function RekapView() {
   const inputDirty   = useRef(false);
   const modalClosing = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // FIX: refs untuk JS-sync sticky header (mengatasi overflow-x:auto yang block sticky:top)
-  const rekapHeadRef = useRef<HTMLDivElement>(null);
-  const rekapBodyRef = useRef<HTMLDivElement>(null);
-
-  function onRekapBodyScroll() {
-    if (rekapHeadRef.current && rekapBodyRef.current) {
-      rekapHeadRef.current.scrollLeft = rekapBodyRef.current.scrollLeft;
-    }
-  }
 
   const [batchColIdx,   setBatchColIdx]   = useState<number | null>(null);
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
@@ -275,45 +266,35 @@ export default function RekapView() {
         />
       ) : (
       <>
-      <div className="rekap-outer">
-        {/* ── Frozen header — sticky top, JS-synced horizontal scroll ── */}
-        <div className="rekap-head" ref={rekapHeadRef} aria-hidden="true">
-          <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
-            <colgroup>
-              <col style={{ width:22 }} />
-              <col style={{ width:95 }} />
-              {MONTHS.map((_, i) => <col key={i} style={{ width:38 }} />)}
-              <col style={{ width:52 }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="stk" style={{ left:0, width:22, minWidth:22 }}>#</th>
-                <th className="stk" style={{ left:22, textAlign:'left', width:95, minWidth:95, maxWidth:95, overflow:'hidden' }}>NAMA</th>
-                {MONTH_NAMES.map((m, mi) => (
-                  <th key={m} style={{
-                    width:38, minWidth:38,
-                    color: batchColIdx === mi ? 'var(--zc)' : undefined,
-                    background: batchColIdx === mi ? 'var(--zcdim)' : undefined,
-                    borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : undefined,
-                    transition:'all var(--t-base)',
-                  }}>
-                    {m.slice(0, 3)}
-                  </th>
-                ))}
-                <th style={{ color:'var(--zc)', width:52, minWidth:52 }}>{t('common.total')}</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        {/* ── Body — horizontal scroll, header synced via onRekapBodyScroll ── */}
-        <div className="rekap-wrap" ref={rekapBodyRef} onScroll={onRekapBodyScroll}>
+      {/* Single table, single scroll container.
+          overflow-x:auto hanya pada .rekap-wrap.
+          Vertical scroll ditangani #content parent — thead sticky:top bekerja sempurna. */}
+      <div className="rekap-wrap">
         <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
-            <col style={{ width:22 }} />
-            <col style={{ width:95 }} />
-            {MONTHS.map((_, i) => <col key={i} style={{ width:38 }} />)}
-            <col style={{ width:52 }} />
+            <col style={{ width:30, minWidth:30 }} />
+            <col style={{ width:100, minWidth:100 }} />
+            {MONTHS.map((_, i) => <col key={i} style={{ width:36, minWidth:36 }} />)}
+            <col style={{ width:52, minWidth:52 }} />
           </colgroup>
+          <thead>
+            <tr>
+              <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center' }}>#</th>
+              <th className="stk" style={{ left:30, textAlign:'left', width:100, minWidth:100 }}>NAMA</th>
+              {MONTH_NAMES.map((m, mi) => (
+                <th key={m} style={{
+                  width:36, minWidth:36,
+                  color: batchColIdx === mi ? 'var(--zc)' : undefined,
+                  background: batchColIdx === mi ? 'var(--zcdim)' : undefined,
+                  borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : undefined,
+                  transition:'all var(--t-base)',
+                }}>
+                  {m.slice(0, 3)}
+                </th>
+              ))}
+              <th style={{ color:'var(--zc)', width:52, minWidth:52 }}>{t('common.total')}</th>
+            </tr>
+          </thead>
           <tbody>
             {filtered.map((name, i) => {
               let rowTotal = 0;
@@ -330,7 +311,7 @@ export default function RekapView() {
                 const disp = free
                   ? <Gift size={9} style={{ opacity:0.6 }} />
                   : v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
-                  : v !== null ? String(v * 1000) : '—';
+                  : v !== null ? String(v) : '—';
 
                 const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
 
@@ -366,17 +347,17 @@ export default function RekapView() {
               });
               return (
                 <tr key={name} data-name={name}>
-                  <td className="stk" style={{ left:0, fontSize:10, color:'var(--txt5)', paddingLeft:8, minWidth:22 }}>{i + 1}</td>
-                  <td className="stk" style={{ left:22, minWidth:95, maxWidth:95, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
+                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
+                  <td className="stk" style={{ left:30, minWidth:100, maxWidth:100, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? String(rowTotal * 1000) : ''}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? String(rowTotal) : ''}</td>
                 </tr>
               );
             })}
           </tbody>
           <tfoot>
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', maxWidth:117, WebkitTransform:'translateZ(0)', transform:'translateZ(0)' }}>{t('common.total')}</td>
+              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:130, WebkitTransform:'translateZ(0)', transform:'translateZ(0)' }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
                 const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
                 return (
@@ -385,7 +366,7 @@ export default function RekapView() {
                     opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 1,
                     transition:'opacity var(--t-base)',
                   }}>
-                    {String(colTotal * 1000)}
+                    {colTotal > 0 ? String(colTotal) : ''}
                   </td>
                 );
               })}
@@ -393,8 +374,7 @@ export default function RekapView() {
             </tr>
           </tfoot>
         </table>
-        </div>{/* /.rekap-wrap */}
-      </div>{/* /.rekap-outer */}
+      </div>
       <div style={{ fontSize:10, color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
         {t('rekap.scrollHint')}
       </div>

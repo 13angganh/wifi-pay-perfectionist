@@ -60,19 +60,14 @@
 .sbtn.ghost:active { opacity: .7; }
 
 /* ── Rekap Table ── */
-.rekap-outer { position: relative; border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-sm); overflow: visible; }
-.rekap-head  { overflow-x: auto; overflow-y: hidden; background: var(--bg2); border-bottom: 2px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0;
-               position: sticky; top: var(--header-h); z-index: 4; /* Sticky di bawah app header */
-               /* FIX: sembunyikan scrollbar tapi biarkan overflow-x:auto agar JS scrollLeft sync bekerja */
-               scrollbar-width: none; -ms-overflow-style: none; pointer-events: none; }
-.rekap-head::-webkit-scrollbar { display: none; }
-.rekap-head .rtable { table-layout: fixed; }
-/* FIX: rekap-wrap body scroll container */
-.rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; border-radius: 0 0 var(--r-md) var(--r-md); border: none; box-shadow: none; }
+/* Single scroll container. overflow-x:auto saja — vertical scroll pada #content parent.
+   Karena hanya overflow-x, thead { position:sticky; top:0 } bekerja sempurna. */
+.rekap-outer { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
+.rekap-head  { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
+.rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain;
+               border: 1px solid var(--border); border-radius: var(--r-md);
+               box-shadow: var(--shadow-sm); }
 .rekap-wrap .rtable { table-layout: fixed; }
-/* FIX: th dalam rekap-head TIDAK boleh sticky — parent rekap-head sudah sticky,
-   dan overflow-x:auto pada rekap-head akan block sticky child */
-.rekap-head .rtable th { position: static !important; top: auto !important; }
 .rtable      { border-collapse: collapse; font-size: 11px; width: 100%; }
 .rtable th   { padding: 9px 8px; font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4); font-weight: 600; letter-spacing: .06em; white-space: nowrap; background: var(--bg2); position: sticky; top: 0; z-index: 3; border-bottom: 2px solid var(--border); }
 .rtable th.stk { position: sticky; z-index: 5 !important; background: var(--bg2);

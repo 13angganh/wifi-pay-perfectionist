@@ -100,3 +100,22 @@ body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10
 .tcard-name   { font-family: var(--font-mono), monospace; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
 .tcard-months { display: flex; gap: 5px; flex-wrap: wrap; }
 .tmonth { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.15); padding: 3px 9px; border-radius: var(--r-full); font-family: var(--font-sans), sans-serif; font-size: 10px; }
+
+/* ── overscroll-behavior: contain di semua scrollable containers ── */
+.rekap-wrap    { overscroll-behavior-x: contain; }
+.rekap-outer   { overscroll-behavior: contain; }
+
+/* ── Spinner icon (Loader2 rotation) ── */
+@keyframes _spin {
+  to { transform: rotate(360deg); }
+}
+.spin { animation: _spin 0.75s linear infinite; display: inline-block; }
+
+/* ── Long press ring animation ── */
+@keyframes longPressRing {
+  from { box-shadow: 0 0 0 0 transparent; }
+  to   { box-shadow: 0 0 0 3px var(--zc); }
+}
+.mcard.long-pressing {
+  animation: longPressRing 500ms linear forwards !important;
+}

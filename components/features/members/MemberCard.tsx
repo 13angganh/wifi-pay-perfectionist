@@ -1,4 +1,6 @@
-// components/features/members/MemberCard.tsx — Fase 4: left border + Lucide + micro-interact + batch
+// components/features/members/MemberCard.tsx — Fase 4 + UX Fix
+// UX: haptic feedback · loading state · inputMode decimal · long press ring
+//     double-submit prevention · undo payment · success flash · auto-focus
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
@@ -6,29 +8,29 @@ import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp } from '@/lib/helpers';
 import { saveDB } from '@/lib/db';
-import { showToast } from '@/components/ui/Toast';
+import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import RiwayatModal from '@/components/modals/RiwayatModal';
+import { haptic } from '@/lib/haptic';
 import type { Zone } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 import {
   ChevronUp, ChevronDown, CheckCircle2, XCircle, Gift,
-  Trash2, Clock, Lock, History, Zap, Check,
+  Trash2, Clock, Lock, History, Zap, Check, Loader2,
 } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 
 interface Props {
-  name: string;
-  index: number;
-  batchMode?: boolean;
+  name:          string;
+  index:         number;
+  batchMode?:    boolean;
   batchSelected?: boolean;
-  onLongPress?: () => void;
+  onLongPress?:  () => void;
   onBatchToggle?: () => void;
 }
 
 // ── Search highlight helper ──
-// Highlight substring yang cocok dengan query pencarian
 function HighlightText({ text, query }: { text: string; query: string }) {
   if (!query || query.trim().length === 0) return <>{text}</>;
   const idx = text.toLowerCase().indexOf(query.toLowerCase().trim());
@@ -37,12 +39,8 @@ function HighlightText({ text, query }: { text: string; query: string }) {
     <>
       {text.slice(0, idx)}
       <mark style={{
-        background: 'var(--zcdim)',
-        color: 'var(--zc)',
-        borderRadius: 2,
-        padding: '0 1px',
-        fontWeight: 700,
-        fontStyle: 'normal',
+        background: 'var(--zcdim)', color: 'var(--zc)',
+        borderRadius: 2, padding: '0 1px', fontWeight: 700, fontStyle: 'normal',
       }}>
         {text.slice(idx, idx + query.trim().length)}
       </mark>
@@ -63,14 +61,23 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     settings, search,
   } = useAppStore();
 
-  const [riwOpen, setRiwOpen] = useState(false);
-  const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
-  const inputDirty   = useRef(false);
-  const isCollapsing = useRef(false);
+  const [riwOpen,       setRiwOpen]       = useState(false);
+  // UX: loading state saat save (double-submit prevention)
+  const [isSaving,      setIsSaving]      = useState(false);
+  // UX: long press visual ring
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  // UX: success flash setelah payment tersimpan
+  const [showSuccess,   setShowSuccess]   = useState(false);
+
+  const isSavingRef    = useRef(false);  // sync guard
+  const inputDirty     = useRef(false);
+  const isCollapsing   = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isLongPress  = useRef(false);
+  const isLongPress    = useRef(false);
+
+  const t           = useT();
+  const lang        = useAppStore(s => s.settings).language ?? 'id';
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const cardYear  = entryCardYear[name]  ?? selYear;
   const cardMonth = entryCardMonth[name] ?? selMonth;
@@ -82,7 +89,6 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const isLocked  = globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   const isExp     = expandedCard === name;
 
-  // Status untuk left border
   const statusBorder = freeCur
     ? 'var(--c-free)'
     : (val !== null ? 'var(--c-lunas)' : 'var(--c-belum)');
@@ -91,58 +97,95 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isExp) {
-      inputDirty.current = false;
-      isCollapsing.current = false;
-    }
+    if (!isExp) { inputDirty.current = false; isCollapsing.current = false; }
   }, [isExp]);
 
   useEffect(() => {
     if (!isExp) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       inputRef.current?.focus();
       cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 80);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [isExp]);
 
-  async function persist(newData: typeof appData, action: string, detail: string) {
+  // ── persist helper dengan double-submit guard + success flash ──
+  async function persist(
+    newData: typeof appData,
+    action: string,
+    detail: string,
+  ): Promise<boolean> {
+    if (isSavingRef.current) return false;
+    isSavingRef.current = true;
+    setIsSaving(true);
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) { setIsSaving(false); isSavingRef.current = false; return true; }
     setSyncStatus('loading');
     try {
       await saveDB(uid, newData, { action, detail }, userEmail || '');
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      // UX: brief success flash
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 700);
+      haptic.success();
+      return true;
+    } catch {
+      setSyncStatus('err');
+      haptic.error();
+      return false;
+    } finally {
+      setIsSaving(false);
+      isSavingRef.current = false;
+    }
   }
 
   async function saveEntryPay(rawVal: string) {
     if (!inputDirty.current) return;
     if (isCollapsing.current) return;
-    if (isLocked) { showToast(t('lockbanner.message'), 'err'); return; }
+    if (isLocked) { showToast(t('lockbanner.message'), 'err'); haptic.error(); return; }
 
-    const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
+    const k       = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
+    const prevVal = entryVal; // simpan untuk undo
     const newData = { ...appData, payments: { ...appData.payments } };
 
     if (rawVal === '' || rawVal === null) {
       delete newData.payments[k];
-      await persist(newData, `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`);
-      showToast(`${name} ${t('common.deleted')}`, 'err');
+      const ok = await persist(
+        newData,
+        `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`,
+        `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`,
+      );
+      if (ok) showToast(`${name} ${t('common.deleted')}`, 'err');
     } else {
       const amt = +rawVal;
       if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
       newData.payments[k] = amt;
-      await persist(newData, `[PAY] ${tLog('log.action.pay')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
-      showToast(`${name} → ${amt === 0 ? 'Akumulasi' : rp(amt)}`);
+      const ok = await persist(
+        newData,
+        `[PAY] ${tLog('log.action.pay')} ${activeZone} - ${name}`,
+        `${MONTH_NAMES[cardMonth]} ${cardYear}: ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`,
+      );
+      if (ok) {
+        // UX: undo selama 4 detik
+        const undoMsg = `${name} → ${amt === 0 ? 'Akumulasi' : rp(amt)}`;
+        showToastUndo(undoMsg, async () => {
+          const revert = { ...appData, payments: { ...appData.payments } };
+          if (prevVal === null) delete revert.payments[k];
+          else revert.payments[k] = prevVal;
+          await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+          showToast(`${name} dibatalkan`, 'info');
+        });
+      }
     }
     inputDirty.current = false;
   }
 
   function doQuickPay(amt: number) {
-    const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
+    const k       = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
+    const prevVal = entryVal; // simpan untuk undo
     const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
     if (settings?.autoDate) {
-      const today = new Date().toISOString().slice(0, 10);
+      const today   = new Date().toISOString().slice(0, 10);
       const infoKey = `${activeZone}__${name}`;
       const dateKey = `date_${cardYear}_${cardMonth}`;
       newData.memberInfo = {
@@ -150,32 +193,46 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         [infoKey]: { ...(newData.memberInfo?.[infoKey] || {}), [dateKey]: today },
       };
     }
-    persist(newData, `[PAY] ${tLog('log.action.quickPay')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}`);
-    showToast(`${name} → ${rp(amt)}`);
+    persist(
+      newData,
+      `[PAY] ${tLog('log.action.quickPay')} ${activeZone} - ${name}`,
+      `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}`,
+    ).then(ok => {
+      if (!ok) return;
+      showToastUndo(`${name} → ${rp(amt)}`, async () => {
+        const revert = { ...appData, payments: { ...appData.payments } };
+        if (prevVal === null) delete revert.payments[k];
+        else revert.payments[k] = prevVal;
+        await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+        showToast(`${name} dibatalkan`, 'info');
+      });
+    });
     inputDirty.current = false;
     setExpandedCard(null);
   }
 
   async function quickPay(amt: number) {
-    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); return; }
+    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); haptic.error(); return; }
     const tarifMember = info.tarif as number | undefined;
-    // Konfirmasi jika nominal > tarif
     if (tarifMember && amt > tarifMember) {
+      haptic.light();
       showConfirm(
         '!',
         t('entry.confirmHighNominal'),
         t('action.confirm'),
         () => doQuickPay(amt),
-        { description: `${name} · ${rp(tarifMember)} → ${rp(amt)}` }
+        { description: `${name} · ${rp(tarifMember)} → ${rp(amt)}` },
       );
       return;
     }
+    haptic.light();
     doQuickPay(amt);
   }
 
   async function clearPay() {
-    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); return; }
+    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); haptic.error(); return; }
     if (entryVal === null) return;
+    haptic.light();
     showConfirm(
       'X',
       `Hapus pembayaran ${name}?`,
@@ -184,10 +241,14 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
         const newData = { ...appData, payments: { ...appData.payments } };
         delete newData.payments[k];
-        await persist(newData, `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`);
-        showToast(`${name} dihapus`, 'err');
+        const ok = await persist(
+          newData,
+          `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`,
+          `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`,
+        );
+        if (ok) showToast(`${name} dihapus`, 'err');
       },
-      { description: `${MONTH_NAMES[cardMonth]} ${cardYear} · ${entryVal > 0 ? rp(entryVal) : t('rekap.accumulation')}` }
+      { description: `${MONTH_NAMES[cardMonth]} ${cardYear} · ${entryVal > 0 ? rp(entryVal) : t('rekap.accumulation')}` },
     );
   }
 
@@ -199,17 +260,17 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       ...(appData.memberInfo || {}),
       [infoKey]: { ...(appData.memberInfo?.[infoKey] || {}), [k2]: dateVal },
     };
-    await persist({ ...appData, memberInfo: newInfo }, `[DATE] ${tLog('log.action.updateDate')} ${activeZone} - ${name}`, `${MONTH_NAMES[cardMonth]} ${cardYear}: ${dateVal}`);
+    await persist(
+      { ...appData, memberInfo: newInfo },
+      `[DATE] ${tLog('log.action.updateDate')} ${activeZone} - ${name}`,
+      `${MONTH_NAMES[cardMonth]} ${cardYear}: ${dateVal}`,
+    );
   }
 
   function handleToggle() {
     if (batchMode) { onBatchToggle?.(); return; }
-    if (isExp) {
-      isCollapsing.current = true;
-      setExpandedCard(null);
-    } else {
-      setExpandedCard(name);
-    }
+    if (isExp) { isCollapsing.current = true; setExpandedCard(null); }
+    else       { setExpandedCard(name); }
   }
 
   function openRiwayat(e: React.MouseEvent) {
@@ -220,23 +281,24 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     setRiwOpen(true);
   }
 
-  // Long press handlers
+  // ── Long press handlers — dengan haptic + visual ring ──
   function handlePointerDown() {
     if (batchMode) return;
     isLongPress.current = false;
+    setIsLongPressing(true);
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
+      setIsLongPressing(false);
+      haptic.medium();   // UX: haptic saat long press aktif
       onLongPress?.();
     }, 500);
   }
-  function handlePointerUp() {
+  function cancelLongPress() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  }
-  function handlePointerLeave() {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    setIsLongPressing(false);
   }
 
-  // Badge status (top row)
+  // Badge status
   let tagEl: React.ReactNode;
   if (freeCur)
     tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
@@ -247,7 +309,6 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   else
     tagEl = <span className="mc-tag tunpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><XCircle size={9} /></span>;
 
-  // ID badge
   const idEl = info.id
     ? (info.ip
         ? <a className="mc-id" href={String(info.ip).startsWith('http') ? String(info.ip) : 'http://' + String(info.ip)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{String(info.id)}</a>
@@ -259,29 +320,24 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       <div
         ref={cardRef}
         id={`card-${name.replace(/\s/g, '_')}`}
-        className={`mcard ${isExp ? 'expanded' : ''}`}
+        className={`mcard ${isExp ? 'expanded' : ''} ${isLongPressing ? 'long-pressing' : ''}`}
         style={{
-          // Left border status — 3px solid, sesuai status member
-          borderLeft: `3px solid ${batchSelected ? 'var(--zc)' : statusBorder}`,
+          borderLeft:  `3px solid ${showSuccess ? 'var(--c-lunas)' : batchSelected ? 'var(--zc)' : statusBorder}`,
           borderRadius: 'var(--r-md)',
-          // Micro-interaction: scale saat tap
-          transition: 'transform var(--t-fast) var(--ease-smooth), box-shadow var(--t-base) var(--ease-smooth)',
-          // Batch mode highlight
-          opacity: batchMode && !batchSelected ? 0.6 : 1,
-          background: batchSelected ? 'rgba(var(--zc-rgb, 59,130,246),0.06)' : undefined,
+          background:   showSuccess
+            ? 'rgba(34,197,94,0.06)'
+            : batchSelected ? 'rgba(var(--zc-rgb, 59,130,246),0.06)' : undefined,
+          transition:  'transform var(--t-fast) var(--ease-smooth), box-shadow var(--t-base) var(--ease-smooth), background 0.35s ease-out, border-left-color 0.35s ease-out',
+          opacity:     batchMode && !batchSelected ? 0.6 : 1,
         }}
         onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        onContextMenu={e => { e.preventDefault(); }} // prevent context menu on long press mobile
+        onPointerUp={cancelLongPress}
+        onPointerLeave={cancelLongPress}
+        onPointerCancel={cancelLongPress}
+        onContextMenu={e => e.preventDefault()}
       >
         {/* Top row */}
-        <div
-          className="mc-top"
-          onClick={handleToggle}
-          style={{ userSelect:'none' }}
-        >
-          {/* Batch checkbox */}
+        <div className="mc-top" onClick={handleToggle} style={{ userSelect:'none' }}>
           {batchMode && (
             <div style={{
               width:18, height:18, borderRadius:'var(--r-xs)',
@@ -296,13 +352,20 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
           <span className="mc-num">{index + 1}</span>
           {idEl}
+          {/* UX: search highlight */}
           <span className="mc-name"><HighlightText text={name} query={search} /></span>
-          {val !== null && (
+
+          {/* UX: loading spinner saat isSaving */}
+          {isSaving ? (
+            <span style={{ display:'flex', alignItems:'center', color:'var(--txt4)', marginLeft:'auto' }}>
+              <Loader2 size={12} className="spin" />
+            </span>
+          ) : val !== null && (
             val === 0
               ? <span style={{ fontSize:10, color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>
               : <span style={{ fontSize:11, color:'var(--c-lunas)' }}>{val.toLocaleString('id-ID')}</span>
           )}
-          {tagEl}
+          {!isSaving && tagEl}
           {!batchMode && (
             <span style={{ color:'var(--txt4)', fontSize:12, marginLeft:2, display:'flex', alignItems:'center' }}>
               {isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -336,14 +399,14 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
               </div>
             ) : (
               <>
-                {/* Input nominal */}
+                {/* Input nominal — UX: inputMode decimal untuk keyboard angka di mobile */}
                 <div className="mc-row">
                   <span className="mc-label">{t('common.amount').toUpperCase()}</span>
                   <input
                     ref={inputRef}
                     className="mc-input"
                     type="number"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     placeholder="0"
                     defaultValue={entryVal !== null ? String(entryVal) : ''}
                     id={`inp-${name.replace(/\s/g, '_')}`}
@@ -356,10 +419,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                         setExpandedCard(null);
                       }
                     }}
+                    disabled={isSaving}
                     autoComplete="off"
                     autoCorrect="off"
                   />
-                  {entryVal !== null && (
+                  {entryVal !== null && !isSaving && (
                     <button className="delbtn" onClick={clearPay} aria-label="Hapus pembayaran">
                       <Trash2 size={13} />
                     </button>
@@ -376,6 +440,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                     type="date"
                     defaultValue={(info[`date_${cardYear}_${cardMonth}`] as string) || ''}
                     onBlur={e => saveDate(e.target.value)}
+                    disabled={isSaving}
                   />
                 </div>
 
@@ -385,43 +450,43 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                     <Zap size={10} />QUICK
                   </span>
                   <div className="qrow">
-                    {info.tarif
-                      ? (
-                        /* Quick pay button dengan ripple effect */
+                    {info.tarif ? (
+                      <button
+                        className="qb"
+                        style={{ borderColor:'var(--zc)', color:'var(--zc)', fontWeight:700, position:'relative', overflow:'hidden', opacity: isSaving ? 0.5 : 1 }}
+                        disabled={isSaving}
+                        onClick={e => {
+                          const btn = e.currentTarget;
+                          const ripple = document.createElement('span');
+                          const rect   = btn.getBoundingClientRect();
+                          const size   = Math.max(rect.width, rect.height);
+                          ripple.style.cssText = `position:absolute;border-radius:50%;width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple-anim 400ms ease-out forwards;pointer-events:none;`;
+                          btn.appendChild(ripple);
+                          setTimeout(() => ripple.remove(), 400);
+                          quickPay(info.tarif as number);
+                        }}
+                      >
+                        {isSaving ? <Loader2 size={11} className="spin" /> : `${info.tarif as number}k`}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize:9, color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>
+                    )}
+                    {(settings?.quickAmounts || DEFAULT_SETTINGS.quickAmounts)
+                      .filter(a => a !== info.tarif)
+                      .map(a => (
                         <button
+                          key={a}
                           className="qb"
-                          style={{ borderColor:'var(--zc)', color:'var(--zc)', fontWeight:700, position:'relative', overflow:'hidden' }}
-                          onClick={e => {
-                            // Ripple effect
-                            const btn = e.currentTarget;
-                            const ripple = document.createElement('span');
-                            const rect = btn.getBoundingClientRect();
-                            const size = Math.max(rect.width, rect.height);
-                            ripple.style.cssText = `
-                              position:absolute; border-radius:50%;
-                              width:${size}px; height:${size}px;
-                              left:${e.clientX - rect.left - size/2}px;
-                              top:${e.clientY - rect.top - size/2}px;
-                              background:rgba(255,255,255,0.25);
-                              transform:scale(0); animation:ripple-anim 400ms ease-out forwards;
-                              pointer-events:none;
-                            `;
-                            btn.appendChild(ripple);
-                            setTimeout(() => ripple.remove(), 400);
-                            quickPay(info.tarif as number);
-                          }}
+                          style={{ opacity: isSaving ? 0.5 : 1 }}
+                          disabled={isSaving}
+                          onClick={() => quickPay(a)}
                         >
-                          {info.tarif as number}k
+                          {a}
                         </button>
-                      )
-                      : <span style={{ fontSize:9, color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>}
-                    {(settings?.quickAmounts || DEFAULT_SETTINGS.quickAmounts).filter(a => a !== info.tarif).map(a => (
-                      <button key={a} className="qb" onClick={() => quickPay(a)}>{a}</button>
-                    ))}
+                      ))}
                   </div>
                 </div>
 
-                {/* Hint tarif */}
                 {!info.tarif && (
                   <div style={{ fontSize:9, color:'var(--txt4)', marginTop:-4, marginBottom:4 }}>
                     {t('membercard.setTarifHint')}
@@ -434,11 +499,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
             <div style={{ marginTop:8, paddingTop:8, borderTop:'1px solid var(--border2)', display:'flex', justifyContent:'flex-end' }}>
               <button
                 onClick={openRiwayat}
-                style={{
-                  background:'none', border:'none', cursor:'pointer',
-                  color:'var(--txt3)', fontSize:11, display:'flex', alignItems:'center', gap:5,
-                  padding:'4px 0', minHeight:32,
-                }}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--txt3)', fontSize:11, display:'flex', alignItems:'center', gap:5, padding:'4px 0', minHeight:32 }}
               >
                 <History size={13} /> {t('membercard.history')}
               </button>
@@ -447,10 +508,24 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         )}
       </div>
 
-      {/* Ripple keyframe — inject sekali */}
+      {/* Keyframes inline — ripple + spin + long-press ring */}
       <style>{`
         @keyframes ripple-anim {
           to { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .spin {
+          animation: spin 0.8s linear infinite;
+          display: inline-block;
+        }
+        @keyframes longPressRing {
+          from { box-shadow: 0 0 0 0 transparent; }
+          to   { box-shadow: 0 0 0 3px var(--zc); }
+        }
+        .mcard.long-pressing {
+          animation: longPressRing 500ms linear forwards !important;
         }
       `}</style>
 

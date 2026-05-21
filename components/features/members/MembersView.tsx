@@ -252,7 +252,7 @@ export default function MembersView() {
               <div className="af-grid">
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('common.name').toUpperCase()}</div>
-                  <input ref={addRef.name} className="af-input" placeholder={t('members.namePlaceholder')} autoComplete="off"
+                  <input ref={addRef.name} className="af-input" placeholder={t('members.namePlaceholder')} autoComplete="off" autoFocus
                     style={{ textTransform:'uppercase' }} onKeyDown={e=>e.key==='Enter'&&addMember()} />
                 </div>
                 <div>
@@ -268,7 +268,7 @@ export default function MembersView() {
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
                   {/* eslint-disable-next-line react-hooks/refs */}
-                  <input ref={addRef.tarif} type="number" inputMode="numeric" className="af-input" placeholder="100" autoComplete="off" />
+                  <input ref={addRef.tarif} type="number" inputMode="decimal" className="af-input" placeholder="100" autoComplete="off" />
                 </div>
               </div>
               <button style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:13, fontWeight:600, cursor:'pointer', minHeight:40 }} onClick={addMember}>

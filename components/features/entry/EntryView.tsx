@@ -25,7 +25,7 @@ export default function EntryView() {
     activeZone, selYear, selMonth, setSelYear, setSelMonth,
     search, setSearch,
     filterStatus, setFilter,
-    setEntryScrollTop,
+    entryScrollTop, setEntryScrollTop,
     globalLocked,
     syncStatus,
     setSyncStatus,
@@ -63,6 +63,17 @@ export default function EntryView() {
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setEntryScrollTop((e.target as HTMLDivElement).scrollTop);
   }, [setEntryScrollTop]);
+
+  // UX: restore scroll position saat kembali ke menu Entry
+  useEffect(() => {
+    if (entryScrollTop <= 0) return;
+    const content = document.getElementById('content');
+    if (!content) return;
+    // Delay sedikit agar DOM sudah render sebelum restore
+    const timer = setTimeout(() => { content.scrollTop = entryScrollTop; }, 60);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya saat mount — intentional, bukan setiap entryScrollTop berubah
 
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';

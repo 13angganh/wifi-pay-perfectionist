@@ -133,11 +133,13 @@ export default function PinLock() {
         {error || '—'}
       </div>
 
-      {/* Hidden inputs for keyboard */}
+      {/* Hidden inputs — readOnly + inputMode=none mencegah keyboard mobile muncul.
+          onChange={noop} karena controlled input butuh onChange tapi kita tidak
+          ingin keyboard native — semua input lewat pressPad numpad. */}
       <div style={{ position:'absolute', opacity:0, pointerEvents:'none' }}>
         {digits.map((d,i) => (
-          <input key={i} ref={refs[i]} type="tel" maxLength={1} value={d}
-            onChange={e => handleDigit(i, e.target.value)}
+          <input key={i} ref={refs[i]} type="tel" inputMode="none" readOnly maxLength={1} value={d}
+            onChange={() => {/* nompad-only input: handled by pressPad */}}
             onKeyDown={e => handleKeyDown(i, e)}
           />
         ))}

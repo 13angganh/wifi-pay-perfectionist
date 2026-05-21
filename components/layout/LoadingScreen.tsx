@@ -1,18 +1,12 @@
 // components/layout/LoadingScreen.tsx — Fase 4: logo baru, hapus subtitle, delay lebih lama
 'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 export default function LoadingScreen() {
-  // Minimum 1.8 detik supaya tidak terlalu cepat
-  const [visible, setVisible] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 1800);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!visible) return null;
-
+  // FIX: Jangan pakai timer internal untuk hide — parent (AppLayout) yang kontrol
+  // kapan LoadingScreen ini di-unmount (berdasarkan authChecked + uid).
+  // Timer internal menyebabkan blank screen hitam jika auth belum selesai tapi
+  // timer sudah expired → render null padahal belum ada konten pengganti.
   return (
     <div style={{
       position:'fixed', inset:0, background:'var(--bg)',

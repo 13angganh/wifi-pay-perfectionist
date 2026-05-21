@@ -306,7 +306,8 @@ const en: Record<string, string> = {
   'settings.pin.toastEnabled'  : 'PIN enabled successfully',
   'settings.pin.toastDisabled' : 'PIN disabled',
   'settings.pin.toastChanged'  : 'PIN changed successfully',
-  'settings.pin.disableConfirm': 'Disable PIN?<br><span style="font-size:11px;color:var(--txt3)">App will open immediately without PIN</span>',
+  'settings.pin.disableConfirm': 'Disable PIN?',
+  'settings.pin.disableConfirmDesc': 'App will open immediately without PIN',
 
   // Settings Quick Pay toast
   'settings.quickPay.minError' : 'Minimum 2 amounts required',

@@ -105,7 +105,7 @@ export default function SettingsPinSection() {
     showConfirm('', t('settings.pin.disableConfirm'), t('action.confirm'), () => {
       updateSettings({ pinEnabled: false, pin: '' });
       showToast(t('settings.pin.toastDisabled')); setPinStep('menu'); setPin1('');
-    });
+    }, { description: t('settings.pin.disableConfirmDesc') });
   }
   function startChange() { setPinStep('change-old'); setPin1(''); setPin2(''); setPinErr(''); }
   function handleChangeOld() { if (!verifyPin(pin1)) { setPinErr(t('pin.wrong')); setPin1(''); return; } setPinStep('change-new'); setPin1(''); setPinErr(''); }

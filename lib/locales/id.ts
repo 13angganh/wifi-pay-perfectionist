@@ -306,7 +306,8 @@ const id: Record<string, string> = {
   'settings.pin.toastEnabled'  : 'PIN berhasil diaktifkan',
   'settings.pin.toastDisabled' : 'PIN dinonaktifkan',
   'settings.pin.toastChanged'  : 'PIN berhasil diubah',
-  'settings.pin.disableConfirm': 'Nonaktifkan PIN?<br><span style="font-size:11px;color:var(--txt3)">App tidak akan terkunci saat dibuka</span>',
+  'settings.pin.disableConfirm': 'Nonaktifkan PIN?',
+  'settings.pin.disableConfirmDesc': 'App tidak akan terkunci saat dibuka',
 
   // Settings Quick Pay toast
   'settings.quickPay.minError' : 'Minimal 2 nominal',

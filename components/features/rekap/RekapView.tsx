@@ -369,7 +369,7 @@ export default function RekapView() {
                   <td className="stk" style={{ left:0, fontSize:10, color:'var(--txt5)', paddingLeft:8, minWidth:22 }}>{i + 1}</td>
                   <td className="stk" style={{ left:22, minWidth:95, maxWidth:95, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal.toLocaleString('id-ID')}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
                 </tr>
               );
             })}

@@ -25,19 +25,20 @@ interface Props { onNavigate: (v: ViewName) => void; }
 export default function Sidebar({ onNavigate }: Props) {
   const router = useRouter();
   const t = useT();
-  const { currentView, userName, userEmail, setSidebar } = useAppStore();
+  const { currentView, userName, userEmail, setSidebar, setLoggingOut } = useAppStore();
 
   async function handleSwitchAccount() {
-    // Sign out Firebase saja, kredensial tetap tersimpan
+    setLoggingOut(true);
+    setSidebar(false);
     await switchAccount();
     router.replace('/login');
-    setSidebar(false);
   }
 
   async function handleLogout() {
+    setLoggingOut(true);
+    setSidebar(false);
     await doLogout();
     router.replace('/login');
-    setSidebar(false);
   }
 
   const initials     = getInitials(userName, userEmail);

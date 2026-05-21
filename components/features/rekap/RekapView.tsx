@@ -330,7 +330,7 @@ export default function RekapView() {
                 const disp = free
                   ? <Gift size={9} style={{ opacity:0.6 }} />
                   : v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
-                  : v !== null ? (v * 1000).toLocaleString('id-ID') : '—';
+                  : v !== null ? String(v * 1000) : '—';
 
                 const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
 
@@ -369,7 +369,7 @@ export default function RekapView() {
                   <td className="stk" style={{ left:0, fontSize:10, color:'var(--txt5)', paddingLeft:8, minWidth:22 }}>{i + 1}</td>
                   <td className="stk" style={{ left:22, minWidth:95, maxWidth:95, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? String(rowTotal * 1000) : ''}</td>
                 </tr>
               );
             })}
@@ -385,7 +385,7 @@ export default function RekapView() {
                     opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 1,
                     transition:'opacity var(--t-base)',
                   }}>
-                    {(colTotal * 1000).toLocaleString('id-ID')}
+                    {String(colTotal * 1000)}
                   </td>
                 );
               })}

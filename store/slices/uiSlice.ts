@@ -54,6 +54,9 @@ export interface UiSlice {
   confirmDialog:     ConfirmDialogState;
   showConfirmDialog: (state: Omit<ConfirmDialogState, 'open'>) => void;
   closeConfirmDialog: () => void;
+  // FIX: loading state saat logout/ganti akun — konsistensi UX
+  isLoggingOut:      boolean;
+  setLoggingOut:     (v: boolean) => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice> = (set) => ({
@@ -73,4 +76,7 @@ export const createUiSlice: StateCreator<UiSlice> = (set) => ({
   confirmDialog:      DEFAULT_CONFIRM,
   showConfirmDialog:  (state) => set({ confirmDialog: { ...state, open: true } }),
   closeConfirmDialog: () => set({ confirmDialog: DEFAULT_CONFIRM }),
+  // FIX: loading state saat logout/ganti akun
+  isLoggingOut:       false,
+  setLoggingOut:      (v) => set({ isLoggingOut: v }),
 });

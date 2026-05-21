@@ -67,8 +67,12 @@
                scrollbar-width: none; -ms-overflow-style: none; pointer-events: none; }
 .rekap-head::-webkit-scrollbar { display: none; }
 .rekap-head .rtable { table-layout: fixed; }
+/* FIX: rekap-wrap body scroll container */
 .rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; border-radius: 0 0 var(--r-md) var(--r-md); border: none; box-shadow: none; }
 .rekap-wrap .rtable { table-layout: fixed; }
+/* FIX: th dalam rekap-head TIDAK boleh sticky — parent rekap-head sudah sticky,
+   dan overflow-x:auto pada rekap-head akan block sticky child */
+.rekap-head .rtable th { position: static !important; top: auto !important; }
 .rtable      { border-collapse: collapse; font-size: 11px; width: 100%; }
 .rtable th   { padding: 9px 8px; font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4); font-weight: 600; letter-spacing: .06em; white-space: nowrap; background: var(--bg2); position: sticky; top: 0; z-index: 3; border-bottom: 2px solid var(--border); }
 .rtable th.stk { position: sticky; z-index: 5 !important; background: var(--bg2);

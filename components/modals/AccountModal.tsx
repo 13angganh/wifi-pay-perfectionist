@@ -9,17 +9,19 @@ interface Props { open: boolean; onClose: () => void; }
 
 export default function AccountModal({ open, onClose }: Props) {
   const router = useRouter();
-  const { userEmail, userName } = useAppStore();
+  const { userEmail, userName, setLoggingOut } = useAppStore();
   if (!open) return null;
 
   async function handleLogout() {
     onClose();
+    setLoggingOut(true);
     await doLogout();
     router.replace('/login');
   }
 
   async function handleSwitch() {
     onClose();
+    setLoggingOut(true);
     await switchAccount();
     router.replace('/login');
   }

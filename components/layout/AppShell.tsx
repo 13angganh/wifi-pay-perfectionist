@@ -75,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     sidebarOpen, setSidebar, setView, theme, appData,
     setDeferredPrompt, showUpdateBanner,
     deferredPrompt, settings,
-    activeZone, setZone, currentView,
+    activeZone, setZone,
   } = useAppStore();
 
   const t = useT();
@@ -89,14 +89,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // UX: Swipe antar zona (KRS ↔ SLK ↔ custom)
-  // Views dengan horizontal scroll internal dikecualikan
+  // rekap: swipe diizinkan tapi hanya jika touch dimulai di LUAR tabel (.rekap-outer)
+  // grafik: swipe diizinkan penuh
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
-  const NO_SWIPE_VIEWS = ['rekap', 'grafik'] as const;
+  const swipeBlockedByTable = useRef(false);
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
+    // Cek apakah touch dimulai di dalam tabel rekap — jika ya, block swipe zona
+    const target = e.target as HTMLElement;
+    swipeBlockedByTable.current = !!target.closest('.rekap-outer');
   }
   function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
     if (swipeStartX.current === null || swipeStartY.current === null) return;
@@ -106,8 +110,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     swipeStartY.current = null;
     // Minimal 60px dan gerakan horizontal harus dominan (1.5x lipat vertikal)
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    // Jangan trigger di view dengan horizontal scroll
-    if ((NO_SWIPE_VIEWS as readonly string[]).includes(currentView)) return;
+    // Jangan trigger jika swipe dimulai di dalam tabel rekap
+    if (swipeBlockedByTable.current) return;
     const zones   = getAllActiveZones(settings);
     const idx     = zones.indexOf(activeZone);
     if (dx < 0 && idx < zones.length - 1) { setZone(zones[idx + 1] as Zone); haptic.light(); }

@@ -87,46 +87,49 @@
   top: 0;
   z-index: 3;
   border-bottom: 2px solid var(--border);
-  /* Pastikan background solid agar baris di bawah tidak tembus */
   box-shadow: 0 1px 0 var(--border);
+  isolation: isolate;
 }
 
 /* th.stk = header kolom # dan NAMA: sticky kiri DAN atas sekaligus */
 .rtable th.stk {
   position: sticky;
   z-index: 5 !important;
-  background: var(--bg2);
-  /* HAPUS translateZ — ini penyebab blank hitam di Chrome Android.
-     Ganti dengan will-change yang lebih aman. */
-  will-change: transform;
+  background: var(--bg);
+  isolation: isolate;
 }
 
-.rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); }
+.rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); contain: style; }
 
 /* td.stk = kolom # dan NAMA: sticky kiri.
-   HAPUS translateZ & backface-visibility — penyebab utama blank hitam.
-   will-change: transform lebih ringan dan tidak menciptakan stacking context baru. */
+   Background solid di semua state penting untuk mencegah blank hitam. */
 .rtable td.stk {
   position: sticky;
-  background: var(--bg2);
+  background: var(--bg);
   z-index: 2;
   text-align: left;
   font-family: var(--font-mono), monospace;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  will-change: transform;
+  /* isolation: isolate agar stacking context terkontrol (tidak GPU layer explosion) */
+  isolation: isolate;
+  /* contain: style layout — optimasi repaint tanpa GPU layer baru */
+  contain: style layout;
 }
-.rtable tr:nth-child(even) td.stk { background: var(--bg2); }
-.rtable tr:hover td.stk { background: var(--bg2); }
+.rtable tr:nth-child(even) td.stk { background: var(--bg); }
+.rtable tr:hover td.stk { background: var(--bg3); }
 .rtable tr:nth-child(even) td { background: color-mix(in srgb, var(--bg) 98%, #fff); }
 .rtable tr:hover td { background: var(--bg3); }
 .cv { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
 .cz { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
 .cn { color: var(--txt5); }
-body.light .rtable td.stk { background: var(--bg2); }
-body.light .rtable tr:nth-child(even) td.stk { background: var(--bg2); }
-body.light .rtable tr:hover td.stk { background: var(--bg2); }
-body.gold .rtable td.stk { background: var(--bg2); }
-body.gold .rtable th { background: var(--bg); }
+body.light .rtable td.stk { background: var(--bg); }
+body.light .rtable tr:nth-child(even) td.stk { background: var(--bg); }
+body.light .rtable tr:hover td.stk { background: var(--bg3); }
+body.gold  .rtable th     { background: var(--bg); }
+body.gold  .rtable th.stk { background: var(--bg); }
+body.gold  .rtable td.stk { background: var(--bg); }
+body.gold  .rtable tr:nth-child(even) td.stk { background: var(--bg); }
+body.gold  .rtable tr:hover td.stk            { background: var(--bg3); }
 .rekap-exp-cell { outline: 2px solid var(--zc); outline-offset: -1px; }
 /* rtable-header: tabel header terpisah di atas body scroll container.
    th tidak perlu position:sticky karena div parent tidak overflow.
@@ -136,9 +139,11 @@ body.gold .rtable th { background: var(--bg); }
   top: 0;
   z-index: 10;
   background: var(--bg);
-  /* Solid cover so body rows don't bleed through header on scroll */
-  box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 1px 0 var(--border);
-  /* Extend background slightly to ensure full cover */
+  box-shadow: 0 3px 12px rgba(0,0,0,0.5), 0 1px 0 var(--border);
+  /* Extend UP by 16px to cover #content padding-top gap */
+  margin-top: -16px;
+  padding-top: 16px;
+  /* Extend left/right slightly */
   margin-left: -1px;
   margin-right: -1px;
   padding-left: 1px;
@@ -155,9 +160,10 @@ body.gold .rtable th { background: var(--bg); }
 .rtable-header th.stk {
   position: sticky;
   background: var(--bg);
+
 }
-body.light .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 0 var(--border); }
-body.gold  .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 1px 0 var(--border); }
+body.light .rekap-header-wrap { box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 1px 0 var(--border); }
+body.gold  .rekap-header-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.7), 0 1px 0 var(--border); }
 .rekap-scroll-hint { background: linear-gradient(to right, rgba(15,17,23,0), rgba(15,17,23,1)); }
 body.light .rekap-scroll-hint { background: linear-gradient(to right, rgba(248,250,252,0), rgba(248,250,252,1)); }
 body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10,6,0), rgba(12,10,6,1)); }
@@ -181,3 +187,18 @@ body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10
 .mcard.long-pressing {
   animation: longPressRing 500ms linear forwards !important;
 }
+
+/* ── Rekap tfoot — background solid agar tidak blank saat scroll ── */
+.rtable tfoot td {
+  background: var(--bg3);
+  border-top: 2px solid var(--border);
+}
+.rtable tfoot td.stk {
+  background: var(--bg3);
+  position: sticky;
+  left: 0;
+}
+body.gold  .rtable tfoot td      { background: var(--bg3); }
+body.gold  .rtable tfoot td.stk  { background: var(--bg3); }
+body.light .rtable tfoot td      { background: var(--bg3); }
+body.light .rtable tfoot td.stk  { background: var(--bg3); }

@@ -57,7 +57,7 @@ export default function LoadingScreen() {
         animation:'lsFade 0.5s 0.2s ease-out both',
         opacity:0,
       }}>
-        Manajemen Iuran WiFi
+        v11.2 Next
       </div>
 
       {/* Progress bar */}

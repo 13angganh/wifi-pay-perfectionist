@@ -17,7 +17,6 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { friendlyAuthError } from '@/lib/helpers';
-import { useAppStore } from '@/store/useAppStore';
 
 // task 1.11: type guard untuk Firebase error
 function getFirebaseCode(e: unknown): string {
@@ -95,8 +94,6 @@ export function useAuth() {
       }
       // Fase 2: set authChecked setelah callback pertama — eliminasi race condition
       setAuthChecked(true);
-      // FIX 4: reset isLoggingOut agar loading screen tidak stuck setelah logout/ganti akun
-      useAppStore.getState().setLoggingOut(false);
     });
     return unsub;
   }, [setUser, clearUser, setAuthChecked]);

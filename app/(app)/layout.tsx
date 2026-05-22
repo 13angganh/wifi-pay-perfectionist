@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════
 // app/(app)/layout.tsx — Protected app layout
-// Fase 2: Hapus setTimeout 1500ms, pakai authChecked dari Firebase callback
-// FIX: Tampilkan LoadingScreen saat isLoggingOut untuk konsistensi UX
+// FIX: Hapus isLoggingOut dari render condition — penyebab loading stuck
+// Cukup authChecked + uid untuk kontrol render. Logout langsung redirect.
 // ══════════════════════════════════════════
 'use client';
 
@@ -15,7 +15,7 @@ import LoadingScreen from '@/components/layout/LoadingScreen';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { uid, authChecked, isLoggingOut } = useAppStore();
+  const { uid, authChecked } = useAppStore();
 
   // Aktifkan auth listener (set authChecked saat callback pertama)
   useAuth();
@@ -23,15 +23,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useAppData();
 
   useEffect(() => {
-    // Tunggu Firebase konfirmasi auth state sebelum redirect
-    // authChecked = true berarti onAuthStateChanged sudah fire pertama kali
-    if (authChecked && !uid && !isLoggingOut) {
+    // Redirect ke login jika Firebase sudah konfirmasi tidak ada user
+    if (authChecked && !uid) {
       router.replace('/login');
     }
-  }, [authChecked, uid, isLoggingOut, router]);
+  }, [authChecked, uid, router]);
 
-  // Tampilkan loading: saat belum ada auth state, ATAU saat sedang proses logout/ganti akun
-  if (!authChecked || !uid || isLoggingOut) return <LoadingScreen />;
+  // Loading: saat Firebase belum selesai cek auth state
+  // Setelah logout: uid langsung null → redirect ke /login terjadi di useEffect
+  if (!authChecked || !uid) return <LoadingScreen />;
 
   return <AppShell>{children}</AppShell>;
 }

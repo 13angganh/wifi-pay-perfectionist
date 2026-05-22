@@ -356,7 +356,6 @@ export default function RekapView() {
                       outline: isSelected ? '2px solid var(--zc)' : undefined,
                       outlineOffset: '-2px',
                       background: isSelected ? 'var(--zcdim)' : undefined,
-                      position: 'relative',
                       transition: 'opacity var(--t-base), background var(--t-fast)',
                       userSelect: 'none',
                       cursor: 'pointer',
@@ -367,12 +366,7 @@ export default function RekapView() {
                     onClick={() => onCellClick(name, mi)}
                     title={free ? 'Free Member' : `${MONTH_NAMES[mi]} ${selYear}`}
                   >
-                    {isSelected && (
-                      <span style={{ position:'absolute', top:2, right:2, color:'var(--zc)', lineHeight:1 }}>
-                        <CheckCheck size={8} />
-                      </span>
-                    )}
-                    {disp}
+                    {disp}{isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
                   </td>
                 );
               });
@@ -381,7 +375,7 @@ export default function RekapView() {
                   <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
                   <td className="stk" style={{ left:30, minWidth:110, maxWidth:110, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700 }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
                 </tr>
               );
             })}
@@ -396,12 +390,13 @@ export default function RekapView() {
                     color:'var(--c-lunas)', fontWeight:700,
                     opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 1,
                     transition:'opacity var(--t-base)',
+                    background:'var(--bg3)',
                   }}>
                     {colTotal > 0 ? (colTotal * 1000).toLocaleString('id-ID') : ''}
                   </td>
                 );
               })}
-              <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:800 }}>{rp(grand)}</td>
+              <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:800, background:'var(--bg3)' }}>{rp(grand)}</td>
             </tr>
           </tfoot>
         </table>

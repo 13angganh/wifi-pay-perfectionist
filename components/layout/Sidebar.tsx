@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
-// components/layout/Sidebar.tsx (task 1.15: dipecah)
+// components/layout/Sidebar.tsx
+// FIX: Hapus setLoggingOut — cukup signOut + router.replace
 // ══════════════════════════════════════════
 'use client';
 
@@ -25,24 +26,23 @@ interface Props { onNavigate: (v: ViewName) => void; }
 export default function Sidebar({ onNavigate }: Props) {
   const router = useRouter();
   const t = useT();
-  const { currentView, userName, userEmail, setSidebar, setLoggingOut } = useAppStore();
+  const { currentView, userName, userEmail, setSidebar } = useAppStore();
 
   async function handleSwitchAccount() {
-    setLoggingOut(true);
     setSidebar(false);
+    // FIX: signOut dulu → onAuthStateChanged fire → uid jadi null → AppLayout redirect
+    // Tidak perlu isLoggingOut atau router.replace manual
     await switchAccount();
-    router.replace('/login');
   }
 
   async function handleLogout() {
-    setLoggingOut(true);
     setSidebar(false);
+    // FIX: signOut dulu → onAuthStateChanged fire → uid jadi null → AppLayout redirect
     await doLogout();
-    router.replace('/login');
   }
 
-  const initials     = getInitials(userName, userEmail);
-  const displayName  = userName || userEmail?.split('@')[0] || 'Pengguna';
+  const initials    = getInitials(userName, userEmail);
+  const displayName = userName || userEmail?.split('@')[0] || 'Pengguna';
 
   return (
     <>

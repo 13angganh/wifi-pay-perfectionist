@@ -58,7 +58,7 @@
 .nb .ni { display: flex; align-items: center; justify-content: center; }
 .nb.on { color: var(--zc); }
 .nb:active { transform: scale(.92); }
-#content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 16px 80px; background: var(--bg); overscroll-behavior: none; }
+#content { flex: 1; overflow-y: auto; padding: 16px 16px 80px; background: var(--bg); overscroll-behavior: none; }
 
 /* ── Page Header ── */
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; }

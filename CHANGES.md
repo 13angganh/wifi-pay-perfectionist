@@ -1,5 +1,50 @@
 # CHANGES — WiFi Pay
 
+## v7.1 — Blank Hitam Rekap (Root Cause Fix) + Logout Stuck
+
+### 🔴 Blank Hitam saat Scroll Rekap — Semua Mode (Dark / Light / Gold)
+
+Root cause yang sebenarnya: **empat penyebab bersamaan**:
+
+1. **`-webkit-overflow-scrolling: touch`** di `#content` (`layout.css`)  
+   → API deprecated iOS yang force-promote setiap element ke GPU layer sendiri  
+   → dikombinasikan dengan `position:sticky` → blank hitam saat scroll  
+   → **Dihapus**
+
+2. **`position: 'relative'` inline di setiap td bulan** (`RekapView.tsx`)  
+   → menciptakan *stacking context* baru per sel (12 kolom × N member)  
+   → ratusan GPU layer terpisah = browser kehabihan VRAM → blank hitam  
+   → **Dihapus**, CheckCheck icon diubah ke inline (tidak perlu parent relative)
+
+3. **`will-change: transform`** di `td.stk` / `th.stk`  
+   → GPU layer dengan background transparan sampai repaint = hitam sementara  
+   → **Dihapus** (fix sebelumnya v7, dikonfirmasi bersih)
+
+4. **Background tidak solid** di beberapa sel (td row total, tfoot td bulan)  
+   → sel transparan = warna canvas browser = hitam  
+   → Semua sel kini punya `background` eksplisit
+
+**Pengganti yang benar:**
+- `td.stk` kini pakai `isolation: isolate` + `contain: style layout`  
+- `td` biasa pakai `contain: style`  
+- `th.stk` pakai `isolation: isolate`  
+- Ini mengontrol stacking context tanpa menciptakan GPU layer baru
+
+### 🔴 Logout / Ganti Akun — Loading Stuck (Race Condition Fix Tuntas)
+
+Root cause: `setLoggingOut(true)` → `router.replace('/login')` dipanggil **sebelum** Firebase `onAuthStateChanged` fire, sehingga AppLayout sudah unmount sebelum `setLoggingOut(false)` bisa dipanggil → stuck selamanya.
+
+**Solusi**: Hapus `isLoggingOut` sepenuhnya dari logika render:
+- `AppLayout` kini hanya cek `authChecked && !uid` (murni dari Firebase)  
+- `Sidebar` cukup panggil `signOut()` dan tutup sidebar — **tanpa `router.replace`**  
+- Setelah `signOut()`, Firebase trigger `onAuthStateChanged` → `clearUser()` → `uid = null` → `AppLayout` useEffect otomatis `router.replace('/login')`  
+- Alur ini deterministik dan tidak ada race condition
+
+### 🟠 Loading Screen — Tagline Diganti ke Versi
+- "Manajemen Iuran WiFi" → "v11.2 Next"
+
+---
+
 ## v7 — UX & Performa Fix (10 Temuan)
 
 ### 🔴 FIX 1: Hapus Fitur Swipe Antar Zona

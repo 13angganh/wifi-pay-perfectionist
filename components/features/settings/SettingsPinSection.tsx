@@ -36,8 +36,8 @@ const inputStyle: React.CSSProperties = {
 
 function PinInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <input type="password" inputMode="numeric" maxLength={4} value={value} placeholder="••••"
-      onChange={e => onChange(e.target.value.replace(/\D/g,'').slice(0,4))}
+    <input type="password" inputMode="numeric" maxLength={6} value={value} placeholder="••••••"
+      onChange={e => onChange(e.target.value.replace(/\D/g,'').slice(0,6))}
       style={inputStyle} autoFocus />
   );
 }
@@ -89,7 +89,7 @@ export default function SettingsPinSection() {
   }
   function verifyPin(input: string) { return simpleHash(input) === settings.pin; }
   function validatePin(p: string): boolean {
-    if (p.length !== 4 || !/^\d{4}$/.test(p)) { setPinErr(t('pin.notMatch')); return false; }
+    if (p.length !== 6 || !/^\d{6}$/.test(p)) { setPinErr(t('pin.notMatch')); return false; }
     return true;
   }
   function startEnable() { setPinStep('enable-new'); setPin1(''); setPin2(''); setPinErr(''); }

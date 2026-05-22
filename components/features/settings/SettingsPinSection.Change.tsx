@@ -29,7 +29,7 @@ export default function PinChange({ currentHash, onSave, onDeactivate }: Props) 
 
   function handleChange() {
     if (simpleHash(old) !== currentHash) { setErr(t('settings.pin.wrongCurrent')); return; }
-    if (pin1.length !== 4 || !/^\d{4}$/.test(pin1)) { setErr(t('settings.pin.invalid')); return; }
+    if (pin1.length !== 6 || !/^\d{6}$/.test(pin1)) { setErr(t('settings.pin.invalid')); return; }
     if (pin1 !== pin2) { setErr(t('settings.pin.mismatch')); return; }
     onSave(pin1);
   }
@@ -45,7 +45,7 @@ export default function PinChange({ currentHash, onSave, onDeactivate }: Props) 
       ].map(([label, val, set]) => (
         <div key={String(label)}>
           <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6 }}>{String(label)}</div>
-          <input style={inputStyle} type="password" maxLength={4} inputMode="numeric" value={String(val)} onChange={e => (set as (v: string) => void)(e.target.value.replace(/\D/g,'').slice(0,4))} />
+          <input style={inputStyle} type="password" maxLength={6} inputMode="numeric" value={String(val)} onChange={e => (set as (v: string) => void)(e.target.value.replace(/\D/g,'').slice(0,6))} />
         </div>
       ))}
       {err && <div style={{ fontSize:11, color:'var(--c-belum)' }}>{err}</div>}

@@ -138,16 +138,19 @@ body.gold  .rtable tr:hover td.stk            { background: var(--bg3); }
   position: sticky;
   top: 0;
   z-index: 10;
+  /* Background penutup: extend ke atas (padding #content = 16px) via pseudo ::before */
+  /* Ini menutup celah antara top:0 dan row tabel yang bisa nongol di area padding */
+}
+.rekap-header-wrap::before {
+  content: '';
+  position: absolute;
+  top: -16px;          /* Tutup tepat sejauh padding #content */
+  left: -16px;
+  right: -16px;
+  height: 16px;
   background: var(--bg);
-  box-shadow: 0 3px 12px rgba(0,0,0,0.5), 0 1px 0 var(--border);
-  /* Extend UP by 16px to cover #content padding-top gap */
-  margin-top: -16px;
-  padding-top: 16px;
-  /* Extend left/right slightly */
-  margin-left: -1px;
-  margin-right: -1px;
-  padding-left: 1px;
-  padding-right: 1px;
+  z-index: 1;
+  pointer-events: none;
 }
 .rtable-header th {
   /* th di header tabel: tidak perlu sticky karena parent sudah sticky */
@@ -162,8 +165,8 @@ body.gold  .rtable tr:hover td.stk            { background: var(--bg3); }
   background: var(--bg);
 
 }
-body.light .rekap-header-wrap { box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 1px 0 var(--border); }
-body.gold  .rekap-header-wrap { box-shadow: 0 4px 16px rgba(0,0,0,0.7), 0 1px 0 var(--border); }
+body.light .rekap-header-wrap::before { background: var(--bg); }
+body.gold  .rekap-header-wrap::before { background: var(--bg); }
 .rekap-scroll-hint { background: linear-gradient(to right, rgba(15,17,23,0), rgba(15,17,23,1)); }
 body.light .rekap-scroll-hint { background: linear-gradient(to right, rgba(248,250,252,0), rgba(248,250,252,1)); }
 body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10,6,0), rgba(12,10,6,1)); }

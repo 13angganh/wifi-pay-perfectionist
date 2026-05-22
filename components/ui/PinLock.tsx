@@ -8,10 +8,12 @@ import { Delete } from 'lucide-react';
 
 export default function PinLock() {
   const { settings, setPinUnlocked, pinUnlocked } = useAppStore();
-  const [digits, setDigits]   = useState(['','','','']);
+  const [digits, setDigits]   = useState(['','','','','','']);
   const [error,  setError]    = useState('');
   const [shake,  setShake]    = useState(false);
   const refs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -35,7 +37,7 @@ export default function PinLock() {
     next[i] = val;
     setDigits(next);
     setError('');
-    if (val && i < 3) refs[i+1].current?.focus();
+    if (val && i < 5) refs[i+1].current?.focus();
     if (next.every(d => d !== '') && val) {
       const entered = next.join('');
       if (simpleHash(entered) === settings.pin) {

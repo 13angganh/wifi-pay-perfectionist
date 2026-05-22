@@ -272,12 +272,14 @@ export default function RekapView() {
           Header div mirror scroll position dari body via onScroll.
           Ini satu-satunya cara andal freeze header + horizontal scroll di Chrome Android. */}
 
-      {/* Tabel header — TIDAK dalam overflow container, jadi sticky top bekerja */}
+      {/* Sticky wrapper — ::before-nya menutup celah 16px di atas header saat scroll */}
+      <div className="rekap-header-wrap">
+      {/* Tabel header — overflowX:hidden agar tidak muncul scrollbar, border visual tetap */}
       <div
         ref={headerScrollRef}
-        className="rekap-header-wrap"
         style={{ overflowX:'hidden', borderRadius:'var(--r-md) var(--r-md) 0 0',
-                 border:'1px solid var(--border)', borderBottom:'none' }}
+                 border:'1px solid var(--border)', borderBottom:'none',
+                 background:'var(--bg)' }}
       >
         <table className="rtable rtable-header" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
@@ -306,6 +308,7 @@ export default function RekapView() {
           </thead>
         </table>
       </div>
+      </div>{/* end rekap-header-wrap */}
 
       {/* Tabel body — bisa scroll horizontal, header di atas sudah terpisah */}
       <div

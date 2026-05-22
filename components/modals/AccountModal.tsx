@@ -1,29 +1,25 @@
 // components/modals/AccountModal.tsx
+// FIX: Hapus router.replace dan setLoggingOut — cukup signOut
+// Firebase onAuthStateChanged → uid null → AppLayout redirect otomatis
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogout, switchAccount } from '@/hooks/useAuth';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function AccountModal({ open, onClose }: Props) {
-  const router = useRouter();
-  const { userEmail, userName, setLoggingOut } = useAppStore();
+  const { userEmail, userName } = useAppStore();
   if (!open) return null;
 
   async function handleLogout() {
     onClose();
-    setLoggingOut(true);
     await doLogout();
-    router.replace('/login');
   }
 
   async function handleSwitch() {
     onClose();
-    setLoggingOut(true);
     await switchAccount();
-    router.replace('/login');
   }
 
   return (

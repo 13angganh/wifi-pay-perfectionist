@@ -17,6 +17,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { friendlyAuthError } from '@/lib/helpers';
+import { useAppStore } from '@/store/useAppStore';
 
 // task 1.11: type guard untuk Firebase error
 function getFirebaseCode(e: unknown): string {

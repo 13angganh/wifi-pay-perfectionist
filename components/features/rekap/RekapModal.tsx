@@ -1,7 +1,6 @@
 // components/features/rekap/RekapModal.tsx — Sub-component dipecah dari RekapView (Fase 3)
 'use client';
 
-import { } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS_EN, MONTHS } from '@/lib/constants';
 import { getPay, isFree, rp, getKey } from '@/lib/helpers';

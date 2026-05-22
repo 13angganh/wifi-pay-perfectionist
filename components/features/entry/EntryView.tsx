@@ -2,7 +2,6 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
@@ -305,16 +304,7 @@ export default function EntryView() {
           />
         ) : (
           filtered.map((name, i) => (
-            <motion.div
-              key={name}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                delay: Math.min(i * 0.028, 0.28),
-                duration: 0.2,
-                ease: 'easeOut',
-              }}
-            >
+            <div key={name}>
               <MemberCard
                 name={name}
                 index={i}
@@ -325,7 +315,7 @@ export default function EntryView() {
                   if (batchMode) toggleBatchMember(name);
                 }}
               />
-            </motion.div>
+            </div>
           ))
         )}
       </div>

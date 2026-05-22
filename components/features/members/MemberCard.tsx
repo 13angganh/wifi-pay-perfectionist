@@ -80,8 +80,12 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const lang        = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
-  const cardYear  = entryCardYear[name]  ?? selYear;
-  const cardMonth = entryCardMonth[name] ?? selMonth;
+  // FIX 6: default ke bulan/tahun SAAT INI saat kartu pertama dibuka
+  // bukan selMonth/selYear yang mungkin sudah berubah dari klik sebelumnya
+  const _nowY = new Date().getFullYear();
+  const _nowM = new Date().getMonth();
+  const cardYear  = entryCardYear[name]  ?? _nowY;
+  const cardMonth = entryCardMonth[name] ?? _nowM;
   const info      = appData.memberInfo?.[activeZone + '__' + name] || {};
   const val       = getPay(appData, activeZone, name, selYear, selMonth);
   const entryVal  = getPay(appData, activeZone, name, cardYear, cardMonth);
@@ -98,8 +102,14 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isExp) { inputDirty.current = false; isCollapsing.current = false; }
-  }, [isExp]);
+    if (!isExp) { inputDirty.current = false; isCollapsing.current = false; return; }
+    // FIX 6: saat kartu dibuka, inisialisasi ke bulan saat ini jika belum pernah diset
+    if (!entryCardYear[name] && !entryCardMonth[name]) {
+      const nowY = new Date().getFullYear();
+      const nowM = new Date().getMonth();
+      setEntryCard(name, nowY, nowM);
+    }
+  }, [isExp, name, entryCardYear, entryCardMonth, setEntryCard]);
 
   useEffect(() => {
     if (!isExp) return;
@@ -194,22 +204,28 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         [infoKey]: { ...(newData.memberInfo?.[infoKey] || {}), [dateKey]: today },
       };
     }
-    persist(
-      newData,
-      `[PAY] ${tLog('log.action.quickPay')} ${activeZone} - ${name}`,
-      `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}`,
-    ).then(ok => {
-      if (!ok) return;
-      showToastUndo(`${name} → ${rp(amt)}`, async () => {
-        const revert = { ...appData, payments: { ...appData.payments } };
-        if (prevVal === null) delete revert.payments[k];
-        else revert.payments[k] = prevVal;
-        await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
-        showToast(`${name} dibatalkan`, 'info');
-      });
-    });
-    inputDirty.current = false;
+    // FIX 8: Optimistic UI — update state + toast LANGSUNG, Firebase async di background
+    setAppData(newData);
     setExpandedCard(null);
+    inputDirty.current = false;
+    haptic.success();
+    // Toast + undo langsung muncul tanpa menunggu Firebase
+    showToastUndo(`${name} → ${rp(amt)}`, async () => {
+      const revert = { ...appData, payments: { ...appData.payments } };
+      if (prevVal === null) delete revert.payments[k];
+      else revert.payments[k] = prevVal;
+      await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+      showToast(`${name} dibatalkan`, 'info');
+    });
+    // Firebase write di background
+    if (uid) {
+      setSyncStatus('loading');
+      saveDB(uid, newData,
+        { action: `[PAY] ${tLog('log.action.quickPay')} ${activeZone} - ${name}`,
+          detail: `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}` },
+        userEmail || ''
+      ).then(() => setSyncStatus('ok')).catch(() => setSyncStatus('err'));
+    }
   }
 
   async function quickPay(amt: number) {
@@ -235,7 +251,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     if (entryVal === null) return;
     haptic.light();
     showConfirm(
-      'X',
+      '🗑️',
       `Hapus pembayaran ${name}?`,
       t('membercard.deleteYes'),
       async () => {

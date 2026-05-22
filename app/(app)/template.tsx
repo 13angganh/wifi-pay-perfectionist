@@ -6,17 +6,11 @@
 // ══════════════════════════════════════════
 'use client';
 
-import { motion } from 'framer-motion';
-
+// FIX: Hapus animasi page transition — menyebabkan lag saat navigasi antar menu
 export default function Template({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-    >
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {children}
-    </motion.div>
+    </div>
   );
 }

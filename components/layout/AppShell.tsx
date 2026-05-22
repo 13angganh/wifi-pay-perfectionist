@@ -8,9 +8,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { useAppStore } from '@/store/useAppStore';
-import { getAllActiveZones } from '@/lib/helpers';
-import { haptic } from '@/lib/haptic';
-import type { Zone } from '@/types';
 import { checkAutoBackup } from '@/lib/backup';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { usePWA } from '@/hooks/usePWA';
@@ -75,7 +72,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     sidebarOpen, setSidebar, setView, theme, appData,
     setDeferredPrompt, showUpdateBanner,
     deferredPrompt, settings,
-    activeZone, setZone,
   } = useAppStore();
 
   const t = useT();
@@ -88,31 +84,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setShowScrollFade(!atBottom);
   }
 
-  // UX: Swipe antar zona (KRS ↔ SLK ↔ custom)
-  // rekap: swipe DINONAKTIFKAN PENUH — tabel horizontal scroll konflik dengan swipe zona
-  // grafik: swipe diizinkan penuh
-  const swipeStartX = useRef<number | null>(null);
-  const swipeStartY = useRef<number | null>(null);
 
-  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
-    // Jangan simpan start jika sedang di halaman rekap — matikan swipe zona
-    if (pathname.includes('/rekap')) return;
-    swipeStartX.current = e.touches[0].clientX;
-    swipeStartY.current = e.touches[0].clientY;
-  }
-  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
-    if (swipeStartX.current === null || swipeStartY.current === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = e.changedTouches[0].clientY - swipeStartY.current;
-    swipeStartX.current = null;
-    swipeStartY.current = null;
-    // Minimal 60px dan gerakan horizontal harus dominan (1.5x lipat vertikal)
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const zones   = getAllActiveZones(settings);
-    const idx     = zones.indexOf(activeZone);
-    if (dx < 0 && idx < zones.length - 1) { setZone(zones[idx + 1] as Zone); haptic.light(); }
-    if (dx > 0 && idx > 0)                { setZone(zones[idx - 1] as Zone); haptic.light(); }
-  }
 
   useIdleTimeout(settings.pinTimeoutMinutes);
   usePWA(); // task 1.15: hook hasil pecah dari AppShell
@@ -193,8 +165,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 overscrollBehavior:'contain' as React.CSSProperties['overscrollBehavior'],
               }}
               onScroll={handleContentScroll}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
             >
               {children}
             </div>

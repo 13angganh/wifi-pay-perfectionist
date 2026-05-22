@@ -82,7 +82,7 @@
   padding: 9px 8px;
   font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4);
   font-weight: 600; letter-spacing: .06em; white-space: nowrap;
-  background: var(--bg2);
+  background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 3;
@@ -101,7 +101,7 @@
   will-change: transform;
 }
 
-.rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; }
+.rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); }
 
 /* td.stk = kolom # dan NAMA: sticky kiri.
    HAPUS translateZ & backface-visibility — penyebab utama blank hitam.
@@ -117,7 +117,7 @@
 }
 .rtable tr:nth-child(even) td.stk { background: var(--bg2); }
 .rtable tr:hover td.stk { background: var(--bg2); }
-.rtable tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+.rtable tr:nth-child(even) td { background: color-mix(in srgb, var(--bg) 98%, #fff); }
 .rtable tr:hover td { background: var(--bg3); }
 .cv { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
 .cz { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
@@ -126,7 +126,7 @@ body.light .rtable td.stk { background: var(--bg2); }
 body.light .rtable tr:nth-child(even) td.stk { background: var(--bg2); }
 body.light .rtable tr:hover td.stk { background: var(--bg2); }
 body.gold .rtable td.stk { background: var(--bg2); }
-body.gold .rtable th { background: var(--bg2); }
+body.gold .rtable th { background: var(--bg); }
 .rekap-exp-cell { outline: 2px solid var(--zc); outline-offset: -1px; }
 /* rtable-header: tabel header terpisah di atas body scroll container.
    th tidak perlu position:sticky karena div parent tidak overflow.
@@ -135,22 +135,26 @@ body.gold .rtable th { background: var(--bg2); }
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg2);
-  /* Shadow bawah agar konten body tidak tampak tembus saat scroll */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 1px 0 var(--border);
+  background: var(--bg);
+  /* Solid cover so body rows don't bleed through header on scroll */
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 1px 0 var(--border);
+  /* Extend background slightly to ensure full cover */
+  margin-left: -1px;
+  margin-right: -1px;
+  padding-left: 1px;
+  padding-right: 1px;
 }
 .rtable-header th {
   /* th di header tabel: tidak perlu sticky karena parent sudah sticky */
   position: static;
   border-bottom: 2px solid var(--border) !important;
   box-shadow: none !important;
-  background: var(--bg2);
+  background: var(--bg);
 }
 /* Kolom # dan NAMA di header: sticky kiri untuk sinkron dengan body */
 .rtable-header th.stk {
   position: sticky;
-  background: var(--bg2);
-  will-change: auto;
+  background: var(--bg);
 }
 body.light .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 0 var(--border); }
 body.gold  .rekap-header-wrap { box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 1px 0 var(--border); }

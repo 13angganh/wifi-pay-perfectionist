@@ -101,12 +101,18 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
     activeZone: z, search: '', filterStatus: 'all',
     expandedCard: null, entryCardYear: {}, entryCardMonth: {},
   }),
-  setView: (v) => set(() => ({
-    currentView: v, expandedCard: null,
-    search: '', filterStatus: 'all',
-    entryScrollTop: 0, rekapExpanded: null,
-    ...(v !== 'entry' ? { entryCardYear: {}, entryCardMonth: {} } : {}),
-  })),
+  setView: (v) => set(() => {
+    const _n = new Date();
+    return {
+      currentView: v, expandedCard: null,
+      search: '', filterStatus: 'all',
+      entryScrollTop: 0, rekapExpanded: null,
+      // FIX 6: reset ke bulan/tahun saat ini setiap navigasi
+      selYear:  _n.getFullYear(),
+      selMonth: _n.getMonth(),
+      ...(v !== 'entry' ? { entryCardYear: {}, entryCardMonth: {} } : {}),
+    };
+  }),
 
   // Period selector
   selYear:     now.getFullYear(),

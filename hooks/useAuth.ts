@@ -95,6 +95,8 @@ export function useAuth() {
       }
       // Fase 2: set authChecked setelah callback pertama — eliminasi race condition
       setAuthChecked(true);
+      // FIX 4: reset isLoggingOut agar loading screen tidak stuck setelah logout/ganti akun
+      useAppStore.getState().setLoggingOut(false);
     });
     return unsub;
   }, [setUser, clearUser, setAuthChecked]);

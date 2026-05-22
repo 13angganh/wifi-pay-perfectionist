@@ -84,7 +84,7 @@ export default function OperasionalView() {
 
   function deleteItem(i: number) {
     const item = items[i];
-    showConfirm('[DEL]', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.confirm'), async () => {
+    showConfirm('🗑️', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.confirm'), async () => {
       await persist(updatedData(items.filter((_, idx) => idx !== i)));
       showToast(t('common.deleted'), 'err');
     });

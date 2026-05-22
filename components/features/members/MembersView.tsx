@@ -123,7 +123,7 @@ export default function MembersView() {
   }
 
   async function deleteMember(name: string) {
-    showConfirm('[DEL]', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
+    showConfirm('🗑️', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
       const list     = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
       const filtered = list.filter(m => m !== name);
       const mk       = `${zone}__${name}`;

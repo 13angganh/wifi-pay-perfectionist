@@ -97,7 +97,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
     >
       <motion.div
         className="riwayat-box"
@@ -118,7 +118,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
-        transition={{ duration: 0.28, ease: [0, 0, 0.2, 1] }}
+        transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         {/* Drag handle */}
         <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6, flexShrink:0 }}>

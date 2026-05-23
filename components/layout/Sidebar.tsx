@@ -1,16 +1,17 @@
 // ══════════════════════════════════════════
 // components/layout/Sidebar.tsx
-// FIX: Hapus setLoggingOut — cukup signOut + router.replace
+// v11.3: Tombol akun buka AccountModal (link Google + ganti akun + keluar)
 // ══════════════════════════════════════════
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { doLogout, switchAccount } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
 import { Settings } from 'lucide-react';
 import { NAV_ITEMS } from '@/lib/navItems';
 import SidebarUserSection from './Sidebar.UserSection';
+import AccountModal from '@/components/modals/AccountModal';
 import type { ViewName } from '@/types';
 
 function getInitials(name: string | null, email: string | null): string {
@@ -25,18 +26,13 @@ interface Props { onNavigate: (v: ViewName) => void; }
 export default function Sidebar({ onNavigate }: Props) {
   const t = useT();
   const { currentView, userName, userEmail, setSidebar } = useAppStore();
+  const [showAccount, setShowAccount] = useState(false);
 
-  async function handleSwitchAccount() {
+  function handleOpenAccount() {
+    // Tutup sidebar dulu di mobile, lalu buka modal
     setSidebar(false);
-    // FIX: signOut dulu → onAuthStateChanged fire → uid jadi null → AppLayout redirect
-    // Tidak perlu isLoggingOut atau router.replace manual
-    await switchAccount();
-  }
-
-  async function handleLogout() {
-    setSidebar(false);
-    // FIX: signOut dulu → onAuthStateChanged fire → uid jadi null → AppLayout redirect
-    await doLogout();
+    // Delay kecil agar sidebar tutup dulu sebelum modal muncul
+    setTimeout(() => setShowAccount(true), 150);
   }
 
   const initials    = getInitials(userName, userEmail);
@@ -55,7 +51,7 @@ export default function Sidebar({ onNavigate }: Props) {
         </div>
         <div>
           <div className="sb-app-name">WiFi Pay</div>
-          <div style={{ fontSize:8, color:'var(--txt5)', letterSpacing:'.06em' }}>v11.2 Next</div>
+          <div style={{ fontSize:8, color:'var(--txt5)', letterSpacing:'.06em' }}>v11.3 Next</div>
         </div>
       </div>
 
@@ -86,11 +82,11 @@ export default function Sidebar({ onNavigate }: Props) {
         </button>
       </nav>
 
+      {/* User section — klik buka AccountModal */}
       <SidebarUserSection
         initials={initials}
         displayName={displayName}
-        onSwitch={handleSwitchAccount}
-        onLogout={handleLogout}
+        onOpenAccount={handleOpenAccount}
       />
 
       <div style={{
@@ -99,8 +95,11 @@ export default function Sidebar({ onNavigate }: Props) {
         fontSize:9, color:'var(--txt5)',
         letterSpacing:'.04em', textAlign:'center',
       }}>
-        WiFi Pay v11.2 Next
+        WiFi Pay v11.3 Next
       </div>
+
+      {/* AccountModal */}
+      <AccountModal open={showAccount} onClose={() => setShowAccount(false)} />
     </>
   );
 }

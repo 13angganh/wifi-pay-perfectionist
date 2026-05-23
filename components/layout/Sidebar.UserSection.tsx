@@ -1,65 +1,55 @@
 // ══════════════════════════════════════════
 // components/layout/Sidebar.UserSection.tsx
-// Dipecah dari Sidebar.tsx (task 1.15)
+// v11.3: Satu tombol akun → buka AccountModal
 // ══════════════════════════════════════════
 'use client';
 
-import { useT } from '@/hooks/useT';
-import { LogOut, UserRoundX } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface Props {
-  initials:     string;
-  displayName:  string;
-  onSwitch:     () => void;
-  onLogout:     () => void;
+  initials:      string;
+  displayName:   string;
+  onOpenAccount: () => void;
 }
 
-export default function SidebarUserSection({ initials, displayName, onSwitch, onLogout }: Props) {
-  const t = useT();
-
+export default function SidebarUserSection({ initials, displayName, onOpenAccount }: Props) {
   return (
     <div className="sb-user-section">
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+      <button
+        onClick={onOpenAccount}
+        aria-label="Buka pengaturan akun"
+        style={{
+          width:'100%', display:'flex', alignItems:'center', gap:10,
+          background:'none', border:'1px solid var(--border)',
+          borderRadius:'var(--r-sm)', padding:'9px 12px',
+          cursor:'pointer', transition:'all var(--t-fast)',
+          textAlign:'left',
+        }}
+        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background='var(--bg3)'}
+        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background='none'}
+      >
+        {/* Avatar */}
         <div style={{
-          width:32, height:32, borderRadius:'50%', flexShrink:0,
+          width:30, height:30, borderRadius:'50%', flexShrink:0,
           background:'linear-gradient(135deg,var(--zc),color-mix(in srgb,var(--zc) 60%,#000))',
           display:'flex', alignItems:'center', justifyContent:'center',
-          fontFamily:"var(--font-mono),monospace", fontWeight:500, fontSize:12, color:'#fff',
-          letterSpacing:'.01em',
+          fontFamily:"var(--font-mono),monospace", fontWeight:500, fontSize:11, color:'#fff',
         }}>
           {initials}
         </div>
-        <div style={{ overflow:'hidden' }}>
+        {/* Nama */}
+        <div style={{ flex:1, overflow:'hidden' }}>
           <div style={{
-            fontSize:13, fontWeight:500, color:'var(--txt)',
+            fontSize:12, fontWeight:600, color:'var(--txt)',
             fontFamily:"var(--font-sans),sans-serif",
             whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
           }}>
             {displayName}
           </div>
+          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>Kelola akun</div>
         </div>
-      </div>
-
-      <div style={{ display:'flex', gap:6 }}>
-        <button
-          className="sb-user-btn"
-          onClick={onSwitch}
-          aria-label="Ganti akun"
-          style={{ flex:1 }}
-        >
-          <UserRoundX size={13} strokeWidth={1.5} />
-          <span>{t('action.changeAccount')}</span>
-        </button>
-        <button
-          className="sb-user-btn danger"
-          onClick={onLogout}
-          aria-label="Keluar dari aplikasi"
-          style={{ flex:1 }}
-        >
-          <LogOut size={13} strokeWidth={1.5} />
-          <span>{t('action.logout')}</span>
-        </button>
-      </div>
+        <User size={13} strokeWidth={1.5} style={{ color:'var(--txt4)', flexShrink:0 }} />
+      </button>
     </div>
   );
 }

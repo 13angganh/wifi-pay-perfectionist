@@ -54,6 +54,13 @@ function saveRememberCred(email: string, pass: string, displayName: string) {
   localStorage.setItem(KEY_PASS,  pass);
 }
 
+function clearRememberCred() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(KEY_EMAIL);
+  localStorage.removeItem(KEY_NAME);
+  localStorage.removeItem(KEY_PASS);
+  localStorage.removeItem('wp_cred'); // migration lama
+}
 
 export function getRememberedCred(): { email: string; name: string; pass: string } | null {
   if (typeof window === 'undefined') return null;

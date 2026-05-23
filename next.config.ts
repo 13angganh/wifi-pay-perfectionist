@@ -11,6 +11,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Fase 2: reactStrictMode diaktifkan kembali
+  // Firebase listener sudah idempotent — cleanup unsub() ada di semua useEffect
   reactStrictMode: true,
   async headers() {
     return [

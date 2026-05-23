@@ -172,4 +172,4 @@ App sudah berjalan dengan implementasi ini. Refactor ke spec memerlukan:
 - Rename semua `body.light` → `body:not(.dark)` atau sejenisnya
 - Risiko regresi visual tinggi di seluruh halaman
 
-**Keputusan:** Pertahankan implementasi yang ada. Catat di sini agar developer berikutnya tidak bingung.
+**Keputusan:** Pertahankan implementasi yang ada. Catat di sini agar developer berikutnya tidak bingung. @2026

@@ -4,7 +4,8 @@
 
 import { Settings } from 'lucide-react';
 import { useT } from '@/hooks/useT';
-import SettingsPinSection    from './SettingsPinSection';
+import SettingsPinSection      from './SettingsPinSection';
+import SettingsBiometricSection from './SettingsBiometricSection';
 import SettingsZoneSection   from './SettingsZoneSection';
 import SettingsTarifSection  from './SettingsTarifSection';
 import SettingsAppSection    from './SettingsAppSection';
@@ -20,6 +21,9 @@ export default function SettingsView() {
 
       {/* KRITIS: PIN Security */}
       <SettingsPinSection />
+
+      {/* KRITIS: Biometrik (sidik jari / face ID) */}
+      <SettingsBiometricSection />
 
       {/* KRITIS: Zona Management */}
       <SettingsZoneSection />

@@ -76,6 +76,7 @@ export interface AppSettings {
   autoDate:      boolean;         // true = otomatis hari ini, false = manual
   quickAmounts:  number[];        // custom quick pay amounts
   pinTimeoutMinutes: number;      // 0 = tidak pernah, idle timeout untuk PIN lock
+  biometricEnabled: boolean;      // sidik jari / face ID via WebAuthn platform authenticator
   language:      'id' | 'en';     // bahasa UI (v11.1)
   // v11.2: zona dinamis
   customZones:   CustomZone[];    // zona tambahan selain KRS & SLK
@@ -89,6 +90,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoDate:     true,
   quickAmounts: [50, 80, 90, 100, 150, 200],
   pinTimeoutMinutes: 0,
+  biometricEnabled: false,
   language:     'id',
   customZones:  [],
   hiddenZones:  [],

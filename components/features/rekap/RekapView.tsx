@@ -316,10 +316,11 @@ export default function RekapView() {
         className="rekap-wrap"
         style={{ borderRadius:'0 0 var(--r-md) var(--r-md)', borderTop:'none' }}
         onScroll={e => {
-          // Sinkronisasi scroll horizontal header dengan body
-          if (headerScrollRef.current) {
-            headerScrollRef.current.scrollLeft = (e.target as HTMLDivElement).scrollLeft;
-          }
+          // rAF untuk smooth header sync — hindari layout thrashing langsung di event handler
+          const sl = (e.target as HTMLDivElement).scrollLeft;
+          requestAnimationFrame(() => {
+            if (headerScrollRef.current) headerScrollRef.current.scrollLeft = sl;
+          });
         }}
       >
         <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
@@ -378,7 +379,7 @@ export default function RekapView() {
                   <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
                   <td className="stk" style={{ left:30, minWidth:110, maxWidth:110, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
+                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
                 </tr>
               );
             })}
@@ -399,7 +400,7 @@ export default function RekapView() {
                   </td>
                 );
               })}
-              <td style={{ color:'var(--zc)', fontFamily:"var(--font-sans),sans-serif", fontWeight:800, background:'var(--bg3)' }}>{rp(grand)}</td>
+              <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:800, background:'var(--bg3)' }}>{grand > 0 ? (grand * 1000).toLocaleString('id-ID') : ''}</td>
             </tr>
           </tfoot>
         </table>

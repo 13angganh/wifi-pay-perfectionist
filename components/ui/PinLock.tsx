@@ -4,13 +4,16 @@ import Image from 'next/image';
 // components/ui/PinLock.tsx — Fase 4: redesign premium, numpad 56x56px
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Delete } from 'lucide-react';
+import { Delete, Fingerprint, ScanFace } from 'lucide-react';
+import { verifyBiometric, hasBiometricCred, isBiometricAvailable } from '@/lib/biometric';
 
 export default function PinLock() {
   const { settings, setPinUnlocked, pinUnlocked } = useAppStore();
   const [digits, setDigits]   = useState(['','','','','','']);
   const [error,  setError]    = useState('');
   const [shake,  setShake]    = useState(false);
+  const [bioAvail, setBioAvail] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
   const refs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -21,7 +24,13 @@ export default function PinLock() {
   ];
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { refs[0].current?.focus(); }, []);
+  useEffect(() => {
+    refs[0].current?.focus();
+    // Cek biometric tersedia dan credential sudah terdaftar
+    if (settings.biometricEnabled && hasBiometricCred()) {
+      isBiometricAvailable().then(ok => setBioAvail(ok));
+    }
+  }, []);
 
   if (!settings.pinEnabled || pinUnlocked) return null;
 
@@ -70,6 +79,23 @@ export default function PinLock() {
       const idx = digits.findIndex(d=>d==='');
       if (idx === -1) return;
       handleDigit(idx, k);
+    }
+  }
+
+  async function handleBiometric() {
+    setBioLoading(true);
+    try {
+      const ok = await verifyBiometric();
+      if (ok) setPinUnlocked(true);
+      else {
+        setError('Verifikasi biometrik gagal');
+        setTimeout(() => setError(''), 2000);
+      }
+    } catch {
+      setError('Biometrik dibatalkan');
+      setTimeout(() => setError(''), 2000);
+    } finally {
+      setBioLoading(false);
     }
   }
 
@@ -180,6 +206,30 @@ export default function PinLock() {
           );
         })}
       </div>
+
+      {/* Biometric button — tampil jika tersedia */}
+      {bioAvail && settings.biometricEnabled && (
+        <button
+          onClick={handleBiometric}
+          disabled={bioLoading}
+          aria-label="Buka dengan sidik jari atau face ID"
+          style={{
+            marginTop:24,
+            background:'none', border:'1px solid var(--border)',
+            borderRadius:'var(--r-full)',
+            padding:'10px 24px',
+            display:'flex', alignItems:'center', gap:8,
+            color:'var(--txt3)', cursor:'pointer',
+            fontSize:12, fontFamily:"var(--font-sans),sans-serif",
+            transition:'all var(--t-fast)',
+            opacity: bioLoading ? 0.5 : 1,
+          }}
+        >
+          <Fingerprint size={16} strokeWidth={1.5} />
+          <ScanFace    size={16} strokeWidth={1.5} />
+          <span>{bioLoading ? 'Memverifikasi...' : 'Sidik Jari / Face ID'}</span>
+        </button>
+      )}
 
       <style>{`
         .pin-shake {

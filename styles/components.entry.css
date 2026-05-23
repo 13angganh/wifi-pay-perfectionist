@@ -80,12 +80,14 @@
    Gunakan top: 0 karena #content sudah menghitung offset-nya sendiri. */
 .rtable th   {
   padding: 9px 8px;
+  padding-right: 10px;
   font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4);
   font-weight: 600; letter-spacing: .06em; white-space: nowrap;
   background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 3;
+  text-align: right;
   border-bottom: 2px solid var(--border);
   box-shadow: 0 1px 0 var(--border);
   isolation: isolate;
@@ -97,9 +99,11 @@
   z-index: 5 !important;
   background: var(--bg);
   isolation: isolate;
+  text-align: left;
+  padding-right: 8px;
 }
 
-.rtable td   { padding: 7px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: center; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); contain: style; }
+.rtable td   { padding: 7px 8px; padding-right: 10px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: right; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); contain: style; }
 
 /* td.stk = kolom # dan NAMA: sticky kiri.
    Background solid di semua state penting untuk mencegah blank hitam. */
@@ -195,11 +199,14 @@ body.gold  .rekap-scroll-hint { background: linear-gradient(to right, rgba(12,10
 .rtable tfoot td {
   background: var(--bg3);
   border-top: 2px solid var(--border);
+  text-align: right;
+  padding-right: 10px;
 }
 .rtable tfoot td.stk {
   background: var(--bg3);
   position: sticky;
   left: 0;
+  text-align: left;
 }
 body.gold  .rtable tfoot td      { background: var(--bg3); }
 body.gold  .rtable tfoot td.stk  { background: var(--bg3); }

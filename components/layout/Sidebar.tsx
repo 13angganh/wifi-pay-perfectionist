@@ -5,7 +5,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogout, switchAccount } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
@@ -24,7 +23,6 @@ function getInitials(name: string | null, email: string | null): string {
 interface Props { onNavigate: (v: ViewName) => void; }
 
 export default function Sidebar({ onNavigate }: Props) {
-  const router = useRouter();
   const t = useT();
   const { currentView, userName, userEmail, setSidebar } = useAppStore();
 

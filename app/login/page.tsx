@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { doLogin, doRegister, doLogout, switchAccount, getRememberedCred } from '@/hooks/useAuth';
+import { doLogin, doRegister, switchAccount, getRememberedCred } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
 
 type LoginState = 'remembered' | 'form' | 'register';

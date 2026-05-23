@@ -1,14 +1,43 @@
 'use client';
 
 import Image from 'next/image';
-// app/login/page.tsx — Fase 2: hapus getSavedCred/loginRemembered, pakai getRememberedEmail + browserLocalPersistence
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { doLogin, doRegister, switchAccount, getRememberedCred } from '@/hooks/useAuth';
+import { doLogin, doRegister, doLoginGoogle, switchAccount, getRememberedCred } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
 
 type LoginState = 'remembered' | 'form' | 'register';
+
+// Tombol Google — komponen terpisah agar tidak re-render parent
+function GoogleButton({ onClick, loading, label }: {
+  onClick: () => void; loading: boolean; label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+        padding:'11px 14px', borderRadius:'var(--r-sm)', cursor: loading ? 'not-allowed' : 'pointer',
+        background:'var(--bg)', border:'1px solid var(--border)',
+        color:'var(--txt)', fontSize:13, fontWeight:600,
+        fontFamily:"var(--font-sans),sans-serif",
+        transition:'all var(--t-fast)', opacity: loading ? 0.6 : 1,
+        marginBottom: 0,
+      }}
+    >
+      {/* Google G icon */}
+      <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink:0 }}>
+        <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+        <path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.6 6.4 6.3 14.7z"/>
+        <path fill="#FBBC05" d="M24 46c5.9 0 10.9-2 14.6-5.3l-6.8-5.6C29.8 36.8 27 37.8 24 37.8c-6 0-11.1-4-12.9-9.5l-7 5.4C7.5 42.1 15.2 46 24 46z"/>
+        <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-1.6 4.4-5.8 7.5-11.8 7.5-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z" opacity="0"/>
+      </svg>
+      {loading ? 'Menghubungkan...' : label}
+    </button>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,38 +50,26 @@ export default function LoginPage() {
 
   const remembered = typeof window !== 'undefined' ? getRememberedCred() : null;
 
-  const [state,    setState]    = useState<LoginState>(remembered ? 'remembered' : 'form');
-  const [email,    setEmail]    = useState(remembered?.email || '');
-  const [pass,     setPass]     = useState(remembered?.pass || '');
-  const [err,      setErr]      = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [rEmail,   setREmail]   = useState('');
-  const [rPass,    setRPass]    = useState('');
-  const [rName,    setRName]    = useState('');
-  const [rErr,     setRErr]     = useState('');
-  const [rLoading, setRLoading] = useState(false);
+  const [state,      setState]      = useState<LoginState>(remembered ? 'remembered' : 'form');
+  const [email,      setEmail]      = useState(remembered?.email || '');
+  const [pass,       setPass]       = useState(remembered?.pass || '');
+  const [err,        setErr]        = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [gLoading,   setGLoading]   = useState(false);
+  const [rEmail,     setREmail]     = useState('');
+  const [rPass,      setRPass]      = useState('');
+  const [rName,      setRName]      = useState('');
+  const [rErr,       setRErr]       = useState('');
+  const [rLoading,   setRLoading]   = useState(false);
 
-  // FIX: handleLanjutkan — auto-login tanpa ketik ulang.
-  // 1. Jika sesi Firebase masih aktif (uid ada) → langsung masuk.
-  // 2. Jika sesi expired tapi kredensial tersimpan → login otomatis di background.
-  // 3. Jika gagal → ke form (email+pass sudah ter-isi, tinggal klik Masuk).
   async function handleLanjutkan() {
-    // Cek sesi aktif
     const currentUid = useAppStore.getState().uid;
-    if (currentUid) {
-      router.replace('/dashboard');
-      return;
-    }
-    // Coba auto-login dengan kredensial tersimpan
+    if (currentUid) { router.replace('/dashboard'); return; }
     if (remembered?.email && remembered?.pass) {
       setLoading(true); setErr('');
       const res = await doLogin(remembered.email, remembered.pass, true);
       setLoading(false);
-      if (!res.error) {
-        router.replace('/dashboard');
-        return;
-      }
-      // Jika gagal (password berubah, dll) → ke form dengan email+pass ter-isi
+      if (!res.error) { router.replace('/dashboard'); return; }
       setErr(res.error);
     }
     setState('form');
@@ -61,8 +78,16 @@ export default function LoginPage() {
   async function handleLogin() {
     if (!email || !pass) { setErr(t('login.requiredFields')); return; }
     setLoading(true); setErr('');
-    const res = await doLogin(email, pass, true /* remember email */);
+    const res = await doLogin(email, pass, true);
     setLoading(false);
+    if (res.error) { setErr(res.error); return; }
+    router.replace('/dashboard');
+  }
+
+  async function handleLoginGoogle() {
+    setGLoading(true); setErr('');
+    const res = await doLoginGoogle();
+    setGLoading(false);
     if (res.error) { setErr(res.error); return; }
     router.replace('/dashboard');
   }
@@ -78,8 +103,6 @@ export default function LoginPage() {
   }
 
   async function handleSwitchAccount() {
-    // Sign out Firebase saja, email+pass TETAP tersimpan dan ter-isi di form
-    // User bisa ketik manual jika mau ganti akun berbeda
     await switchAccount();
     setErr('');
     setState('form');
@@ -91,6 +114,13 @@ export default function LoginPage() {
     marginBottom:14, fontFamily:"var(--font-mono),monospace", outline:'none',
     transition:'border .2s', boxSizing:'border-box',
   };
+
+  const divider = (
+    <div style={{ textAlign:'center', margin:'14px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
+      <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
+      <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>atau</span>
+    </div>
+  );
 
   const greeterName = remembered?.name || remembered?.email?.split('@')[0];
 
@@ -112,7 +142,7 @@ export default function LoginPage() {
 
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:24, width:'100%', maxWidth:360, boxShadow:'var(--shadow-md)' }}>
 
-        {/* STATE A — Remembered email */}
+        {/* STATE A — Remembered */}
         {state === 'remembered' && (
           <div>
             <div style={{ textAlign:'center', marginBottom:24 }}>
@@ -126,10 +156,13 @@ export default function LoginPage() {
             <button className="lf-btn" onClick={handleLanjutkan} disabled={loading}>
               {loading ? t('common.loading') : t('login.continue')}
             </button>
-            <div style={{ textAlign:'center', margin:'12px 0', fontSize:11, color:'var(--txt4)' }}>{t('login.or')}</div>
-            <button className="lf-btn secondary" onClick={handleSwitchAccount} style={{ fontSize:12 }}>
-              {t('login.changeAccount')}
-            </button>
+            {divider}
+            <GoogleButton onClick={handleLoginGoogle} loading={gLoading} label="Masuk dengan Google" />
+            <div style={{ marginTop:10 }}>
+              <button className="lf-btn secondary" onClick={handleSwitchAccount} style={{ fontSize:12 }}>
+                {t('login.changeAccount')}
+              </button>
+            </div>
             {err && <div className="lf-err">{err}</div>}
           </div>
         )}
@@ -150,6 +183,9 @@ export default function LoginPage() {
               </button>
             )}
 
+            <GoogleButton onClick={handleLoginGoogle} loading={gLoading} label="Masuk dengan Google" />
+            {divider}
+
             <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
             <input
               style={inputStyle} type="email" inputMode="email" placeholder="email@gmail.com"
@@ -169,11 +205,7 @@ export default function LoginPage() {
             <button className="lf-btn" onClick={handleLogin} disabled={loading}>
               {loading ? t('common.loading') : t('login.submit')}
             </button>
-            <div style={{ textAlign:'center', margin:'12px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
-              <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
-              <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
-            </div>
-            <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
+            <div style={{ textAlign:'center', marginTop:14, fontSize:11, color:'var(--txt3)' }}>
               {t('login.noAccount')}{' '}
               <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={() => { setState('register'); setErr(''); }}>
                 {t('login.registerHere')}
@@ -190,6 +222,10 @@ export default function LoginPage() {
                 {t('login.createAccount')}
               </div>
             </div>
+
+            <GoogleButton onClick={handleLoginGoogle} loading={gLoading} label="Daftar dengan Google" />
+            {divider}
+
             {([t('login.email').toUpperCase(), t('login.passwordMin6').toUpperCase(), t('login.username').toUpperCase()] as const).map((label, i) => {
               const vals  = [rEmail, rPass, rName];
               const types = ['email','password','text'] as const;
@@ -212,11 +248,7 @@ export default function LoginPage() {
             <button className="lf-btn" onClick={handleRegister} disabled={rLoading}>
               {rLoading ? t('common.loading') : t('login.registerSubmit')}
             </button>
-            <div style={{ textAlign:'center', margin:'12px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
-              <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
-              <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
-            </div>
-            <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
+            <div style={{ textAlign:'center', marginTop:14, fontSize:11, color:'var(--txt3)' }}>
               {t('login.hasAccount')}{' '}
               <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={() => { setState('form'); setRErr(''); }}>
                 {t('login.loginHere')}

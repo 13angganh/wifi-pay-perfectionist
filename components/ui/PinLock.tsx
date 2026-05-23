@@ -23,13 +23,14 @@ export default function PinLock() {
     useRef<HTMLInputElement>(null),
   ];
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     refs[0].current?.focus();
     // Cek biometric tersedia dan credential sudah terdaftar
     if (settings.biometricEnabled && hasBiometricCred()) {
       isBiometricAvailable().then(ok => setBioAvail(ok));
     }
+    // refs[0] dan settings.biometricEnabled stabil — hanya perlu run sekali saat mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!settings.pinEnabled || pinUnlocked) return null;

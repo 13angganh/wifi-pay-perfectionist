@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import { doLogin, doRegister, doLoginGoogle, switchAccount, getRememberedCred } from '@/hooks/useAuth';
+import { doLogin, doRegister, doLoginGoogle, doResetPassword, switchAccount, getRememberedCred } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
 
 type LoginState = 'remembered' | 'form' | 'register';
@@ -56,6 +56,8 @@ export default function LoginPage() {
   const [err,        setErr]        = useState('');
   const [loading,    setLoading]    = useState(false);
   const [gLoading,   setGLoading]   = useState(false);
+  const [resetSent,   setResetSent]   = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [rEmail,     setREmail]     = useState('');
   const [rPass,      setRPass]      = useState('');
   const [rName,      setRName]      = useState('');
@@ -90,6 +92,15 @@ export default function LoginPage() {
     setGLoading(false);
     if (res.error) { setErr(res.error); return; }
     router.replace('/dashboard');
+  }
+
+  async function handleReset() {
+    if (!email) { setErr('Masukkan email dulu.'); return; }
+    setResetLoading(true); setErr('');
+    await doResetPassword(email);
+    setResetLoading(false);
+    setResetSent(true);
+    setTimeout(() => setResetSent(false), 5000);
   }
 
   async function handleRegister() {
@@ -205,7 +216,20 @@ export default function LoginPage() {
             <button className="lf-btn" onClick={handleLogin} disabled={loading}>
               {loading ? t('common.loading') : t('login.submit')}
             </button>
-            <div style={{ textAlign:'center', marginTop:14, fontSize:11, color:'var(--txt3)' }}>
+            {resetSent && (
+              <div style={{ fontSize:11, color:'var(--c-lunas)', textAlign:'center', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)', marginBottom:8 }}>
+                ✓ Link reset dikirim ke {email} — cek inbox
+              </div>
+            )}
+            <div style={{ textAlign:'center', marginTop:4, marginBottom:10 }}>
+              <span
+                style={{ fontSize:11, color:'var(--txt3)', cursor:'pointer', textDecoration:'underline' }}
+                onClick={handleReset}
+              >
+                {resetLoading ? 'Mengirim...' : 'Lupa password?'}
+              </span>
+            </div>
+            <div style={{ textAlign:'center', marginTop:4, fontSize:11, color:'var(--txt3)' }}>
               {t('login.noAccount')}{' '}
               <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={() => { setState('register'); setErr(''); }}>
                 {t('login.registerHere')}

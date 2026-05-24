@@ -36,28 +36,48 @@ export function doJSONBackup(data: AppData): void {
 }
 
 // ── Share via Web Share API (Gmail, WhatsApp, Drive, dll) ──
-// Return true jika berhasil, false jika tidak support atau dibatalkan
 export async function doJSONShare(data: AppData): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  if (!navigator.share) return false;
+  if (typeof window === 'undefined' || !navigator.share) return false;
 
   const { blob, filename } = makeBackupBlob(data);
-  const file = new File([blob], filename, { type: 'application/json' });
-
-  // Cek apakah browser support share file
-  if (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [file] })) return false;
 
   try {
-    await navigator.share({
-      title: 'WiFi Pay Backup',
-      text:  `Backup data WiFi Pay — ${new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}`,
-      files: [file],
-    });
+    // Coba share dengan file terlebih dulu
+    const file = new File([blob], filename, { type: 'application/json' });
+    const canShareFile = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
+
+    if (canShareFile) {
+      await navigator.share({
+        title: 'WiFi Pay Backup',
+        text:  `Backup data WiFi Pay — ${new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}`,
+        files: [file],
+      });
+    } else {
+      // Fallback: share URL object (beberapa browser tidak support file share)
+      const url = URL.createObjectURL(blob);
+      await navigator.share({
+        title: 'WiFi Pay Backup',
+        text:  `Backup data WiFi Pay — ${new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}
+File: ${filename}`,
+        url,
+      });
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
     markBackupDone();
     return true;
-  } catch {
-    // User membatalkan share — bukan error
-    return false;
+  } catch (e: unknown) {
+    // AbortError = user cancel — bukan error
+    if (e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError') {
+      return false;
+    }
+    // Jika share sama sekali gagal, fallback ke download
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    markBackupDone();
+    return true; // anggap sukses karena sudah download
   }
 }
 

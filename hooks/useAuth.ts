@@ -13,6 +13,7 @@ import {
   linkWithPopup,
   GoogleAuthProvider,
   verifyBeforeUpdateEmail,
+  sendPasswordResetEmail,
   updateProfile,
   signOut,
   browserLocalPersistence,
@@ -226,6 +227,22 @@ export async function doUpdateEmail(newEmail: string): Promise<{ error?: string 
     }
     if (code === 'auth/requires-recent-login') {
       return { error: 'Sesi kedaluwarsa. Logout lalu login ulang, kemudian coba lagi.' };
+    }
+    return { error: friendlyAuthError(code) };
+  }
+}
+
+// ── Reset password via email ──
+export async function doResetPassword(email: string): Promise<{ error?: string }> {
+  try {
+    if (!email.trim()) return { error: 'Masukkan email akun.' };
+    await sendPasswordResetEmail(auth, email.trim());
+    return {};
+  } catch (e: unknown) {
+    const code = getFirebaseCode(e);
+    if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+      // Jangan bocorkan info apakah email terdaftar atau tidak
+      return {};
     }
     return { error: friendlyAuthError(code) };
   }

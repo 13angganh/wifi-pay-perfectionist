@@ -67,7 +67,9 @@ function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, s
   );
 }
 
-export default function SettingsTarifSection() {
+interface TarifProps { section?: 'export' | 'wa' | 'quickpay' | 'all' }
+
+export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
   const { settings, updateSettings, appData } = useAppStore();
   const t = useT();
   const lang = settings.language ?? 'id';
@@ -164,7 +166,7 @@ export default function SettingsTarifSection() {
   return (
     <>
       {/* Export Data */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'export') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Download size={16} strokeWidth={1.5} /></div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.export')}</div>
@@ -200,10 +202,10 @@ export default function SettingsTarifSection() {
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Share & WA */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'wa') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Share2 size={16} strokeWidth={1.5} /></div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
@@ -247,10 +249,10 @@ export default function SettingsTarifSection() {
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Quick Pay amounts */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'quickpay') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Zap size={16} strokeWidth={1.5} /></div>
           <div>
@@ -282,7 +284,7 @@ export default function SettingsTarifSection() {
         <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px', background:'var(--bg3)', borderRadius:'var(--r-xs)' }}>
           {t('settings.quickPayNote')}
         </div>
-      </div>
+      </div>}
     </>
   );
 }

@@ -1,22 +1,20 @@
-// components/features/settings/SettingsView.tsx — Fase 3: assembler only
-// SettingsView hanya merakit section-section yang sudah dipecah
+// components/features/settings/SettingsView.tsx
 'use client';
 
-import { Settings, Shield, Fingerprint, Mail, Map, Tag, Sliders } from 'lucide-react';
+import { Settings, Shield, Fingerprint, Mail, Map, Download, MessageCircle, Zap, Sun, Globe, Calendar, Info } from 'lucide-react';
 import { useT } from '@/hooks/useT';
+import { useAppStore } from '@/store/useAppStore';
 import SettingsPinSection      from './SettingsPinSection';
 import SettingsBiometricSection from './SettingsBiometricSection';
-import SettingsEmailSection      from './SettingsEmailSection';
+import SettingsEmailSection     from './SettingsEmailSection';
 import SettingsZoneSection      from './SettingsZoneSection';
 import SettingsTarifSection     from './SettingsTarifSection';
 import SettingsAppSection       from './SettingsAppSection';
 import CollapsibleSection       from './CollapsibleSection';
-import { useAppStore } from '@/store/useAppStore';
 
 export default function SettingsView() {
-  const t = useT();
-
-  const { settings } = useAppStore();
+  const t      = useT();
+  const { settings, theme } = useAppStore();
 
   return (
     <div>
@@ -24,33 +22,30 @@ export default function SettingsView() {
         <Settings size={18} strokeWidth={1.5} /> {t('settings.pageTitle')}
       </div>
 
-      {/* PIN Security */}
+      {/* PIN Keamanan */}
       <CollapsibleSection
         title="PIN Keamanan"
         icon={<Shield size={16} strokeWidth={1.5} />}
         badge={settings.pinEnabled ? 'Aktif' : 'Nonaktif'}
         badgeColor={settings.pinEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
-        defaultOpen={false}
       >
         <SettingsPinSection />
       </CollapsibleSection>
 
-      {/* Biometrik */}
+      {/* Sidik Jari & Face ID */}
       <CollapsibleSection
         title="Sidik Jari & Face ID"
         icon={<Fingerprint size={16} strokeWidth={1.5} />}
         badge={settings.biometricEnabled ? 'Aktif' : 'Nonaktif'}
         badgeColor={settings.biometricEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
-        defaultOpen={false}
       >
         <SettingsBiometricSection />
       </CollapsibleSection>
 
-      {/* Ubah Email */}
+      {/* Email & Password */}
       <CollapsibleSection
-        title="Ubah Email Akun"
+        title="Email & Reset Password"
         icon={<Mail size={16} strokeWidth={1.5} />}
-        defaultOpen={false}
       >
         <SettingsEmailSection />
       </CollapsibleSection>
@@ -59,27 +54,68 @@ export default function SettingsView() {
       <CollapsibleSection
         title="Manajemen Zona"
         icon={<Map size={16} strokeWidth={1.5} />}
-        defaultOpen={false}
       >
         <SettingsZoneSection />
       </CollapsibleSection>
 
-      {/* Tarif & Quick Pay */}
+      {/* Export Data — hanya komponen ExportSection dari SettingsTarifSection */}
       <CollapsibleSection
-        title="Tarif & Quick Pay"
-        icon={<Tag size={16} strokeWidth={1.5} />}
-        defaultOpen={false}
+        title="Export Data"
+        icon={<Download size={16} strokeWidth={1.5} />}
       >
-        <SettingsTarifSection />
+        <SettingsTarifSection section="export" />
       </CollapsibleSection>
 
-      {/* Preferensi Aplikasi */}
+      {/* Ringkasan WhatsApp */}
       <CollapsibleSection
-        title="Preferensi Aplikasi"
-        icon={<Sliders size={16} strokeWidth={1.5} />}
-        defaultOpen={false}
+        title="Ringkasan WhatsApp"
+        icon={<MessageCircle size={16} strokeWidth={1.5} />}
       >
-        <SettingsAppSection />
+        <SettingsTarifSection section="wa" />
+      </CollapsibleSection>
+
+      {/* Quick Pay */}
+      <CollapsibleSection
+        title="Quick Pay"
+        icon={<Zap size={16} strokeWidth={1.5} />}
+      >
+        <SettingsTarifSection section="quickpay" />
+      </CollapsibleSection>
+
+      {/* Tema Tampilan */}
+      <CollapsibleSection
+        title="Tema Tampilan"
+        icon={<Sun size={16} strokeWidth={1.5} />}
+        badge={theme === 'light' ? 'Terang' : theme === 'gold' ? 'Emas' : 'Gelap'}
+      >
+        <SettingsAppSection section="theme" />
+      </CollapsibleSection>
+
+      {/* Bahasa */}
+      <CollapsibleSection
+        title="Bahasa"
+        icon={<Globe size={16} strokeWidth={1.5} />}
+        badge={settings.language === 'en' ? 'English' : 'Indonesia'}
+      >
+        <SettingsAppSection section="language" />
+      </CollapsibleSection>
+
+      {/* Tanggal Otomatis */}
+      <CollapsibleSection
+        title="Tanggal Bayar Otomatis"
+        icon={<Calendar size={16} strokeWidth={1.5} />}
+        badge={settings.autoDate ? 'Otomatis' : 'Manual'}
+        badgeColor={settings.autoDate ? 'var(--c-lunas)' : 'var(--txt4)'}
+      >
+        <SettingsAppSection section="autodate" />
+      </CollapsibleSection>
+
+      {/* Info Aplikasi */}
+      <CollapsibleSection
+        title="Info Aplikasi"
+        icon={<Info size={16} strokeWidth={1.5} />}
+      >
+        <SettingsAppSection section="info" />
       </CollapsibleSection>
     </div>
   );

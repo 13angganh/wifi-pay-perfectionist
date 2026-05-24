@@ -1,7 +1,6 @@
 // ══════════════════════════════════════════
 // lib/export.excel.ts — PDF & Excel exports
-// Dipecah dari export.ts (task 1.15)
-// CDN-loaded jsPDF + SheetJS — any justified: no public TS typings for CDN globals
+// v11.3: jsPDF via npm (bukan CDN) — eliminasi race condition
 // ══════════════════════════════════════════
 
 import type { AppData } from '@/types';
@@ -9,11 +8,10 @@ import { MONTHS } from './constants';
 import { getPay } from './payment';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-interface WindowWithLibs extends Window {
-  jspdf: { jsPDF: new (...args: any[]) => any };
-  XLSX: any;
-}
-const win = (typeof window !== 'undefined' ? window : {}) as WindowWithLibs;
+// SheetJS tetap via CDN global (XLSX)
+interface WindowWithXLSX extends Window { XLSX: any; }
+const win = (typeof window !== 'undefined' ? window : {}) as WindowWithXLSX;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ── Download helper ──
 function download(blob: Blob, filename: string) {
@@ -23,22 +21,18 @@ function download(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ── PDF ──
+// ── PDF via npm jspdf ──
 export async function generatePDF(
   data: AppData, zone: string, year: number, month: number | null
 ): Promise<{ blob: Blob; filename: string }> {
-  // Guard: tunggu hingga jsPDF tersedia (max 5 detik)
-  if (!win.jspdf?.jsPDF) {
-    await new Promise<void>((resolve, reject) => {
-      const start = Date.now();
-      const check = setInterval(() => {
-        if (win.jspdf?.jsPDF) { clearInterval(check); resolve(); }
-        else if (Date.now() - start > 5000) { clearInterval(check); reject(new Error('jsPDF tidak tersedia')); }
-      }, 100);
-    });
-  }
-  const { jsPDF } = win.jspdf;
+  // Dynamic import agar tidak bloat initial bundle
+  const { default: jsPDF }    = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+
+  // Daftarkan plugin autotable
+  autoTable(doc, { head: [[]], body: [] }); // init
 
   const mems =
     zone === 'ALL'
@@ -76,13 +70,13 @@ export async function generatePDF(
     foot = [['','TOTAL',...totals.map(t => t.toLocaleString('id-ID')), totals.reduce((a,b) => a+b, 0).toLocaleString('id-ID')]];
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     head, body, foot, startY: 26,
-    styles:          { fontSize:8, cellPadding:2 },
-    headStyles:      { fillColor:[30,34,49],  textColor:[170,170,160] },
-    footStyles:      { fillColor:[20,24,36],  textColor:[90,200,160], fontStyle:'bold' },
+    styles:             { fontSize:8, cellPadding:2 },
+    headStyles:         { fillColor:[30,34,49],  textColor:[170,170,160] },
+    footStyles:         { fillColor:[20,24,36],  textColor:[90,200,160], fontStyle:'bold' },
     alternateRowStyles: { fillColor:[15,18,28] },
-    margin:          { left:14, right:14 },
+    margin:             { left:14, right:14 },
   });
 
   const blob     = doc.output('blob');
@@ -90,11 +84,14 @@ export async function generatePDF(
   return { blob, filename };
 }
 
-// ── Excel ──
+// ── Excel via SheetJS CDN ──
 export function generateExcel(
   data: AppData, zone: string, year: number, month: number | null
 ): { blob: Blob; filename: string } {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const XLSX = win.XLSX;
+  if (!XLSX) throw new Error('SheetJS belum tersedia');
+
   const mems =
     zone === 'ALL'
       ? [...data.krsMembers.map(n => ({ n, z:'KRS' })), ...data.slkMembers.map(n => ({ n, z:'SLK' }))]
@@ -133,10 +130,10 @@ export function generateExcel(
   );
   const filename = `wifi-pay-${zone}-${month !== null ? MONTHS[month]+'-' : ''}${year}.xlsx`;
   return { blob, filename };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
-// ── Download PDF helper (untuk ExportModal) ──
+// ── Download blob helper ──
 export function downloadBlob(blob: Blob, filename: string) {
   download(blob, filename);
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

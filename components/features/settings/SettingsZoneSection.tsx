@@ -9,14 +9,13 @@ import { saveDB } from '@/lib/db';
 import { useT } from '@/hooks/useT';
 import type { CustomZone } from '@/types';
 import {
-  Settings, ChevronDown, ChevronUp, Check, X, Plus, Edit2, Eye, EyeOff,
+  Check, X, Plus, Edit2, Eye, EyeOff,
 } from 'lucide-react';
 
 export default function SettingsZoneSection() {
   const { settings, updateSettings, appData, setAppData, uid, userEmail, setSyncStatus } = useAppStore();
   const t = useT();
 
-  const [zonaOpen,     setZonaOpen]     = useState(false);
   const [editingZona,  setEditingZona]  = useState<string | null>(null);
   const [editZonaVal,  setEditZonaVal]  = useState('');
   const [addZonaOpen,  setAddZonaOpen]  = useState(false);
@@ -122,24 +121,8 @@ export default function SettingsZoneSection() {
   }
 
   return (
-    <div style={{ background:'var(--bg2)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-md)', padding:16, marginBottom:10, boxShadow:'var(--shadow-md)' }}>
-      <button
-        onClick={() => setZonaOpen(v => !v)}
-        style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', background:'none', border:'none', cursor:'pointer', padding:0, color:'var(--txt)' }}
-      >
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ color:'var(--zc)' }}><Settings size={16} strokeWidth={1.5} /></div>
-          <div style={{ textAlign:'left' }}>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13 }}>{t('settings.zones')}</div>
-            <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{t('settings.zonesNote').split('.')[0]}</div>
-          </div>
-        </div>
-        {zonaOpen ? <ChevronUp size={16} color="var(--txt3)" /> : <ChevronDown size={16} color="var(--txt3)" />}
-      </button>
-
-      {zonaOpen && (
-        <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid var(--border2)' }}>
-          {allZones.map(({ key: z, color: zColor, isCustom }) => {
+    <div>
+      {allZones.map(({ key: z, color: zColor, isCustom }) => {
             const isHidden  = zonaHidden.includes(z);
             const memCount  = z === 'KRS' ? appData.krsMembers.length
                             : z === 'SLK' ? appData.slkMembers.length
@@ -204,7 +187,7 @@ export default function SettingsZoneSection() {
             );
           })}
 
-          {addZonaOpen ? (
+      {addZonaOpen ? (
             <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'12px', marginTop:8 }}>
               <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>{t('settings.addZone').toUpperCase()}</div>
               <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:10 }}>
@@ -239,11 +222,9 @@ export default function SettingsZoneSection() {
             </button>
           )}
 
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
+      <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
             {t('settings.zonesNote')}
           </div>
-        </div>
-      )}
     </div>
   );
 }

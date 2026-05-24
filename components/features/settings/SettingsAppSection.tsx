@@ -26,7 +26,9 @@ function ToggleChip({ label, active, onClick }: { label:string; active:boolean; 
   );
 }
 
-export default function SettingsAppSection() {
+interface AppProps { section?: 'theme' | 'language' | 'autodate' | 'info' | 'all' }
+
+export default function SettingsAppSection({ section = 'all' }: AppProps) {
   const { settings, updateSettings, theme, setTheme } = useAppStore();
   const t = useT();
 
@@ -72,7 +74,7 @@ export default function SettingsAppSection() {
   return (
     <>
       {/* Tema */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'theme') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}>
             {theme === 'light' ? <Sun size={16} strokeWidth={1.5} />
@@ -123,10 +125,10 @@ export default function SettingsAppSection() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Bahasa */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'language') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Globe size={16} strokeWidth={1.5} /></div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.language')}</div>
@@ -135,10 +137,10 @@ export default function SettingsAppSection() {
           <ToggleChip label="Indonesia" active={settings.language !== 'en'} onClick={() => { updateSettings({ ...settings, language: 'id' }); showToast('Bahasa: Indonesia'); }} />
           <ToggleChip label="English"   active={settings.language === 'en'} onClick={() => { updateSettings({ ...settings, language: 'en' }); showToast('Language: English'); }} />
         </div>
-      </div>
+      </div>}
 
       {/* Tanggal Bayar */}
-      <div style={cardStyle}>
+      {(section === 'all' || section === 'autodate') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Calendar size={16} strokeWidth={1.5} /></div>
           <div>
@@ -155,10 +157,10 @@ export default function SettingsAppSection() {
         <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.5 }}>
           {settings.autoDate ? t('settings.autoDate.noteAuto') : t('settings.autoDate.noteManual')}
         </div>
-      </div>
+      </div>}
 
       {/* App Info */}
-      <div style={{ ...cardStyle, textAlign:'center' }}>
+      {(section === 'all' || section === 'info') && <div style={{ ...cardStyle, textAlign:'center' }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
           <div style={{
             width:52, height:52, borderRadius:13, overflow:'hidden',
@@ -173,7 +175,7 @@ export default function SettingsAppSection() {
             <div>Server: Singapore</div>
           </div>
         </div>
-      </div>
+      </div>}
     </>
   );
 }

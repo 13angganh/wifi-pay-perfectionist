@@ -4,14 +4,16 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { doUpdateEmail } from '@/hooks/useAuth';
+import { doUpdateEmail, doResetPassword } from '@/hooks/useAuth';
 import { showToast } from '@/components/ui/Toast';
 import { Mail, CheckCircle2 } from 'lucide-react';
 
 export default function SettingsEmailSection() {
   const { userEmail } = useAppStore();
   const [newEmail,  setNewEmail]  = useState('');
-  const [loading,   setLoading]   = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [resetSent,  setResetSent]  = useState(false);
+  const [resetLoad,  setResetLoad]  = useState(false);
   const [sent,      setSent]      = useState(false);
 
   async function handleUpdate() {
@@ -97,6 +99,38 @@ export default function SettingsEmailSection() {
           </button>
         </>
       )}
+      {/* Reset password */}
+      <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
+        <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:8 }}>
+          Lupa password? Kirim link reset ke email aktif.
+        </div>
+        {resetSent ? (
+          <div style={{ fontSize:11, color:'var(--c-lunas)', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)' }}>
+            ✓ Link reset terkirim ke {userEmail}
+          </div>
+        ) : (
+          <button
+            onClick={async () => {
+              if (!userEmail) return;
+              setResetLoad(true);
+              await doResetPassword(userEmail);
+              setResetLoad(false);
+              setResetSent(true);
+              setTimeout(() => setResetSent(false), 8000);
+            }}
+            disabled={resetLoad}
+            style={{
+              width:'100%', padding:'9px 14px', borderRadius:'var(--r-sm)',
+              background:'var(--bg3)', border:'1px solid var(--border)',
+              color:'var(--txt2)', cursor: resetLoad ? 'not-allowed' : 'pointer',
+              fontSize:12, fontWeight:600, fontFamily:"var(--font-sans),sans-serif",
+              transition:'all var(--t-fast)', opacity: resetLoad ? 0.6 : 1,
+            }}
+          >
+            {resetLoad ? 'Mengirim...' : '🔑 Kirim Link Reset Password'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

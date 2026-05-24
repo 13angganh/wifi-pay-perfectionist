@@ -27,6 +27,16 @@ function download(blob: Blob, filename: string) {
 export async function generatePDF(
   data: AppData, zone: string, year: number, month: number | null
 ): Promise<{ blob: Blob; filename: string }> {
+  // Guard: tunggu hingga jsPDF tersedia (max 5 detik)
+  if (!win.jspdf?.jsPDF) {
+    await new Promise<void>((resolve, reject) => {
+      const start = Date.now();
+      const check = setInterval(() => {
+        if (win.jspdf?.jsPDF) { clearInterval(check); resolve(); }
+        else if (Date.now() - start > 5000) { clearInterval(check); reject(new Error('jsPDF tidak tersedia')); }
+      }, 100);
+    });
+  }
   const { jsPDF } = win.jspdf;
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
 

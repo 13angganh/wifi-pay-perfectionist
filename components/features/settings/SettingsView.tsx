@@ -2,17 +2,21 @@
 // SettingsView hanya merakit section-section yang sudah dipecah
 'use client';
 
-import { Settings } from 'lucide-react';
+import { Settings, Shield, Fingerprint, Mail, Map, Tag, Sliders } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import SettingsPinSection      from './SettingsPinSection';
 import SettingsBiometricSection from './SettingsBiometricSection';
 import SettingsEmailSection      from './SettingsEmailSection';
-import SettingsZoneSection   from './SettingsZoneSection';
-import SettingsTarifSection  from './SettingsTarifSection';
-import SettingsAppSection    from './SettingsAppSection';
+import SettingsZoneSection      from './SettingsZoneSection';
+import SettingsTarifSection     from './SettingsTarifSection';
+import SettingsAppSection       from './SettingsAppSection';
+import CollapsibleSection       from './CollapsibleSection';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function SettingsView() {
   const t = useT();
+
+  const { settings } = useAppStore();
 
   return (
     <div>
@@ -20,23 +24,63 @@ export default function SettingsView() {
         <Settings size={18} strokeWidth={1.5} /> {t('settings.pageTitle')}
       </div>
 
-      {/* KRITIS: PIN Security */}
-      <SettingsPinSection />
+      {/* PIN Security */}
+      <CollapsibleSection
+        title="PIN Keamanan"
+        icon={<Shield size={16} strokeWidth={1.5} />}
+        badge={settings.pinEnabled ? 'Aktif' : 'Nonaktif'}
+        badgeColor={settings.pinEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
+        defaultOpen={false}
+      >
+        <SettingsPinSection />
+      </CollapsibleSection>
 
-      {/* KRITIS: Biometrik (sidik jari / face ID) */}
-      <SettingsBiometricSection />
+      {/* Biometrik */}
+      <CollapsibleSection
+        title="Sidik Jari & Face ID"
+        icon={<Fingerprint size={16} strokeWidth={1.5} />}
+        badge={settings.biometricEnabled ? 'Aktif' : 'Nonaktif'}
+        badgeColor={settings.biometricEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
+        defaultOpen={false}
+      >
+        <SettingsBiometricSection />
+      </CollapsibleSection>
 
-      {/* Ubah email akun */}
-      <SettingsEmailSection />
+      {/* Ubah Email */}
+      <CollapsibleSection
+        title="Ubah Email Akun"
+        icon={<Mail size={16} strokeWidth={1.5} />}
+        defaultOpen={false}
+      >
+        <SettingsEmailSection />
+      </CollapsibleSection>
 
-      {/* KRITIS: Zona Management */}
-      <SettingsZoneSection />
+      {/* Manajemen Zona */}
+      <CollapsibleSection
+        title="Manajemen Zona"
+        icon={<Map size={16} strokeWidth={1.5} />}
+        defaultOpen={false}
+      >
+        <SettingsZoneSection />
+      </CollapsibleSection>
 
-      {/* PREFERENSI: Export, Share, Quick Pay */}
-      <SettingsTarifSection />
+      {/* Tarif & Quick Pay */}
+      <CollapsibleSection
+        title="Tarif & Quick Pay"
+        icon={<Tag size={16} strokeWidth={1.5} />}
+        defaultOpen={false}
+      >
+        <SettingsTarifSection />
+      </CollapsibleSection>
 
-      {/* PREFERENSI: Bahasa, Tanggal, App Info */}
-      <SettingsAppSection />
+      {/* Preferensi Aplikasi */}
+      <CollapsibleSection
+        title="Preferensi Aplikasi"
+        icon={<Sliders size={16} strokeWidth={1.5} />}
+        defaultOpen={false}
+      >
+        <SettingsAppSection />
+      </CollapsibleSection>
     </div>
   );
 }

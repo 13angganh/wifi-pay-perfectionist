@@ -7,7 +7,7 @@
 
 import { AlertTriangle, CheckCircle2, ChevronRight, Wallet, Database, Share2 } from 'lucide-react';
 import { rp } from '@/lib/helpers';
-import { doJSONBackup } from '@/lib/export.json';
+import { doJSONBackup, doJSONShare, isShareSupported } from '@/lib/export.json';
 import { doWASummary } from '@/lib/export.wa';
 import { showToast } from '@/components/ui/Toast';
 import { useT } from '@/hooks/useT';
@@ -91,20 +91,34 @@ export default function DashboardRecentActivity(p: Props) {
         <ChevronRight size={16} style={{ color:'var(--txt4)', flexShrink:0 }} />
       </div>
 
-      {/* Backup */}
-      <div style={{ ...card, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>
+      {/* Backup — 2 pilihan: Download + Share */}
+      <div style={card}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
           <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Database size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.lastBackup')}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:2 }}>{p.backupLbl}</div>
+          <div style={{ fontSize:10, color:'var(--txt4)' }}>{p.backupLbl}</div>
         </div>
-        <button
-          style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', padding:'8px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, transition:'all var(--t-fast)', minHeight:40 }}
-          onClick={e => { e.stopPropagation(); doJSONBackup(p.appData); showToast('Backup JSON berhasil!'); }}
-        >
-          {t('dashboard.backupNow')}
-        </button>
+        <div style={{ display:'flex', gap:8 }}>
+          <button
+            style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
+            onClick={() => { doJSONBackup(p.appData); showToast('Backup berhasil diunduh'); }}
+          >
+            <Database size={12} /> Download
+          </button>
+          {isShareSupported() && (
+            <button
+              style={{ flex:1, background:'rgba(201,149,42,0.08)', border:'1px solid rgba(201,149,42,0.25)', color:'var(--zc)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
+              onClick={async () => {
+                const ok = await doJSONShare(p.appData);
+                if (ok) showToast('Backup berhasil dibagikan');
+                else showToast('Share dibatalkan', 'err');
+              }}
+            >
+              <Share2 size={12} /> Bagikan
+            </button>
+          )}
+        </div>
       </div>
 
       {/* WA Summary */}

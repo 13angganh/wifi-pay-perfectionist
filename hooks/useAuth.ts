@@ -177,27 +177,55 @@ export async function doRegister(
   }
 }
 
-// ── Update email (kirim verifikasi ke email baru) ──
-// Setelah dipanggil, Firebase kirim email verifikasi ke email baru.
-// Email baru aktif setelah user klik link verifikasi di inbox.
+// ── Update email dengan re-auth otomatis ──
+// Firebase mensyaratkan sesi segar untuk operasi sensitif.
+// Solusi: reauthenticate via Google popup dulu, lalu update email.
 export async function doUpdateEmail(newEmail: string): Promise<{ error?: string }> {
   try {
     const user = auth.currentUser;
     if (!user) return { error: 'Tidak ada sesi aktif.' };
-    // verifyBeforeUpdateEmail: kirim email konfirmasi ke newEmail dulu
-    // Email lama tidak langsung berubah sampai link diklik
+
+    // Coba update langsung dulu
+    try {
+      await verifyBeforeUpdateEmail(user, newEmail);
+      return {};
+    } catch (firstErr: unknown) {
+      const code = getFirebaseCode(firstErr);
+      if (code !== 'auth/requires-recent-login') {
+        // Error lain (bukan sesi) — langsung throw
+        throw firstErr;
+      }
+    }
+
+    // Sesi expired — reauthenticate dulu
+    // Cek apakah user punya Google provider
+    const hasGoogle = user.providerData.some(p => p.providerId === 'google.com');
+    if (hasGoogle) {
+      // Reauthenticate via Google popup
+      const { reauthenticateWithPopup } = await import('firebase/auth');
+      await reauthenticateWithPopup(user, googleProvider);
+    } else {
+      // User hanya email/password — tidak bisa reauthenticate otomatis tanpa password
+      return { error: 'Sesi kedaluwarsa. Logout lalu login ulang untuk mengubah email.' };
+    }
+
+    // Sekarang coba lagi setelah reauthenticate
     await verifyBeforeUpdateEmail(user, newEmail);
     return {};
+
   } catch (e: unknown) {
     const code = getFirebaseCode(e);
-    if (code === 'auth/requires-recent-login') {
-      return { error: 'Sesi terlalu lama. Logout lalu login ulang, kemudian coba lagi.' };
+    if (code === 'auth/popup-closed-by-user' || code === AuthErrorCodes.POPUP_CLOSED_BY_USER) {
+      return { error: 'Verifikasi dibatalkan.' };
     }
     if (code === 'auth/email-already-in-use') {
       return { error: 'Email ini sudah dipakai akun lain.' };
     }
     if (code === 'auth/invalid-email') {
       return { error: 'Format email tidak valid.' };
+    }
+    if (code === 'auth/requires-recent-login') {
+      return { error: 'Sesi kedaluwarsa. Logout lalu login ulang, kemudian coba lagi.' };
     }
     return { error: friendlyAuthError(code) };
   }

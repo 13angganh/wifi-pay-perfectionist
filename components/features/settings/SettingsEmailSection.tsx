@@ -32,13 +32,8 @@ export default function SettingsEmailSection() {
     }
   }
 
-  const cardStyle: React.CSSProperties = {
-    background:'var(--bg2)', border:'1px solid rgba(255,255,255,0.08)',
-    borderRadius:'var(--r-md)', padding:16, marginBottom:10,
-  };
-
   return (
-    <div style={cardStyle}>
+    <div>
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
         <Mail size={16} strokeWidth={1.5} style={{ color:'var(--zc)', flexShrink:0 }} />

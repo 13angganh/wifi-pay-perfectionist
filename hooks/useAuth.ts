@@ -12,6 +12,7 @@ import {
   signInWithPopup,
   linkWithPopup,
   GoogleAuthProvider,
+  verifyBeforeUpdateEmail,
   updateProfile,
   signOut,
   browserLocalPersistence,
@@ -173,6 +174,32 @@ export async function doRegister(
     return {};
   } catch (e: unknown) {
     return { error: friendlyAuthError(getFirebaseCode(e)) };
+  }
+}
+
+// ── Update email (kirim verifikasi ke email baru) ──
+// Setelah dipanggil, Firebase kirim email verifikasi ke email baru.
+// Email baru aktif setelah user klik link verifikasi di inbox.
+export async function doUpdateEmail(newEmail: string): Promise<{ error?: string }> {
+  try {
+    const user = auth.currentUser;
+    if (!user) return { error: 'Tidak ada sesi aktif.' };
+    // verifyBeforeUpdateEmail: kirim email konfirmasi ke newEmail dulu
+    // Email lama tidak langsung berubah sampai link diklik
+    await verifyBeforeUpdateEmail(user, newEmail);
+    return {};
+  } catch (e: unknown) {
+    const code = getFirebaseCode(e);
+    if (code === 'auth/requires-recent-login') {
+      return { error: 'Sesi terlalu lama. Logout lalu login ulang, kemudian coba lagi.' };
+    }
+    if (code === 'auth/email-already-in-use') {
+      return { error: 'Email ini sudah dipakai akun lain.' };
+    }
+    if (code === 'auth/invalid-email') {
+      return { error: 'Format email tidak valid.' };
+    }
+    return { error: friendlyAuthError(code) };
   }
 }
 

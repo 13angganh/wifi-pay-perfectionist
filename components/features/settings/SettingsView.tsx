@@ -6,6 +6,7 @@ import { Settings } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import SettingsPinSection      from './SettingsPinSection';
 import SettingsBiometricSection from './SettingsBiometricSection';
+import SettingsEmailSection      from './SettingsEmailSection';
 import SettingsZoneSection   from './SettingsZoneSection';
 import SettingsTarifSection  from './SettingsTarifSection';
 import SettingsAppSection    from './SettingsAppSection';
@@ -24,6 +25,9 @@ export default function SettingsView() {
 
       {/* KRITIS: Biometrik (sidik jari / face ID) */}
       <SettingsBiometricSection />
+
+      {/* Ubah email akun */}
+      <SettingsEmailSection />
 
       {/* KRITIS: Zona Management */}
       <SettingsZoneSection />

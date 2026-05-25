@@ -1,6 +1,4 @@
 // app/offline/ReloadButton.tsx — Client Component
-// Dipecah dari page.tsx karena page.tsx perlu export metadata (Server Component)
-// sedangkan tombol reload butuh onClick (hanya bisa di Client Component).
 'use client';
 
 export default function ReloadButton() {
@@ -8,20 +6,30 @@ export default function ReloadButton() {
     <button
       onClick={() => window.location.reload()}
       style={{
-        marginTop: 8,
-        background: 'var(--zc, #3B82F6)',
-        color: '#fff',
+        background: 'var(--zc, #C9952A)',
         border: 'none',
-        borderRadius: 'var(--r-md, 12px)',
-        padding: '10px 28px',
-        fontFamily: 'var(--font-sans, system-ui), sans-serif',
-        fontWeight: 600,
-        fontSize: 13,
+        borderRadius: 12,
+        color: '#fff',
         cursor: 'pointer',
-        minHeight: 44,
+        fontSize: 14,
+        fontWeight: 700,
+        padding: '13px 36px',
+        fontFamily: 'var(--font-sans, system-ui, sans-serif)',
+        letterSpacing: '.02em',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+        transition: 'opacity 0.2s ease, transform 0.2s ease',
+        minWidth: 180,
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.opacity = '0.85';
+        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.03)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.opacity = '1';
+        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
       }}
     >
-      Muat Ulang
+      Coba Lagi
     </button>
   );
 }

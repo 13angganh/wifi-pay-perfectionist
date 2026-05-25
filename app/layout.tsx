@@ -42,9 +42,9 @@ const antiFOUC = `
 (function() {
   try {
     var t = localStorage.getItem('wp_theme');
+    document.body.classList.remove('light','gold');
     if (t === 'light') document.body.classList.add('light');
-    else if (t === 'dark') document.body.classList.remove('light');
-    else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.body.classList.add('light');
+    else if (t === 'gold') document.body.classList.add('gold');
   } catch(e) {}
 })();
 `;

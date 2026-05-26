@@ -1,9 +1,14 @@
-// public/sw.js — WiFi Pay Service Worker v3
-// Fix: cache /offline page + proper fallback chain
+// app/sw.js/route.ts — Generate sw.js dengan BUILD_ID dari env
+// Ini memastikan setiap deploy Vercel punya sw.js unik → browser auto-update SW
+import { NextResponse } from 'next/server';
 
-const CACHE_NAME = 'wifipay-v4-202605252101';
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || Date.now().toString(36);
+const CACHE_NAME = `wifipay-v4-${BUILD_ID}`;
 
-// Asset yang di-cache saat install
+const SW_CONTENT = `
+// WiFi Pay Service Worker — build: ${BUILD_ID}
+const CACHE_NAME = '${CACHE_NAME}';
+
 const PRECACHE = [
   '/',
   '/offline',
@@ -11,12 +16,8 @@ const PRECACHE = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
-  '/icon-192-maskable.png',
-  '/icon-512-maskable.png',
-  '/apple-touch-icon.png',
 ];
 
-// ── Install: precache semua asset penting ──
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -25,7 +26,6 @@ self.addEventListener('install', e => {
   );
 });
 
-// ── Activate: hapus cache lama ──
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -36,30 +36,24 @@ self.addEventListener('activate', e => {
   );
 });
 
-// ── Fetch: network-first dengan fallback ──
 self.addEventListener('fetch', e => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Bypass: Firebase, CDN, Google APIs — selalu network
   if (
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis') ||
     url.hostname.includes('firebaseio') ||
     url.hostname.includes('cdnjs') ||
-    url.hostname.includes('fonts.g') ||
-    url.pathname.includes('_next/webpack-hmr')
-  ) {
-    return;
-  }
+    url.pathname.includes('_next/webpack-hmr') ||
+    url.pathname.startsWith('/sw.js')
+  ) return;
 
-  // Hanya handle GET
   if (request.method !== 'GET') return;
 
   e.respondWith(
     fetch(request)
       .then(res => {
-        // Cache response sukses
         if (res && res.status === 200 && res.type === 'basic') {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
@@ -67,26 +61,15 @@ self.addEventListener('fetch', e => {
         return res;
       })
       .catch(async () => {
-        // Offline: coba dari cache
         const cached = await caches.match(request);
         if (cached) return cached;
-
-        // Navigasi ke halaman → tampilkan /offline
         if (request.mode === 'navigate') {
           const offlinePage = await caches.match('/offline');
           if (offlinePage) return offlinePage;
         }
-
-        // Fallback terakhir: halaman root
         const root = await caches.match('/');
         if (root) return root;
-
-        // Tidak ada cache sama sekali
-        return new Response('Offline — tidak ada koneksi internet', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain' },
-        });
+        return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
       })
   );
 });
@@ -94,3 +77,14 @@ self.addEventListener('fetch', e => {
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
+`.trim();
+
+export async function GET() {
+  return new NextResponse(SW_CONTENT, {
+    headers: {
+      'Content-Type':          'application/javascript',
+      'Cache-Control':         'no-cache, no-store, must-revalidate',
+      'Service-Worker-Allowed': '/',
+    },
+  });
+}

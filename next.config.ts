@@ -12,6 +12,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Inject BUILD_ID unik tiap build — dipakai sw.js untuk invalidate cache
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8)
+      ?? process.env.VERCEL_DEPLOYMENT_ID?.slice(0, 8)
+      ?? Date.now().toString(36),
+  },
   async headers() {
     return [
       {

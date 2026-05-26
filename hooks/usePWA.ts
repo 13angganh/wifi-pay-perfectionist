@@ -20,7 +20,7 @@ export function usePWA() {
   // Service Worker registration + update detection
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js').then(reg => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
       reg.update();
       if (reg.waiting) {
         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -29,9 +29,13 @@ export function usePWA() {
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing;
         sw?.addEventListener('statechange', () => {
-          if (sw.state === 'installed') {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            // Ada update tersedia — skip waiting langsung
             sw.postMessage({ type: 'SKIP_WAITING' });
             setUpdateBanner(true);
+          } else if (sw.state === 'installed') {
+            // First install — langsung aktif
+            sw.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });

@@ -40,6 +40,20 @@ export default function MembersView() {
   const [freeName, setFreeName] = useState('');
   const [freeZone, setFreeZone] = useState<Zone>('KRS');
   const [riwOpen,  setRiwOpen]  = useState(false);
+  const [addIP,    setAddIP]    = useState('');
+
+  // IP converter: 10.x.200.2 → ganti oktet ke-2 (misal 13→90)
+  function convertIP(ip: string, fromOctet: string, toOctet: string): string {
+    if (!ip.trim()) return ip;
+    // Match: 10.{from}.*.* atau *.{from}.*.*
+    const parts = ip.trim().split('.');
+    if (parts.length !== 4) return ip; // bukan IPv4 standar
+    if (parts[1] === fromOctet) {
+      parts[1] = toOctet;
+      return parts.join('.');
+    }
+    return ip; // tidak cocok, kembalikan apa adanya
+  }
 
   const t = useT();
   const zone = newMemberZone;
@@ -48,7 +62,6 @@ export default function MembersView() {
   const addRef = {
     name:  useRef<HTMLInputElement>(null),
     id:    useRef<HTMLInputElement>(null),
-    ip:    useRef<HTMLInputElement>(null),
     tarif: useRef<HTMLInputElement>(null),
   };
 
@@ -73,7 +86,7 @@ export default function MembersView() {
   async function addMember() {
     const name  = addRef.name.current?.value.trim().toUpperCase() || '';
     const id    = addRef.id.current?.value.trim()   || '';
-    const ip    = addRef.ip.current?.value.trim()   || '';
+    const ip    = addIP.trim();
     const tarif = addRef.tarif.current?.value.trim() || '';
     if (!name) { showToast(t('members.nameRequired'),'err'); return; }
     const list = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
@@ -84,7 +97,8 @@ export default function MembersView() {
     const newData = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']: list, memberInfo: newInfo };
     await persist(newData, `[ADD] ${tLog('log.action.addMember')} ${zone} - ${name}`, `ID:${id} IP:${ip}`);
     showToast(`${name} ${t('members.added')}`);
-    ['name','id','ip','tarif'].forEach(f => { const el = addRef[f as keyof typeof addRef].current; if(el) el.value=''; });
+    ['name','id','tarif'].forEach(f => { const el = addRef[f as keyof typeof addRef].current; if(el) el.value=''; });
+    setAddIP('');
   }
 
   function openEdit(name: string) {
@@ -262,8 +276,24 @@ export default function MembersView() {
                 </div>
                 <div style={{ gridColumn:'span 2' }}>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
-                  {/* eslint-disable-next-line react-hooks/refs */}
-                  <input ref={addRef.ip} className="af-input" placeholder="192.168.x.x atau http://..." autoComplete="off" />
+                  <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                    <input
+                      className="af-input"
+                      style={{ flex:1 }}
+                      placeholder="192.168.x.x atau http://..."
+                      autoComplete="off"
+                      value={addIP}
+                      onChange={e => setAddIP(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      title="Konversi IP: oktet ke-2 dari 13 → 90"
+                      onClick={() => setAddIP(v => convertIP(v, '13', '90'))}
+                      style={{ flexShrink:0, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)', borderRadius:'var(--r-sm)', padding:'0 8px', fontSize:10, cursor:'pointer', height:32, whiteSpace:'nowrap', fontWeight:600 }}
+                    >
+                      .13→.90
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>

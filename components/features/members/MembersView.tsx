@@ -42,19 +42,6 @@ export default function MembersView() {
   const [riwOpen,  setRiwOpen]  = useState(false);
   const [addIP,    setAddIP]    = useState('');
 
-  // IP converter: 10.x.200.2 → ganti oktet ke-2 (misal 13→90)
-  function convertIP(ip: string, fromOctet: string, toOctet: string): string {
-    if (!ip.trim()) return ip;
-    // Match: 10.{from}.*.* atau *.{from}.*.*
-    const parts = ip.trim().split('.');
-    if (parts.length !== 4) return ip; // bukan IPv4 standar
-    if (parts[1] === fromOctet) {
-      parts[1] = toOctet;
-      return parts.join('.');
-    }
-    return ip; // tidak cocok, kembalikan apa adanya
-  }
-
   const t = useT();
   const zone = newMemberZone;
   const zc   = zone === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)';
@@ -173,6 +160,34 @@ export default function MembersView() {
 
   // Sort
   const getInfo = (n: string) => appData.memberInfo?.[zone+'__'+n] || {};
+
+  // Batch convert IP: ganti oktet ke-2 dari '13' → '90' untuk semua member di semua zona
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function batchConvertIP() {
+    const info     = appData.memberInfo || {};
+    const newInfo  = { ...info };
+    let   count    = 0;
+
+    Object.keys(newInfo).forEach(key => {
+      const ip = String(newInfo[key]?.ip || '');
+      if (!ip) return;
+      const parts = ip.split('.');
+      if (parts.length === 4 && parts[1] === '13') {
+        parts[1] = '90';
+        newInfo[key] = { ...newInfo[key], ip: parts.join('.') };
+        count++;
+      }
+    });
+
+    if (count === 0) {
+      showToast('Tidak ada IP dengan oktet ke-2 = .13 yang ditemukan', 'err');
+      return;
+    }
+
+    const newData = { ...appData, memberInfo: newInfo };
+    await persist(newData, '[IP] Konversi oktet ke-2 .13 → .90', `${count} member diperbarui`);
+    showToast(`${count} IP berhasil dikonversi .13 → .90`);
+  }
   const mems = zone==='KRS' ? [...appData.krsMembers] : zone==='SLK' ? [...appData.slkMembers] : [...(appData.zoneMembers?.[zone] ?? [])];
   const sortFns: Record<SortMode,(a:string,b:string)=>number> = {
     'name-asc':  (a,b) => a.localeCompare(b),
@@ -271,33 +286,20 @@ export default function MembersView() {
                 </div>
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.customerId').toUpperCase()}</div>
-                  {/* eslint-disable-next-line react-hooks/refs */}
                   <input ref={addRef.id} className="af-input" placeholder={t('common.optional')} autoComplete="off" />
                 </div>
                 <div style={{ gridColumn:'span 2' }}>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
-                  <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                    <input
+                  <input
                       className="af-input"
-                      style={{ flex:1 }}
                       placeholder="192.168.x.x atau http://..."
                       autoComplete="off"
                       value={addIP}
                       onChange={e => setAddIP(e.target.value)}
                     />
-                    <button
-                      type="button"
-                      title="Konversi IP: oktet ke-2 dari 13 → 90"
-                      onClick={() => setAddIP(v => convertIP(v, '13', '90'))}
-                      style={{ flexShrink:0, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)', borderRadius:'var(--r-sm)', padding:'0 8px', fontSize:10, cursor:'pointer', height:32, whiteSpace:'nowrap', fontWeight:600 }}
-                    >
-                      .13→.90
-                    </button>
-                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
-                  {/* eslint-disable-next-line react-hooks/refs */}
                   <input ref={addRef.tarif} type="number" inputMode="decimal" className="af-input" placeholder="100" autoComplete="off" />
                 </div>
               </div>

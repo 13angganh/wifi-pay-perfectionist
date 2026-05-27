@@ -161,15 +161,20 @@ export default function MembersView() {
   // Sort
   const getInfo = (n: string) => appData.memberInfo?.[zone+'__'+n] || {};
 
-  // Batch convert IP: ganti oktet ke-2 dari '13' → '90' untuk semua member di semua zona
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Konversi IP zona aktif: oktet ke-2 .13 → .90
   async function batchConvertIP() {
-    const info     = appData.memberInfo || {};
-    const newInfo  = { ...info };
-    let   count    = 0;
+    const info    = appData.memberInfo || {};
+    const newInfo = { ...info };
+    let   count   = 0;
 
-    Object.keys(newInfo).forEach(key => {
-      const ip = String(newInfo[key]?.ip || '');
+    // Hanya proses member di zona yang sedang aktif
+    const zoneMems = zone === 'KRS' ? appData.krsMembers
+                   : zone === 'SLK' ? appData.slkMembers
+                   : (appData.zoneMembers?.[zone] ?? []);
+
+    zoneMems.forEach(name => {
+      const key  = `${zone}__${name}`;
+      const ip   = String(newInfo[key]?.ip || '');
       if (!ip) return;
       const parts = ip.split('.');
       if (parts.length === 4 && parts[1] === '13') {
@@ -180,13 +185,15 @@ export default function MembersView() {
     });
 
     if (count === 0) {
-      showToast('Tidak ada IP dengan oktet ke-2 = .13 yang ditemukan', 'err');
+      showToast(`Tidak ada IP .13 di zona ${zone}`, 'err');
       return;
     }
 
-    const newData = { ...appData, memberInfo: newInfo };
-    await persist(newData, '[IP] Konversi oktet ke-2 .13 → .90', `${count} member diperbarui`);
-    showToast(`${count} IP berhasil dikonversi .13 → .90`);
+    await persist({ ...appData, memberInfo: newInfo },
+      `[IP] Konversi .13→.90 zona ${zone}`,
+      `${count} member diperbarui`
+    );
+    showToast(`${count} IP zona ${zone} berhasil dikonversi .13 → .90`);
   }
   const mems = zone==='KRS' ? [...appData.krsMembers] : zone==='SLK' ? [...appData.slkMembers] : [...(appData.zoneMembers?.[zone] ?? [])];
   const sortFns: Record<SortMode,(a:string,b:string)=>number> = {
@@ -309,13 +316,27 @@ export default function MembersView() {
             </div>
           )}
 
-          {/* Sort */}
-          <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8 }}>
+          {/* Sort + Konversi IP */}
+          <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8, alignItems:'center' }}>
             {(Object.entries(sortLabels) as [SortMode,string][]).map(([k,l]) => (
             <button key={k} onClick={() => setSortMode(k)}
                 style={{ padding:'4px 9px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer', fontSize:10,
                   background:sortMode===k?'var(--zc)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)' }}>{l}</button>
             ))}
+            {/* Konversi IP: oktet ke-2 .13 → .90 untuk zona aktif */}
+            <button
+              title={`Konversi IP zona ${zone}: oktet ke-2 .13 → .90`}
+              onClick={() => showConfirm('🔄',
+                `Konversi semua IP zona ${zone} dari oktet ke-2 ".13" ke ".90"?
+
+Contoh: 10.13.200.2 → 10.90.200.2`,
+                'Konversi',
+                batchConvertIP
+              )}
+              style={{ padding:'4px 9px', borderRadius:'var(--r-full)', border:'1px solid rgba(201,149,42,0.3)', cursor:'pointer', fontSize:10, background:'rgba(201,149,42,0.08)', color:'var(--zc)', fontWeight:700, marginLeft:4 }}
+            >
+              IP .13→.90
+            </button>
           </div>
 
           {/* Search */}

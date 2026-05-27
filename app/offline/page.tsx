@@ -1,6 +1,4 @@
-// app/offline/page.tsx — Halaman offline PWA
-// Konsisten dengan 3 tema: dark (default), light, gold
-// Tema dibaca via inline script sebelum render (sama seperti anti-FOUC di layout.tsx)
+// app/offline/page.tsx
 import type { Metadata } from 'next';
 import ReloadButton from './ReloadButton';
 
@@ -9,52 +7,170 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// Script baca tema dari localStorage sebelum render — cegah flash
-const themeScript = `
-(function(){
-  try{
-    var t=localStorage.getItem('wp_theme');
-    document.body.classList.remove('light','gold');
-    if(t==='light') document.body.classList.add('light');
-    else if(t==='gold') document.body.classList.add('gold');
-  }catch(e){}
-})();
-`;
+// Baca tema dari localStorage sebelum render (cegah flash)
+const themeScript = `(function(){try{var t=localStorage.getItem('wp_theme');document.body.classList.remove('light','gold');if(t==='light')document.body.classList.add('light');else if(t==='gold')document.body.classList.add('gold');}catch(e){}})();`;
 
 export default function OfflinePage() {
   return (
     <>
-      {/* Inject tema sebelum paint */}
       <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'var(--bg, #0F1117)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 32,
-        fontFamily: 'var(--font-sans, system-ui, -apple-system, sans-serif)',
-      }}>
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
-        {/* Icon animasi */}
-        <div style={{
-          width: 88,
-          height: 88,
-          borderRadius: 24,
-          background: 'rgba(var(--offline-icon-bg, 201,149,42), 0.08)',
-          border: '1px solid rgba(var(--offline-icon-border, 201,149,42), 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 24,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-          animation: 'wppulse 2.5s ease-in-out infinite',
-        }}>
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
-            stroke="var(--c-belum, #EF4444)" strokeWidth="1.5"
+        /* ── Token default (dark) ── */
+        :root {
+          --bg:       #0F1117;
+          --bg2:      #181C27;
+          --bg3:      #1E2336;
+          --border:   #252B40;
+          --txt:      #E8EAF0;
+          --txt2:     #B0B8D0;
+          --txt3:     #6B7494;
+          --txt5:     #2D3452;
+          --zc:       #C9952A;
+          --err:      #EF4444;
+          --radius:   14px;
+          --ff:       'Inter', system-ui, sans-serif;
+        }
+        /* ── Light ── */
+        body.light {
+          --bg:     #F8FAFC;
+          --bg2:    #FFFFFF;
+          --bg3:    #F1F3F8;
+          --border: #E2E6F0;
+          --txt:    #0F1117;
+          --txt2:   #374060;
+          --txt3:   #6B7494;
+          --txt5:   #C8CDD8;
+          --zc:     #C9952A;
+        }
+        /* ── Gold ── */
+        body.gold {
+          --bg:     #0C0A06;
+          --bg2:    #141008;
+          --bg3:    #1A1508;
+          --border: #2A2210;
+          --txt:    #F0E8D0;
+          --txt2:   #C8B880;
+          --txt3:   #807040;
+          --txt5:   #302810;
+          --zc:     #E8B84B;
+        }
+
+        html, body {
+          min-height: 100%;
+          background: var(--bg);
+          font-family: var(--ff);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+          position: fixed;
+          inset: 0;
+          background: var(--bg);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 32px 24px;
+          gap: 0;
+        }
+
+        .icon-wrap {
+          width: 88px;
+          height: 88px;
+          border-radius: 24px;
+          background: rgba(239,68,68,0.07);
+          border: 1px solid rgba(239,68,68,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+          animation: pulse 2.4s ease-in-out infinite;
+        }
+        body.gold .icon-wrap {
+          background: rgba(232,184,75,0.07);
+          border-color: rgba(232,184,75,0.2);
+        }
+
+        .badge {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .14em;
+          color: var(--zc);
+          margin-bottom: 10px;
+          opacity: .75;
+        }
+
+        .title {
+          font-size: 22px;
+          font-weight: 800;
+          color: var(--txt);
+          letter-spacing: -.03em;
+          text-align: center;
+          line-height: 1.2;
+          margin-bottom: 10px;
+        }
+
+        .desc {
+          font-size: 13px;
+          color: var(--txt3);
+          max-width: 270px;
+          line-height: 1.7;
+          text-align: center;
+          margin-bottom: 24px;
+        }
+
+        .card {
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 14px 18px;
+          width: 100%;
+          max-width: 290px;
+          margin-bottom: 24px;
+        }
+
+        .card-title {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .1em;
+          color: var(--zc);
+          margin-bottom: 10px;
+        }
+
+        .tip {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 12px;
+          color: var(--txt2);
+          margin-bottom: 7px;
+        }
+        .tip:last-child { margin-bottom: 0; }
+        .tip-icon { font-size: 15px; flex-shrink: 0; }
+
+        .version {
+          margin-top: 20px;
+          font-size: 10px;
+          color: var(--txt5);
+          letter-spacing: .06em;
+        }
+
+        @keyframes pulse {
+          0%,100% { opacity:1; transform:scale(1); }
+          50%      { opacity:.6; transform:scale(.94); }
+        }
+      `}</style>
+
+      <div className="page">
+
+        {/* Icon wifi offline */}
+        <div className="icon-wrap">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none"
+            stroke="var(--err,#EF4444)" strokeWidth="1.5"
             strokeLinecap="round" strokeLinejoin="round">
             <line x1="1" y1="1" x2="23" y2="23"/>
             <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
@@ -66,100 +182,22 @@ export default function OfflinePage() {
           </svg>
         </div>
 
-        {/* App label */}
-        <div style={{
-          fontSize: 10,
-          fontWeight: 800,
-          color: 'var(--zc, #C9952A)',
-          letterSpacing: '.14em',
-          marginBottom: 10,
-          opacity: 0.8,
-        }}>
-          WIFI PAY
+        <div className="badge">WIFI PAY</div>
+        <div className="title">Tidak Ada Koneksi</div>
+        <div className="desc">
+          Pastikan WiFi atau paket data aktif, lalu coba muat ulang.
         </div>
 
-        {/* Judul */}
-        <div style={{
-          fontSize: 22,
-          fontWeight: 800,
-          color: 'var(--txt, #F0F0F0)',
-          letterSpacing: '-0.03em',
-          marginBottom: 10,
-          textAlign: 'center',
-          lineHeight: 1.2,
-        }}>
-          Tidak Ada Koneksi
-        </div>
-
-        {/* Deskripsi */}
-        <div style={{
-          fontSize: 13,
-          color: 'var(--txt3, #6B7494)',
-          maxWidth: 280,
-          lineHeight: 1.7,
-          textAlign: 'center',
-          marginBottom: 28,
-        }}>
-          Pastikan perangkat terhubung ke internet (WiFi atau paket data), lalu coba muat ulang.
-        </div>
-
-        {/* Tips */}
-        <div style={{
-          background: 'var(--bg2, #181C27)',
-          border: '1px solid var(--border, #252B40)',
-          borderRadius: 14,
-          padding: '14px 18px',
-          marginBottom: 28,
-          maxWidth: 300,
-          width: '100%',
-        }}>
-          <div style={{
-            fontSize: 9,
-            color: 'var(--zc, #C9952A)',
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            marginBottom: 10,
-          }}>
-            YANG BISA DILAKUKAN
-          </div>
-          {[
-            ['📶', 'Aktifkan WiFi atau paket data'],
-            ['✈️', 'Pastikan mode pesawat tidak aktif'],
-            ['🔄', 'Muat ulang setelah internet aktif'],
-          ].map(([icon, text]) => (
-            <div key={text} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              marginBottom: 8,
-              fontSize: 12,
-              color: 'var(--txt2, #A1A8C1)',
-            }}>
-              <span style={{ fontSize: 14 }}>{icon}</span>
-              <span>{text}</span>
-            </div>
-          ))}
+        <div className="card">
+          <div className="card-title">YANG BISA DILAKUKAN</div>
+          <div className="tip"><span className="tip-icon">📶</span><span>Aktifkan WiFi atau paket data</span></div>
+          <div className="tip"><span className="tip-icon">✈️</span><span>Pastikan mode pesawat tidak aktif</span></div>
+          <div className="tip"><span className="tip-icon">🔄</span><span>Muat ulang setelah internet aktif</span></div>
         </div>
 
         <ReloadButton />
 
-        <div style={{
-          marginTop: 20,
-          fontSize: 10,
-          color: 'var(--txt5, #2D3452)',
-          letterSpacing: '.06em',
-        }}>
-          WiFi Pay v11.3 Next
-        </div>
-
-        <style>{`
-          @keyframes wppulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.65; transform: scale(0.95); }
-          }
-          /* Pastikan body inherit background dari CSS var */
-          html, body { margin: 0; padding: 0; min-height: 100%; }
-        `}</style>
+        <div className="version">WiFi Pay v11.3 Next</div>
       </div>
     </>
   );

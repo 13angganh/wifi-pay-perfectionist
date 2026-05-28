@@ -1,89 +1,104 @@
 'use client';
 
-import { WifiOff, RefreshCw, Wifi, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { WifiOff, RefreshCw, CheckCircle2, Radio } from 'lucide-react';
 
 export default function OfflinePage() {
   const [online, setOnline] = useState(false);
-  const [retrying, setRetrying] = useState(false);
   const [countdown, setCountdown] = useState(8);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     const onOnline = () => {
       setOnline(true);
-      setRetrying(true);
-      setTimeout(() => window.location.reload(), 1200);
+      setChecking(true);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1200);
     };
 
-    const onOffline = () => setOnline(false);
-
     window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
-
-    const timer = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          if (navigator.onLine) window.location.reload();
-          return 8;
-        }
-        return c - 1;
-      });
-    }, 1000);
 
     return () => {
-      clearInterval(timer);
       window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
     };
   }, []);
 
-  const reconnect = () => {
-    setRetrying(true);
-    setTimeout(() => window.location.reload(), 800);
-  };
+  useEffect(() => {
+    if (online) return;
+
+    const interval = setInterval(() => {
+      setCountdown((v) => {
+        if (v <= 1) {
+          if (navigator.onLine) {
+            window.location.reload();
+          }
+          return 8;
+        }
+        return v - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [online]);
+
+  const statusText = useMemo(() => {
+    if (checking) return 'Menyambungkan ulang aplikasi...';
+    return 'Beberapa data masih bisa diakses secara offline';
+  }, [checking]);
 
   return (
     <main className="offline-root">
-      <div className="offline-ambient offline-ambient-a" />
-      <div className="offline-ambient offline-ambient-b" />
+      <div className="offline-ambient offline-ambient-1" />
+      <div className="offline-ambient offline-ambient-2" />
+      <div className="offline-grid" />
 
-      <section className="offline-card" aria-label="Offline status">
+      <section className="offline-card" aria-label="Status koneksi offline">
         <div className="offline-chip">
-          <span className={`offline-dot ${online ? 'online' : ''}`} />
-          {online ? 'Koneksi kembali tersedia' : 'Mode Offline Aktif'}
+          <Radio size={14} />
+          MODE OFFLINE
         </div>
 
-        <div className="offline-wifi-wrap">
-          <div className="offline-ring" />
-          <div className="offline-ring delay" />
-          <div className="offline-icon">
-            {online ? <Wifi size={38} /> : <WifiOff size={38} />}
+        <div className="wifi-visual" aria-hidden="true">
+          <div className="wifi-ring wifi-ring-1" />
+          <div className="wifi-ring wifi-ring-2" />
+          <div className="wifi-ring wifi-ring-3" />
+          <div className="wifi-core">
+            <WifiOff size={34} />
           </div>
         </div>
 
-        <h1>Koneksi Terputus</h1>
+        <div className="offline-copy">
+          <h1>Koneksi Terputus</h1>
+          <p>{statusText}</p>
+        </div>
 
-        <p className="offline-desc">
-          Beberapa data masih bisa diakses secara offline. Aplikasi akan otomatis menyambung ulang saat internet kembali tersedia.
-        </p>
-
-        <div className="offline-status">
-          <ShieldCheck size={16} />
-          Cache aplikasi masih aktif dan aman digunakan.
+        <div className="offline-status-box">
+          <div>
+            <span className="offline-label">CACHE STATUS</span>
+            <strong>Halaman tersimpan tersedia</strong>
+          </div>
+          <CheckCircle2 size={18} />
         </div>
 
         <button
           aria-label="Coba sambungkan ulang aplikasi"
-          className="offline-btn"
-          onClick={reconnect}
-          disabled={retrying}
+          disabled={checking}
+          className="offline-button"
+          onClick={() => {
+            setChecking(true);
+            setTimeout(() => {
+              window.location.reload();
+            }, 600);
+          }}
         >
-          <RefreshCw size={16} className={retrying ? 'spin' : ''} />
-          {retrying ? 'Menyambungkan...' : 'Perbarui Sekarang'}
+          <RefreshCw size={17} className={checking ? 'spin' : ''} />
+          {checking ? 'Menyambungkan...' : 'Periksa Koneksi'}
         </button>
 
         <div className="offline-footer">
-          Auto reconnect dalam {countdown} detik
+          <span>Auto reconnect dalam {countdown} detik</span>
+          <span>WiFi Pay PWA</span>
         </div>
       </section>
 
@@ -92,177 +107,194 @@ export default function OfflinePage() {
           min-height: 100dvh;
           overflow: hidden;
           position: relative;
+          background:
+            radial-gradient(circle at top, rgba(37,99,235,.28), transparent 38%),
+            radial-gradient(circle at bottom right, rgba(168,85,247,.18), transparent 30%),
+            #07111f;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 24px;
-          background:
-            radial-gradient(circle at top left, rgba(59,130,246,.24), transparent 30%),
-            radial-gradient(circle at bottom right, rgba(168,85,247,.18), transparent 35%),
-            #07111f;
           color: white;
+        }
+
+        .offline-grid {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: radial-gradient(circle at center, black, transparent 85%);
         }
 
         .offline-ambient {
           position: absolute;
-          width: 340px;
-          height: 340px;
-          filter: blur(80px);
-          opacity: .5;
-          animation: float 12s ease-in-out infinite;
+          border-radius: 999px;
+          filter: blur(70px);
+          opacity: .55;
+          animation: float 8s ease-in-out infinite;
         }
 
-        .offline-ambient-a {
-          top: -120px;
-          left: -80px;
+        .offline-ambient-1 {
+          width: 240px;
+          height: 240px;
           background: #2563eb;
+          top: -40px;
+          left: -30px;
         }
 
-        .offline-ambient-b {
-          bottom: -120px;
-          right: -80px;
+        .offline-ambient-2 {
+          width: 260px;
+          height: 260px;
           background: #9333ea;
-          animation-delay: -6s;
+          bottom: -70px;
+          right: -50px;
+          animation-delay: -4s;
         }
 
         .offline-card {
+          width: min(100%, 420px);
           position: relative;
-          z-index: 2;
-          width: 100%;
-          max-width: 420px;
-          border-radius: 28px;
-          padding: 32px 24px;
+          z-index: 1;
           backdrop-filter: blur(22px);
-          background: rgba(10,16,30,.62);
-          border: 1px solid rgba(255,255,255,.12);
-          box-shadow: 0 20px 60px rgba(0,0,0,.45);
-          text-align: center;
+          background: rgba(15, 23, 42, 0.72);
+          border: 1px solid rgba(255,255,255,.09);
+          border-radius: 32px;
+          padding: 28px;
+          box-shadow: 0 25px 80px rgba(0,0,0,.45);
         }
 
         .offline-chip {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 14px;
-          border-radius: 999px;
-          background: rgba(255,255,255,.08);
-          border: 1px solid rgba(255,255,255,.08);
-          font-size: 12px;
-          margin-bottom: 26px;
-        }
-
-        .offline-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 999px;
-          background: #ef4444;
-          box-shadow: 0 0 10px #ef4444;
-        }
-
-        .offline-dot.online {
-          background: #22c55e;
-          box-shadow: 0 0 10px #22c55e;
-        }
-
-        .offline-wifi-wrap {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          margin: 0 auto 20px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-        }
-
-        .offline-icon {
-          width: 92px;
-          height: 92px;
-          border-radius: 50%;
-          background: linear-gradient(180deg, rgba(59,130,246,.32), rgba(59,130,246,.08));
           border: 1px solid rgba(255,255,255,.1);
-          display:flex;
-          align-items:center;
-          justify-content:center;
+          background: rgba(255,255,255,.06);
+          padding: 8px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          letter-spacing: .12em;
+          margin-bottom: 24px;
         }
 
-        .offline-ring {
+        .wifi-visual {
+          position: relative;
+          width: 180px;
+          height: 180px;
+          margin: 0 auto 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .wifi-ring {
           position: absolute;
-          inset: 0;
-          border-radius: 50%;
-          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 999px;
+          border: 2px solid rgba(96,165,250,.18);
           animation: pulse 3s infinite;
         }
 
-        .offline-ring.delay { animation-delay: 1.5s; }
+        .wifi-ring-1 { width: 90px; height: 90px; }
+        .wifi-ring-2 { width: 130px; height: 130px; animation-delay: .6s; }
+        .wifi-ring-3 { width: 170px; height: 170px; animation-delay: 1.2s; }
 
-        h1 {
-          font-size: 32px;
-          line-height: 1.1;
-          margin: 0 0 14px;
-          font-weight: 800;
-          letter-spacing: -.03em;
+        .wifi-core {
+          width: 78px;
+          height: 78px;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          box-shadow: 0 0 40px rgba(37,99,235,.55);
         }
 
-        .offline-desc {
+        .offline-copy {
+          text-align: center;
+        }
+
+        .offline-copy h1 {
+          margin: 0 0 10px;
+          font-size: clamp(32px, 7vw, 40px);
+          line-height: 1;
+        }
+
+        .offline-copy p {
+          margin: 0 auto;
+          max-width: 320px;
+          color: rgba(255,255,255,.72);
           font-size: 15px;
           line-height: 1.7;
-          color: rgba(255,255,255,.76);
-          margin: 0 auto 18px;
-          max-width: 320px;
         }
 
-        .offline-status {
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          gap:8px;
-          font-size:13px;
-          color:#cbd5e1;
-          margin-bottom:24px;
+        .offline-status-box {
+          margin-top: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          background: rgba(255,255,255,.05);
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 20px;
+          padding: 16px;
         }
 
-        .offline-btn {
-          width:100%;
-          min-height:52px;
-          border:none;
-          border-radius:18px;
-          font-size:15px;
-          font-weight:700;
-          background: linear-gradient(135deg,#2563eb,#7c3aed);
-          color:white;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          gap:10px;
-          cursor:pointer;
+        .offline-label {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 11px;
+          letter-spacing: .12em;
+          color: rgba(255,255,255,.5);
         }
 
-        .offline-btn:disabled {
-          opacity:.7;
-          cursor:not-allowed;
+        .offline-button {
+          margin-top: 22px;
+          width: 100%;
+          border: 0;
+          border-radius: 18px;
+          padding: 16px;
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          color: white;
+          font-size: 15px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .offline-button:disabled {
+          opacity: .7;
         }
 
         .offline-footer {
-          margin-top:16px;
-          font-size:12px;
-          color:rgba(255,255,255,.55);
+          margin-top: 16px;
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 12px;
+          color: rgba(255,255,255,.55);
         }
 
-        .spin { animation: spin 1s linear infinite; }
+        .spin {
+          animation: spin .9s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
 
         @keyframes pulse {
-          0% { transform: scale(.8); opacity: 0; }
-          70% { opacity: .5; }
-          100% { transform: scale(1.35); opacity: 0; }
+          0% { transform: scale(.82); opacity: .2; }
+          70% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(1.08); opacity: 0; }
         }
 
         @keyframes float {
           0%,100% { transform: translateY(0px); }
-          50% { transform: translateY(18px); }
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+          50% { transform: translateY(20px); }
         }
 
         @media (prefers-reduced-motion: reduce) {

@@ -2,7 +2,7 @@
 // Strategy: network-first halaman, cache-first assets statis
 // CACHE_VERSION berubah tiap build → browser auto-detect update → install SW baru
 
-const CACHE_VERSION = 'wifipay-__BUILD_HASH__';
+const CACHE_VERSION = 'wifipay-vdev';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const PAGES_CACHE   = `${CACHE_VERSION}-pages`;
 
@@ -112,11 +112,4 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
-});
-
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });

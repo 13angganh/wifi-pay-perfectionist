@@ -42,9 +42,9 @@ const antiFOUC = `
 (function() {
   try {
     var t = localStorage.getItem('wp_theme');
-    document.body.classList.remove('light','gold');
-    if (t === 'light') document.body.classList.add('light');
-    else if (t === 'gold') document.body.classList.add('gold');
+    document.documentElement.classList.remove('light','gold');
+    if (t === 'light') document.documentElement.classList.add('light');
+    else if (t === 'gold') document.documentElement.classList.add('gold');
   } catch(e) {}
 })();
 `;
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Anti-FOUC: jalankan sebelum render body */}
         <script dangerouslySetInnerHTML={{ __html: antiFOUC }} />
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className="app-shell">
         {children}
         <Analytics />
         <SpeedInsights />

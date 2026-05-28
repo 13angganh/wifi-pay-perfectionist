@@ -2,7 +2,7 @@
 // Strategy: network-first halaman, cache-first assets statis
 // CACHE_VERSION berubah tiap build → browser auto-detect update → install SW baru
 
-const CACHE_VERSION = 'wifipay-vdev';
+const CACHE_VERSION = 'wifipay-v2-runtime';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const PAGES_CACHE   = `${CACHE_VERSION}-pages`;
 
@@ -28,6 +28,7 @@ self.addEventListener('install', (event) => {
       .catch(() => {})
   );
   self.skipWaiting();
+  console.log("[SW] install", CACHE_VERSION);
 });
 
 // ── Activate ──
@@ -39,7 +40,7 @@ self.addEventListener('activate', (event) => {
           .filter(k => k !== STATIC_CACHE && k !== PAGES_CACHE)
           .map(k => caches.delete(k))
       ))
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()).then(()=>console.log("[SW] active", CACHE_VERSION))
   );
   if (isUpgrade) {
     self.clients.matchAll({ type: 'window' }).then(clients => {

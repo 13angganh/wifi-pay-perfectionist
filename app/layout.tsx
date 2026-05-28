@@ -56,8 +56,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Anti-FOUC: jalankan sebelum render body */}
+        {/* Anti-FOUC */}
         <script dangerouslySetInnerHTML={{ __html: antiFOUC }} />
+        
+<script dangerouslySetInnerHTML={{ __html: `
+if ('serviceWorker' in navigator) {
+window.addEventListener('load', async () => {
+const reg = await navigator.serviceWorker.register('/sw.js');
+if (reg.waiting) {
+  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  window.location.reload();
+}
+reg.addEventListener('updatefound', () => {
+  const worker = reg.installing;
+  worker?.addEventListener('statechange', () => {
+    if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+      const ok = confirm('Versi baru tersedia. Perbarui sekarang?');
+      if (ok) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      }
+    }
+  });
+});
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+  if (refreshing) return;
+  refreshing = true;
+  window.location.reload();
+});
+});
+}
+`}} />
+
       </head>
       <body suppressHydrationWarning>
         {children}

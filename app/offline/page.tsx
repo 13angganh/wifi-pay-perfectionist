@@ -1,97 +1,94 @@
 'use client';
 
-import { WifiOff, RefreshCw, Wifi, CheckCircle2 } from 'lucide-react';
+import { WifiOff, RefreshCw, Wifi, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function OfflinePage() {
-  const [countdown, setCountdown] = useState(8);
-  const [checking, setChecking] = useState(false);
   const [online, setOnline] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [countdown, setCountdown] = useState(8);
 
   useEffect(() => {
     const onOnline = () => {
       setOnline(true);
-      setChecking(true);
+      setRetrying(true);
       setTimeout(() => window.location.reload(), 1200);
     };
 
-    window.addEventListener('online', onOnline);
+    const onOffline = () => setOnline(false);
 
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (navigator.onLine) {
-            onOnline();
-          }
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          if (navigator.onLine) window.location.reload();
           return 8;
         }
-        return prev - 1;
+        return c - 1;
       });
     }, 1000);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(timer);
       window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
     };
   }, []);
 
-  return (
-    <main className="offline-shell">
-      <div className="offline-ambient offline-ambient-1" />
-      <div className="offline-ambient offline-ambient-2" />
+  const reconnect = () => {
+    setRetrying(true);
+    setTimeout(() => window.location.reload(), 800);
+  };
 
-      <section className="offline-card" aria-live="polite">
+  return (
+    <main className="offline-root">
+      <div className="offline-ambient offline-ambient-a" />
+      <div className="offline-ambient offline-ambient-b" />
+
+      <section className="offline-card" aria-label="Offline status">
         <div className="offline-chip">
-          <span className="offline-chip-dot" />
-          Mode Offline
+          <span className={`offline-dot ${online ? 'online' : ''}`} />
+          {online ? 'Koneksi kembali tersedia' : 'Mode Offline Aktif'}
         </div>
 
-        <div className="wifi-wrap" aria-hidden="true">
-          <div className="wifi-glow" />
-          <WifiOff size={44} />
-          <div className="signal-bars">
-            <span />
-            <span />
-            <span />
+        <div className="offline-wifi-wrap">
+          <div className="offline-ring" />
+          <div className="offline-ring delay" />
+          <div className="offline-icon">
+            {online ? <Wifi size={38} /> : <WifiOff size={38} />}
           </div>
         </div>
 
         <h1>Koneksi Terputus</h1>
-        <p className="offline-subtitle">
-          Beberapa data masih bisa diakses secara offline sementara aplikasi mencoba menyambungkan ulang jaringan.
+
+        <p className="offline-desc">
+          Beberapa data masih bisa diakses secara offline. Aplikasi akan otomatis menyambung ulang saat internet kembali tersedia.
         </p>
 
         <div className="offline-status">
-          <Wifi size={16} />
-          {online ? 'Koneksi ditemukan' : 'Menunggu jaringan tersedia'}
+          <ShieldCheck size={16} />
+          Cache aplikasi masih aktif dan aman digunakan.
         </div>
 
         <button
-          aria-label="Periksa ulang koneksi internet"
-          disabled={checking}
-          className="offline-button"
-          onClick={() => {
-            setChecking(true);
-            setTimeout(() => window.location.reload(), 800);
-          }}
+          aria-label="Coba sambungkan ulang aplikasi"
+          className="offline-btn"
+          onClick={reconnect}
+          disabled={retrying}
         >
-          <RefreshCw size={16} className={checking ? 'spin' : ''} />
-          {checking ? 'Menyambungkan...' : 'Perbarui Sekarang'}
+          <RefreshCw size={16} className={retrying ? 'spin' : ''} />
+          {retrying ? 'Menyambungkan...' : 'Perbarui Sekarang'}
         </button>
 
         <div className="offline-footer">
-          <div>
-            Reconnect otomatis dalam <strong>{countdown}s</strong>
-          </div>
-          <div className="cache-info">
-            <CheckCircle2 size={14} />
-            Cache offline aktif
-          </div>
+          Auto reconnect dalam {countdown} detik
         </div>
       </section>
 
       <style jsx>{`
-        .offline-shell {
+        .offline-root {
           min-height: 100dvh;
           overflow: hidden;
           position: relative;
@@ -100,33 +97,32 @@ export default function OfflinePage() {
           justify-content: center;
           padding: 24px;
           background:
-            radial-gradient(circle at top, rgba(59,130,246,.22), transparent 40%),
-            linear-gradient(180deg,#07111f 0%,#081827 45%,#020617 100%);
+            radial-gradient(circle at top left, rgba(59,130,246,.24), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(168,85,247,.18), transparent 35%),
+            #07111f;
+          color: white;
         }
 
         .offline-ambient {
           position: absolute;
-          border-radius: 999px;
-          filter: blur(70px);
+          width: 340px;
+          height: 340px;
+          filter: blur(80px);
           opacity: .5;
-          animation: float 10s ease-in-out infinite;
+          animation: float 12s ease-in-out infinite;
         }
 
-        .offline-ambient-1 {
-          width: 240px;
-          height: 240px;
-          background: #2563eb;
-          top: -40px;
+        .offline-ambient-a {
+          top: -120px;
           left: -80px;
+          background: #2563eb;
         }
 
-        .offline-ambient-2 {
-          width: 280px;
-          height: 280px;
-          background: #0ea5e9;
-          bottom: -80px;
-          right: -100px;
-          animation-delay: 2s;
+        .offline-ambient-b {
+          bottom: -120px;
+          right: -80px;
+          background: #9333ea;
+          animation-delay: -6s;
         }
 
         .offline-card {
@@ -134,12 +130,12 @@ export default function OfflinePage() {
           z-index: 2;
           width: 100%;
           max-width: 420px;
+          border-radius: 28px;
+          padding: 32px 24px;
+          backdrop-filter: blur(22px);
+          background: rgba(10,16,30,.62);
           border: 1px solid rgba(255,255,255,.12);
-          background: rgba(15,23,42,.72);
-          backdrop-filter: blur(18px);
-          border-radius: 32px;
-          padding: 28px;
-          box-shadow: 0 10px 50px rgba(0,0,0,.45);
+          box-shadow: 0 20px 60px rgba(0,0,0,.45);
           text-align: center;
         }
 
@@ -149,136 +145,128 @@ export default function OfflinePage() {
           gap: 8px;
           padding: 8px 14px;
           border-radius: 999px;
-          background: rgba(255,255,255,.06);
-          color: #dbeafe;
+          background: rgba(255,255,255,.08);
+          border: 1px solid rgba(255,255,255,.08);
           font-size: 12px;
-          margin-bottom: 22px;
+          margin-bottom: 26px;
         }
 
-        .offline-chip-dot {
+        .offline-dot {
           width: 8px;
           height: 8px;
           border-radius: 999px;
-          background: #38bdf8;
-          box-shadow: 0 0 12px #38bdf8;
+          background: #ef4444;
+          box-shadow: 0 0 10px #ef4444;
         }
 
-        .wifi-wrap {
+        .offline-dot.online {
+          background: #22c55e;
+          box-shadow: 0 0 10px #22c55e;
+        }
+
+        .offline-wifi-wrap {
           position: relative;
-          width: 110px;
-          height: 110px;
-          margin: 0 auto 24px;
-          border-radius: 28px;
-          background: linear-gradient(180deg, rgba(37,99,235,.22), rgba(14,165,233,.08));
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
+          width: 120px;
+          height: 120px;
+          margin: 0 auto 20px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
         }
 
-        .wifi-glow {
+        .offline-icon {
+          width: 92px;
+          height: 92px;
+          border-radius: 50%;
+          background: linear-gradient(180deg, rgba(59,130,246,.32), rgba(59,130,246,.08));
+          border: 1px solid rgba(255,255,255,.1);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        }
+
+        .offline-ring {
           position: absolute;
           inset: 0;
-          border-radius: inherit;
-          background: radial-gradient(circle, rgba(59,130,246,.35), transparent 70%);
-          animation: pulse 2.8s infinite;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.12);
+          animation: pulse 3s infinite;
         }
 
-        .signal-bars {
-          position: absolute;
-          bottom: 16px;
-          display: flex;
-          gap: 4px;
-        }
-
-        .signal-bars span {
-          width: 6px;
-          border-radius: 999px;
-          background: rgba(255,255,255,.8);
-          animation: bars 1.2s infinite ease-in-out;
-        }
-
-        .signal-bars span:nth-child(1){height:10px}
-        .signal-bars span:nth-child(2){height:16px;animation-delay:.2s}
-        .signal-bars span:nth-child(3){height:22px;animation-delay:.4s}
+        .offline-ring.delay { animation-delay: 1.5s; }
 
         h1 {
-          color: white;
-          font-size: 30px;
+          font-size: 32px;
           line-height: 1.1;
-          margin: 0 0 12px;
+          margin: 0 0 14px;
+          font-weight: 800;
+          letter-spacing: -.03em;
         }
 
-        .offline-subtitle {
-          color: rgba(255,255,255,.72);
+        .offline-desc {
           font-size: 15px;
           line-height: 1.7;
-          margin-bottom: 20px;
+          color: rgba(255,255,255,.76);
+          margin: 0 auto 18px;
+          max-width: 320px;
         }
 
         .offline-status {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 12px;
-          border-radius: 16px;
-          background: rgba(255,255,255,.05);
-          color: #bfdbfe;
-          font-size: 14px;
-          margin-bottom: 18px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          font-size:13px;
+          color:#cbd5e1;
+          margin-bottom:24px;
         }
 
-        .offline-button {
-          width: 100%;
-          border: 0;
-          border-radius: 18px;
-          padding: 16px;
-          font-size: 15px;
-          font-weight: 700;
-          color: white;
-          background: linear-gradient(135deg,#2563eb,#0ea5e9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
+        .offline-btn {
+          width:100%;
+          min-height:52px;
+          border:none;
+          border-radius:18px;
+          font-size:15px;
+          font-weight:700;
+          background: linear-gradient(135deg,#2563eb,#7c3aed);
+          color:white;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:10px;
+          cursor:pointer;
         }
 
-        .offline-button:disabled {opacity:.7}
+        .offline-btn:disabled {
+          opacity:.7;
+          cursor:not-allowed;
+        }
 
         .offline-footer {
-          margin-top: 18px;
-          color: rgba(255,255,255,.7);
-          font-size: 13px;
-          display: grid;
-          gap: 10px;
+          margin-top:16px;
+          font-size:12px;
+          color:rgba(255,255,255,.55);
         }
 
-        .cache-info {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-        }
+        .spin { animation: spin 1s linear infinite; }
 
-        .spin {animation: spin 1s linear infinite}
-
-        @keyframes spin {to{transform:rotate(360deg)}}
         @keyframes pulse {
-          0%,100%{transform:scale(1);opacity:.6}
-          50%{transform:scale(1.08);opacity:1}
+          0% { transform: scale(.8); opacity: 0; }
+          70% { opacity: .5; }
+          100% { transform: scale(1.35); opacity: 0; }
         }
+
         @keyframes float {
-          0%,100%{transform:translateY(0)}
-          50%{transform:translateY(20px)}
+          0%,100% { transform: translateY(0px); }
+          50% { transform: translateY(18px); }
         }
-        @keyframes bars {
-          0%,100%{opacity:.35}
-          50%{opacity:1}
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          *, *:before, *:after {
+          * {
             animation: none !important;
             transition: none !important;
           }

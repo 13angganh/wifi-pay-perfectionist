@@ -30,3 +30,6 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# SW generated per-build (jangan commit)
+public/sw.js

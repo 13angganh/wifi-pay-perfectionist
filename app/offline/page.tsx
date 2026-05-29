@@ -1,210 +1,225 @@
 'use client';
 
-import { WifiOff, RefreshCw, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { WifiOff, RefreshCw } from 'lucide-react';
 
 export default function OfflinePage() {
-  const [retrying, setRetrying] = useState(false);
-  const [seconds, setSeconds] = useState(5);
-  const [online, setOnline] = useState(false);
-
-  useEffect(() => {
-    const onOnline = () => {
-      setOnline(true);
-      setRetrying(true);
-      setTimeout(() => window.location.reload(), 1200);
-    };
-
-    window.addEventListener('online', onOnline);
-
-    const timer = setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
-          if (navigator.onLine) {
-            window.location.reload();
-          }
-          return 5;
-        }
-        return s - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener('online', onOnline);
-    };
-  }, []);
-
   return (
-    <main className="offline-root">
-      <div className="offline-bg offline-bg-1" />
-      <div className="offline-bg offline-bg-2" />
+    <>
+      {/* Self-contained CSS — tidak bergantung pada globals.css atau SW cache */}
+      <style>{`
+        /* ── Reset ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <section className="offline-card">
-        <div className="offline-chip">
-          <span className="offline-dot" /> Offline Cache Active
+        /* ── Dark (default) ── */
+        :root {
+          --bg:      #0F1117;
+          --bg2:     #181C27;
+          --bg3:     #1E2235;
+          --border:  #252B40;
+          --txt:     #FFFFFF;
+          --txt2:    #A1A8C1;
+          --txt3:    #6B7494;
+          --txt5:    #2D3452;
+          --zc:      #3B82F6;
+          --c-belum: #EF4444;
+          --r-xl:    20px;
+          --r-md:    12px;
+          --r-full:  9999px;
+          --ff:      ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+        /* ── Light ── */
+        body.light {
+          --bg:      #F8FAFC;
+          --bg2:     #FFFFFF;
+          --bg3:     #F0F4F8;
+          --border:  #E4EAF0;
+          --txt:     #0F1117;
+          --txt2:    #374151;
+          --txt3:    #6B7280;
+          --txt5:    #D1D5DB;
+          --zc:      #2563EB;
+          --c-belum: #DC2626;
+        }
+        /* ── Gold ── */
+        body.gold {
+          --bg:      #0C0A06;
+          --bg2:     #141008;
+          --bg3:     #1C1610;
+          --border:  rgba(201,149,42,0.15);
+          --txt:     #F5EAD6;
+          --txt2:    #C4AA80;
+          --txt3:    #8A7055;
+          --txt5:    #2E2218;
+          --zc:      #C9952A;
+          --c-belum: #EF4444;
+        }
+
+        html, body {
+          min-height: 100%;
+          background: var(--bg);
+          font-family: var(--ff);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .wp-offline-page {
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 32px 24px;
+          background: var(--bg);
+          gap: 20px;
+          text-align: center;
+        }
+
+        .wp-offline-icon {
+          width: 80px;
+          height: 80px;
+          border-radius: var(--r-xl);
+          background: rgba(239,68,68,0.08);
+          border: 1px solid rgba(239,68,68,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: wpOfflinePulse 2.4s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+
+        .wp-offline-badge {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .14em;
+          color: var(--zc);
+          opacity: .75;
+        }
+
+        .wp-offline-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: var(--txt);
+          letter-spacing: -.02em;
+          line-height: 1.2;
+          margin-bottom: 8px;
+        }
+
+        .wp-offline-desc {
+          font-size: 13px;
+          color: var(--txt3);
+          max-width: 280px;
+          line-height: 1.7;
+          margin: 0 auto;
+        }
+
+        .wp-offline-card {
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          border-radius: var(--r-md);
+          padding: 14px 18px;
+          width: 100%;
+          max-width: 290px;
+          text-align: left;
+        }
+
+        .wp-offline-card-title {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .1em;
+          color: var(--zc);
+          margin-bottom: 10px;
+        }
+
+        .wp-offline-tip {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 12px;
+          color: var(--txt2);
+          margin-bottom: 7px;
+        }
+        .wp-offline-tip:last-child { margin-bottom: 0; }
+
+        .wp-offline-tip-icon {
+          font-size: 16px;
+          flex-shrink: 0;
+          line-height: 1;
+        }
+
+        .wp-offline-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 12px 32px;
+          background: var(--zc);
+          border: none;
+          border-radius: var(--r-full);
+          color: #fff;
+          font-size: 14px;
+          font-weight: 700;
+          font-family: var(--ff);
+          cursor: pointer;
+          letter-spacing: .01em;
+          transition: opacity .15s ease, transform .15s ease;
+          box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        }
+        .wp-offline-btn:hover  { opacity: .85; transform: scale(1.03); }
+        .wp-offline-btn:active { opacity: .7;  transform: scale(.98);  }
+
+        .wp-offline-version {
+          font-size: 10px;
+          color: var(--txt5);
+          letter-spacing: .06em;
+        }
+
+        @keyframes wpOfflinePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: .6; transform: scale(.94); }
+        }
+      `}</style>
+
+      <div className="wp-offline-page">
+
+        <div className="wp-offline-icon">
+          <WifiOff size={34} color="var(--c-belum)" />
         </div>
 
-        <div className="wifi-wrap" aria-hidden="true">
-          <div className="wifi-pulse" />
-          <WifiOff size={42} />
+        <div className="wp-offline-badge">WIFI PAY</div>
+
+        <div>
+          <div className="wp-offline-title">Tidak Ada Akses Internet</div>
+          <p className="wp-offline-desc">
+            WiFi Pay memerlukan koneksi internet untuk mengakses data.
+            Aktifkan WiFi atau paket data, lalu coba lagi.
+          </p>
         </div>
 
-        <div className="signal-bars" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-
-        <h1>Koneksi Terputus</h1>
-
-        <p>
-          Beberapa data masih bisa diakses secara offline. Aplikasi akan otomatis
-          tersambung kembali saat internet tersedia.
-        </p>
-
-        <div className="offline-status">
-          <ShieldCheck size={16} />
-          Session dan cache lokal tetap aman.
+        <div className="wp-offline-card">
+          <div className="wp-offline-card-title">YANG BISA DILAKUKAN</div>
+          <div className="wp-offline-tip">
+            <span className="wp-offline-tip-icon">📶</span>
+            <span>Aktifkan WiFi atau paket data</span>
+          </div>
+          <div className="wp-offline-tip">
+            <span className="wp-offline-tip-icon">✈️</span>
+            <span>Pastikan mode pesawat tidak aktif</span>
+          </div>
+          <div className="wp-offline-tip">
+            <span className="wp-offline-tip-icon">🔄</span>
+            <span>Muat ulang setelah internet aktif</span>
+          </div>
         </div>
 
         <button
-          aria-label="Coba sambungkan ulang aplikasi"
-          className="retry-btn"
-          disabled={retrying}
-          onClick={() => {
-            setRetrying(true);
-            window.location.reload();
-          }}
+          className="wp-offline-btn"
+          onClick={() => window.location.reload()}
         >
-          <RefreshCw size={16} className={retrying ? 'spin' : ''} />
-          {online ? 'Menyambungkan...' : `Coba Lagi (${seconds})`}
+          <RefreshCw size={15} />
+          Coba Lagi
         </button>
-      </section>
 
-      <style jsx>{`
-        .offline-root {
-          min-height: 100dvh;
-          overflow: hidden;
-          background:
-            radial-gradient(circle at top, rgba(59,130,246,.25), transparent 40%),
-            linear-gradient(180deg,#07111f,#091423 60%,#050816);
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          position:relative;
-          padding:24px;
-          color:white;
-          font-family:Inter,sans-serif;
-        }
-        .offline-bg {
-          position:absolute;
-          border-radius:999px;
-          filter:blur(80px);
-          opacity:.45;
-          animation:float 8s ease-in-out infinite;
-        }
-        .offline-bg-1 {
-          width:280px;height:280px;
-          background:#2563eb;
-          top:-80px;left:-50px;
-        }
-        .offline-bg-2 {
-          width:220px;height:220px;
-          background:#06b6d4;
-          bottom:-60px;right:-30px;
-          animation-delay:2s;
-        }
-        .offline-card {
-          width:min(100%,420px);
-          position:relative;
-          z-index:2;
-          backdrop-filter:blur(22px);
-          background:rgba(15,23,42,.55);
-          border:1px solid rgba(255,255,255,.08);
-          border-radius:28px;
-          padding:28px;
-          box-shadow:0 10px 40px rgba(0,0,0,.35);
-          text-align:center;
-        }
-        .offline-chip {
-          display:inline-flex;
-          align-items:center;
-          gap:8px;
-          background:rgba(255,255,255,.06);
-          border:1px solid rgba(255,255,255,.08);
-          border-radius:999px;
-          padding:8px 14px;
-          font-size:12px;
-          margin-bottom:24px;
-        }
-        .offline-dot {
-          width:8px;height:8px;border-radius:50%;background:#22c55e;
-          box-shadow:0 0 12px #22c55e;
-        }
-        .wifi-wrap {
-          width:110px;height:110px;border-radius:50%;
-          margin:0 auto 16px;
-          position:relative;
-          display:flex;align-items:center;justify-content:center;
-          background:rgba(37,99,235,.12);
-        }
-        .wifi-pulse {
-          position:absolute;inset:0;border-radius:50%;
-          border:2px solid rgba(96,165,250,.5);
-          animation:pulse 2s infinite;
-        }
-        .signal-bars {
-          display:flex;gap:6px;justify-content:center;
-          margin-bottom:18px;
-        }
-        .signal-bars span {
-          width:8px;border-radius:999px;background:#60a5fa;
-          animation:bars 1.2s infinite ease-in-out;
-        }
-        .signal-bars span:nth-child(1){height:10px}
-        .signal-bars span:nth-child(2){height:18px;animation-delay:.15s}
-        .signal-bars span:nth-child(3){height:26px;animation-delay:.3s}
-        .signal-bars span:nth-child(4){height:34px;animation-delay:.45s}
-        h1 {font-size:32px;line-height:1.1;margin:0 0 14px;font-weight:800}
-        p {
-          color:rgba(255,255,255,.72);
-          line-height:1.7;
-          font-size:15px;
-          margin:0 auto 20px;
-        }
-        .offline-status {
-          display:flex;align-items:center;justify-content:center;gap:8px;
-          font-size:13px;color:#cbd5e1;
-          margin-bottom:22px;
-        }
-        .retry-btn {
-          width:100%;border:none;cursor:pointer;
-          border-radius:16px;padding:15px 18px;
-          background:linear-gradient(135deg,#2563eb,#0891b2);
-          color:white;font-size:15px;font-weight:700;
-          display:flex;align-items:center;justify-content:center;gap:10px;
-        }
-        .retry-btn:disabled {opacity:.8}
-        .spin {animation:spin 1s linear infinite}
-        @keyframes pulse {
-          0%{transform:scale(.9);opacity:1}
-          100%{transform:scale(1.4);opacity:0}
-        }
-        @keyframes bars {
-          50%{opacity:.3;transform:translateY(3px)}
-        }
-        @keyframes float {
-          50%{transform:translateY(20px)}
-        }
-        @keyframes spin {
-          to {transform:rotate(360deg)}
-        }
-        @media (prefers-reduced-motion: reduce) {
-          * {animation:none !important;transition:none !important}
-        }
-      `}</style>
-    </main>
+        <div className="wp-offline-version">WiFi Pay v11.3 Next</div>
+
+      </div>
+    </>
   );
 }

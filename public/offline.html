@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline — WiFi Pay</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0F1117;
+      --bg2:     #181C27;
+      --bg3:     #1E2235;
+      --border:  #252B40;
+      --txt:     #FFFFFF;
+      --txt2:    #A1A8C1;
+      --txt3:    #6B7494;
+      --txt5:    #2D3452;
+      --zc:      #3B82F6;
+      --err:     #EF4444;
+    }
+    body.light {
+      --bg:      #F8FAFC;
+      --bg2:     #FFFFFF;
+      --bg3:     #F0F4F8;
+      --border:  #E4EAF0;
+      --txt:     #0F1117;
+      --txt2:    #374151;
+      --txt3:    #6B7280;
+      --txt5:    #D1D5DB;
+      --zc:      #2563EB;
+      --err:     #DC2626;
+    }
+    body.gold {
+      --bg:      #0C0A06;
+      --bg2:     #141008;
+      --bg3:     #1C1610;
+      --border:  rgba(201,149,42,0.15);
+      --txt:     #F5EAD6;
+      --txt2:    #C4AA80;
+      --txt3:    #8A7055;
+      --txt5:    #2E2218;
+      --zc:      #C9952A;
+      --err:     #EF4444;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .icon-wrap {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    body.gold .icon-wrap {
+      background: rgba(201,149,42,0.08);
+      border-color: rgba(201,149,42,0.2);
+    }
+
+    .icon-wrap svg { color: var(--err); }
+    body.gold .icon-wrap svg { color: var(--zc); }
+
+    .badge {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      color: var(--zc);
+      opacity: .8;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--txt);
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .desc {
+      font-size: 13px;
+      color: var(--txt3);
+      max-width: 280px;
+      line-height: 1.7;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      width: 100%;
+      max-width: 290px;
+      text-align: left;
+    }
+
+    .card-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      color: var(--zc);
+      margin-bottom: 10px;
+    }
+
+    .tip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--txt2);
+      margin-bottom: 7px;
+    }
+    .tip:last-child { margin-bottom: 0; }
+    .tip-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      background: var(--zc);
+      border: none;
+      border-radius: 9999px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: .01em;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      transition: opacity .15s, transform .15s;
+    }
+    .btn:hover  { opacity: .85; transform: scale(1.03); }
+    .btn:active { opacity: .7;  transform: scale(.98);  }
+
+    .version {
+      font-size: 10px;
+      color: var(--txt5);
+      letter-spacing: .06em;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.6; transform:scale(.94); }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    try {
+      var t = localStorage.getItem('wp_theme');
+      document.body.classList.remove('light','gold');
+      if (t === 'light') document.body.classList.add('light');
+      else if (t === 'gold') document.body.classList.add('gold');
+    } catch(e) {}
+  </script>
+
+  <div class="page">
+
+    <div class="icon-wrap">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+        <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+    </div>
+
+    <div class="badge">WIFI PAY</div>
+
+    <div>
+      <div class="title">Tidak Ada Akses Internet</div>
+      <p class="desc">
+        WiFi Pay memerlukan koneksi internet untuk mengakses data.
+        Aktifkan WiFi atau paket data, lalu coba lagi.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-label">YANG BISA DILAKUKAN</div>
+      <div class="tip">
+        <span class="tip-icon">📶</span>
+        <span>Aktifkan WiFi atau paket data</span>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">✈️</span>
+        <span>Pastikan mode pesawat tidak aktif</span>
+      </div>
+      <div class="tip">
+        <span class="tip-icon">🔄</span>
+        <span>Muat ulang setelah internet aktif</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="window.location.reload()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      Coba Lagi
+    </button>
+
+    <div class="version">WiFi Pay v11.3 Next</div>
+
+  </div>
+</body>
+</html>

@@ -9,7 +9,7 @@ const PAGES_CACHE   = `${CACHE_VERSION}-pages`;
 let isUpgrade = false;
 
 const STATIC_ASSETS = [
-  '/offline',
+  '/offline.html',
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
@@ -102,7 +102,7 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         const accept = request.headers.get('Accept') || '';
         if (accept.includes('text/html')) {
-          const offline = await caches.match('/offline');
+          const offline = await caches.match('/offline.html');
           if (offline) return offline;
         }
         return new Response('Tidak ada koneksi internet.', {

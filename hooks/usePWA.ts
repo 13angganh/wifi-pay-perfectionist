@@ -17,11 +17,12 @@ export function usePWA() {
     return () => window.removeEventListener('beforeinstallprompt', h);
   }, [setDeferredPrompt]);
 
-  // Service Worker registration + update detection
+  // SW registration sudah dipindah ke root app/layout.tsx (inline script)
+  // agar aktif dari semua halaman termasuk /login dan /offline
+  // usePWA hanya handle: update banner notification
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
-      reg.update();
+    navigator.serviceWorker.ready.then(reg => {
       if (reg.waiting) {
         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         setUpdateBanner(true);
@@ -29,21 +30,12 @@ export function usePWA() {
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing;
         sw?.addEventListener('statechange', () => {
-          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-            // Ada update tersedia — skip waiting langsung
+          if (sw.state === 'installed') {
             sw.postMessage({ type: 'SKIP_WAITING' });
             setUpdateBanner(true);
-          } else if (sw.state === 'installed') {
-            // First install — langsung aktif
-            sw.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
-    });
-
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) { refreshing = true; window.location.reload(); }
-    });
+    }).catch(() => {});
   }, [setUpdateBanner]);
 }

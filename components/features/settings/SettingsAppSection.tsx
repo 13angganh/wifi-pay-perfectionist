@@ -170,7 +170,7 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
           </div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>WiFi Pay</div>
           <div style={{ fontSize:11, color:'var(--txt4)', lineHeight:2 }}>
-            <div>{t('settings.version')} v11.2 Next</div>
+            <div>{t('settings.version')} v11.3 Next</div>
             <div>Firebase: wifi-pay-online</div>
             <div>Server: Singapore</div>
           </div>

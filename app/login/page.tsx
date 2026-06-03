@@ -149,7 +149,7 @@ export default function LoginPage() {
       <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:26, fontWeight:800, letterSpacing:'-0.03em', marginBottom:2 }}>
         WiFi Pay
       </div>
-      <div style={{ fontSize:10, color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>v11.2 Next</div>
+      <div style={{ fontSize:10, color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>v11.3 Next</div>
 
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:24, width:'100%', maxWidth:360, boxShadow:'var(--shadow-md)' }}>
 

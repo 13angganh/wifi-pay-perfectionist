@@ -42,9 +42,10 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   const tarif     = info.tarif as number | undefined;
   const quickAmts = settings?.quickAmounts || [50, 80, 90, 100, 150, 200];
 
-  async function persist(newData: typeof appData, action: string, detail: string) {
+  // FIX: return boolean agar caller bisa cek hasil sebelum tampilkan toast sukses.
+  async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action, detail }, userEmail || '', () => ({
@@ -52,7 +53,11 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      return true;
+    } catch {
+      setSyncStatus('err');
+      return false;
+    }
   }
 
   function quickPay(amt: number) {
@@ -79,7 +84,11 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
       showToast(`${name} dibatalkan`, 'info');
     });
-    persist(newData, `[PAY] ${tLog('log.action.quickPay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
+    // FIX: jika write Firebase di background ini gagal, beri tahu user secara eksplisit
+    // — sebelumnya gagal diam-diam, hanya terlihat dari pill header yang mudah terlewat,
+    // dan saat app dibuka ulang pembayaran ini hilang tanpa penjelasan.
+    persist(newData, `[PAY] ${tLog('log.action.quickPay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`)
+      .then(ok => { if (!ok) showToast(t('common.saveFailed'), 'err'); });
   }
 
   async function manualPay(val: string) {
@@ -92,16 +101,24 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     const newData = { ...appData, payments: { ...appData.payments } };
     if (val === '') {
       delete newData.payments[k];
-      await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
-      showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
-      onClose();
+      const ok = await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
+      if (ok) {
+        showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
+        onClose();
+      } else {
+        showToast(t('common.saveFailed'), 'err');
+      }
     } else {
       const amt = +val;
       if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
       newData.payments[k] = amt;
-      await persist(newData, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
-      showToast(`${name} ${MONTH_NAMES[month]} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
-      onClose({ name, month });
+      const ok = await persist(newData, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
+      if (ok) {
+        showToast(`${name} ${MONTH_NAMES[month]} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
+        onClose({ name, month });
+      } else {
+        showToast(t('common.saveFailed'), 'err');
+      }
     }
   }
 
@@ -118,9 +135,13 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         const k       = getKey(activeZone, name, selYear, month);
         const newData = { ...appData, payments: { ...appData.payments } };
         delete newData.payments[k];
-        await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
-        showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
-        onClose();
+        const ok = await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
+        if (ok) {
+          showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
+          onClose();
+        } else {
+          showToast(t('common.saveFailed'), 'err');
+        }
       },
       { description: `${MONTH_NAMES[month]} ${selYear} · ${curVal > 0 ? rp(curVal) : t('rekap.accumulation')}` }
     );

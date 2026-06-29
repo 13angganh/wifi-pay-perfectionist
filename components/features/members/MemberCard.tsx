@@ -223,13 +223,15 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       showToast(`${name} dibatalkan`, 'info');
     });
     // Firebase write di background
+    // FIX: jika gagal, beri toast eksplisit — sebelumnya gagal diam-diam (hanya pill header)
     if (uid) {
       setSyncStatus('loading');
       saveDB(uid, newData,
         { action: `[PAY] ${tLog('log.action.quickPay')} ${activeZone} - ${name}`,
           detail: `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}` },
         userEmail || ''
-      ).then(() => setSyncStatus('ok')).catch(() => setSyncStatus('err'));
+      ).then(() => setSyncStatus('ok'))
+       .catch(() => { setSyncStatus('err'); showToast(t('common.saveFailed'), 'err'); });
     }
   }
 
@@ -282,11 +284,16 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       ...(appData.memberInfo || {}),
       [infoKey]: { ...(appData.memberInfo?.[infoKey] || {}), [k2]: dateVal },
     };
-    await persist(
+    // FIX: saveDate sebelumnya tidak pernah menampilkan toast sama sekali — sukses
+    // maupun gagal. Sekarang tetap silent saat sukses (micro-update, tidak perlu toast),
+    // tapi toast error eksplisit jika gagal tersimpan, supaya user tidak mengira tanggal
+    // sudah tersimpan padahal hanya berubah optimis di state lokal.
+    const ok = await persist(
       { ...appData, memberInfo: newInfo },
       `[DATE] ${tLog('log.action.updateDate')} ${activeZone} - ${name}`,
       `${MONTH_NAMES[cardMonth]} ${cardYear}: ${dateVal}`,
     );
+    if (!ok) showToast(t('common.saveFailed'), 'err');
   }
 
   function handleToggle() {

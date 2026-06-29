@@ -56,9 +56,9 @@ export default function OperasionalView() {
   const totalOps    = items.reduce((s, it) => s + (+it.nominal || 0), 0);
   const netIncome   = grossIncome - totalOps;
 
-  async function persist(newData: typeof appData) {
+  async function persist(newData: typeof appData): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action:`[OPS] ${tLog('log.action.updateOps')}`, detail:`${MONTH_NAMES[opsMonth]} ${opsYear}` }, userEmail || '', () => ({
@@ -66,27 +66,35 @@ export default function OperasionalView() {
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      return true;
+    } catch {
+      setSyncStatus('err');
+      return false;
+    }
   }
 
   function updatedData(newItems: OpsItem[]) {
     return { ...appData, operasional: { ...appData.operasional, [opsKey]: { items: newItems } } };
   }
 
-  async function addItem() { await persist(updatedData([...items, { label:'', nominal:0 }])); }
+  async function addItem() {
+    const ok = await persist(updatedData([...items, { label:'', nominal:0 }]));
+    if (!ok) showToast(t('common.saveFailed'), 'err');
+  }
 
   async function updateItem(i: number, field: 'label' | 'nominal', val: string) {
     const newItems = items.map((it, idx) =>
       idx === i ? { ...it, [field]: field === 'nominal' ? (+val || 0) : val } : it
     );
-    await persist(updatedData(newItems));
+    const ok = await persist(updatedData(newItems));
+    if (!ok) showToast(t('common.saveFailed'), 'err');
   }
 
   function deleteItem(i: number) {
     const item = items[i];
     showConfirm('🗑️', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.confirm'), async () => {
-      await persist(updatedData(items.filter((_, idx) => idx !== i)));
-      showToast(t('common.deleted'), 'err');
+      const ok = await persist(updatedData(items.filter((_, idx) => idx !== i)));
+      showToast(ok ? t('common.deleted') : t('common.saveFailed'), 'err');
     });
   }
 

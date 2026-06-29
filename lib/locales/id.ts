@@ -36,6 +36,7 @@ const id: Record<string, string> = {
   'common.saving'    : 'Menyimpan...',
   'common.saved'     : 'Tersimpan',
   'common.error'     : 'Gagal',
+  'common.saveFailed': 'Gagal tersimpan ke server, periksa koneksi',
   'common.offline'   : 'Offline',
   'header.lock'      : 'KUNCI',
   'header.unlock'    : 'BUKA',

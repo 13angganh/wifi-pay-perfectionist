@@ -62,14 +62,19 @@ export default function Header({ onToggleSidebar }: Props) {
     const next = !globalLocked;
     setGlobalLocked(next);
     setAppData({ ...appData, _globalLocked: next }); // BUG-001: sync appData agar tidak stale
+    let ok = true;
     if (uid) {
       try {
         setSyncStatus('loading');
         await saveDB(uid, { ...appData, _globalLocked: next });
         setSyncStatus('ok');
-      } catch { setSyncStatus('err'); }
+      } catch { setSyncStatus('err'); ok = false; }
     }
-    showToast(next ? t('header.entryLocked') : t('header.entryUnlocked'), next ? 'info' : 'ok');
+    if (ok) {
+      showToast(next ? t('header.entryLocked') : t('header.entryUnlocked'), next ? 'info' : 'ok');
+    } else {
+      showToast(t('common.saveFailed'), 'err');
+    }
   }
 
   // Sync pill config

@@ -118,6 +118,7 @@ export default function EntryView() {
     }
 
     setAppData(newData);
+    let ok = true;
     if (uid) {
       setSyncStatus('loading');
       try {
@@ -129,11 +130,15 @@ export default function EntryView() {
           lockedEntries: useAppStore.getState().lockedEntries,
         }));
         setSyncStatus('ok');
-      } catch { setSyncStatus('err'); }
+      } catch { setSyncStatus('err'); ok = false; }
     }
-    showToast(`✓ ${details.length} ${t('entry.batchSuccess')}`);
-    if (skipped.length > 0) {
-      setTimeout(() => showToast(`${skipped.length} ${t('entry.batchSkipped')}`, 'info'), 800);
+    if (ok) {
+      showToast(`✓ ${details.length} ${t('entry.batchSuccess')}`);
+      if (skipped.length > 0) {
+        setTimeout(() => showToast(`${skipped.length} ${t('entry.batchSkipped')}`, 'info'), 800);
+      }
+    } else {
+      showToast(t('common.saveFailed'), 'err');
     }
     clearBatch();
   }

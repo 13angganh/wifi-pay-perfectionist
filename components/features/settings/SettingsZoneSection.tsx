@@ -22,12 +22,12 @@ export default function SettingsZoneSection() {
   const [newZonaKey,   setNewZonaKey]   = useState('');
   const [newZonaColor, setNewZonaColor] = useState('#8B5CF6');
 
-  async function persistData(newData: typeof appData, action: string, detail: string) {
+  async function persistData(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
-    try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); }
-    catch { setSyncStatus('err'); }
+    try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); return true; }
+    catch { setSyncStatus('err'); return false; }
   }
 
   const zonaHidden: string[] = settings.hiddenZones ?? [];
@@ -109,9 +109,12 @@ export default function SettingsZoneSection() {
         if (appData.zoneMembers?.[key]) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _del, ...rest } = appData.zoneMembers;
-          persistData({ ...appData, zoneMembers: rest }, `[DEL] Hapus zona ${key}`, '');
+          persistData({ ...appData, zoneMembers: rest }, `[DEL] Hapus zona ${key}`, '').then(ok => {
+            showToast(ok ? `Zona ${key} ${t('zona.deleted')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
+          });
+        } else {
+          showToast(`Zona ${key} ${t('zona.deleted')}`);
         }
-        showToast(`Zona ${key} ${t('zona.deleted')}`);
       },
       memCount > 0 ? {
         description: `${memCount} ${t('zona.deleteHasMembers')}`,

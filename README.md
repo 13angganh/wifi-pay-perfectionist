@@ -1,3 +1,55 @@
+# WiFi Pay Next — Update v11.5.3
+
+> Patch fix konsistensi toast sukses/gagal vs status sync — bug yang dilaporkan saat edit nama member ("H.ZAINI berhasil diupdate" tapi pill header menunjukkan "Gagal simpan", dan nama balik ke semula setelah app ditutup-buka kembali). Root cause sama ditemukan di 9 file lain saat audit menyeluruh ke seluruh menu Entry, Rekap, dan Member — semua sudah diperbaiki dengan pola yang konsisten.
+
+## v11.5.3 — Fix: Toast Sukses Tampil Walau Simpan ke Server Gagal
+
+**Root cause:** Hampir semua fungsi `persist()`/handler simpan di app ini punya pola sama:
+1. Update state lokal (`setAppData`) — UI langsung berubah, *optimistic update*.
+2. `await` panggilan Firebase (`saveDB`/`persistPayment`) di dalam `try/catch`.
+3. Di blok `catch`, hanya `setSyncStatus('err')` dipanggil (mengubah pill di header jadi "Gagal simpan").
+4. **Tapi** baris `showToast('...berhasil...')` setelah `await persist(...)` dieksekusi **tanpa syarat** — fungsi `persist()` tidak mengembalikan nilai apa pun, sehingga caller tidak tahu (dan tidak peduli) apakah save-nya sukses atau gagal.
+
+Akibatnya: saat Firebase gagal (offline, koneksi lambat, dll), pengguna melihat toast hijau "berhasil" **bersamaan** dengan pill merah "Gagal simpan" di pojok kiri atas header — dua sinyal yang saling bertentangan dalam satu aksi. Karena perubahan hanya tersimpan optimis di state lokal (bukan di Firebase), begitu app ditutup dan dibuka kembali (data di-fetch ulang dari server), perubahan itu hilang dan kembali ke nilai lama — persis seperti dilaporkan: nama "HAJI ZAINI" balik lagi setelah sempat tampil "H.ZAINI".
+
+**Perbaikan:** setiap fungsi `persist()`/handler simpan sekarang **mengembalikan boolean** hasil sebenarnya, dan setiap pemanggilnya **mengecek hasil itu** sebelum menampilkan toast — toast sukses hanya muncul jika benar-benar tersimpan ke server, toast gagal (`t('common.saveFailed')`, key locale baru: "Gagal tersimpan ke server, periksa koneksi") muncul jika gagal. Untuk aksi yang menutup modal setelah simpan (Edit Member, Free Member, dsb), modal **tidak ditutup** jika gagal, supaya pengguna bisa langsung coba lagi tanpa kehilangan input yang sudah diketik.
+
+| # | Lokasi | Fungsi yang diperbaiki |
+|---|--------|------------------------|
+| 1 | **Members** — `MembersView.tsx` | `addMember`, `saveEdit` (bug yang dilaporkan), `deleteMember`, `restoreMember`, `permanentDelete` |
+| 2 | **Members** — `MemberCard.tsx` | `doQuickPay` (toast error tambahan jika background save gagal), `saveDate` (sebelumnya tidak ada toast sama sekali, sukses maupun gagal) |
+| 3 | **Rekap** — `RekapView.tsx` | `handleBatchPay` |
+| 4 | **Rekap** — `RekapModal.tsx` | `quickPay`, `manualPay`, `clearPay` |
+| 5 | **Entry** — `EntryView.tsx` | `executeBatch` |
+| 6 | **Modal Free Member** — `FreeMemberModal.tsx` | `handleSave`, `handleRemove` |
+| 7 | **Operasional** — `OperasionalView.tsx` | `addItem`, `updateItem`, `deleteItem` |
+| 8 | **Settings — Konversi IP** — `SettingsIPSection.tsx` | `doConvert` |
+| 9 | **Settings — Zona** — `SettingsZoneSection.tsx` | `deleteCustomZona` |
+| 10 | **Header** — `Header.tsx` | `toggleGlobalLock` (kunci/buka entry) |
+
+**Dengan sengaja TIDAK diubah:** `ImportModal.tsx` dan `hooks/useAppData.ts` — keduanya sudah benar sejak awal (toast error spesifik di blok `catch`, terpisah dari toast sukses lokal), jadi tidak ada perubahan di sana. `SettingsZoneSection.tsx` (`saveEditZona`, `toggleHideZona`, `addZona`) juga tidak disentuh — fungsi-fungsi itu hanya menulis ke `localStorage` via `updateSettings()` (sinkron, tidak terhubung Firebase), jadi tidak punya kelas bug yang sama.
+
+**File yang berubah (v11.5.3):**
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MembersView.tsx` | `persist()` return `Promise<boolean>`; 5 caller dikondisikan ke hasilnya |
+| `components/features/members/MemberCard.tsx` | `doQuickPay` & `saveDate` dapat toast error eksplisit saat gagal |
+| `components/features/rekap/RekapView.tsx` | `persist()` return `Promise<boolean>`; `handleBatchPay` dikondisikan |
+| `components/features/rekap/RekapModal.tsx` | `persist()` return `Promise<boolean>`; `quickPay`/`manualPay`/`clearPay` dikondisikan |
+| `components/features/entry/EntryView.tsx` | `executeBatch` dikondisikan ke hasil save |
+| `components/modals/FreeMemberModal.tsx` | `persist()` return `Promise<boolean>`; modal tidak tertutup jika gagal |
+| `components/features/operasional/OperasionalView.tsx` | `persist()` return `Promise<boolean>`; toast error utk `addItem`/`updateItem`/`deleteItem` |
+| `components/features/settings/SettingsIPSection.tsx` | `persist()` return `Promise<boolean>`; `doConvert` dikondisikan |
+| `components/features/settings/SettingsZoneSection.tsx` | `persistData()` return `Promise<boolean>`; `deleteCustomZona` dikondisikan |
+| `components/layout/Header.tsx` | `toggleGlobalLock` dikondisikan ke hasil save |
+| `lib/locales/id.ts`, `en.ts` | Key baru: `common.saveFailed` |
+| `lib/constants.ts` | Versi → v11.5.3 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **135/135 unit test lulus** (tidak ada test baru ditambahkan — perubahan murni alur kontrol pada kode yang sudah ada, bukan logic baru; semua test eksisting termasuk integritas i18n tetap lulus setelah penambahan key locale).
+
+---
+
 # WiFi Pay Next — Update v11.5.2
 
 > Gabungan: 2 perbaikan terisolasi untuk Rekap (rendering saat scroll) + 3 fitur baru. Tidak urgent — v11.5.1 tetap aman dan nyaman dipakai jika versi ini belum mau dipasang.

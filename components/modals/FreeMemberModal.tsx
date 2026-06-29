@@ -49,12 +49,12 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, zone, name, appData.freeMembers]);
 
-  async function persist(newData: typeof appData, action: string, detail: string) {
+  async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
-    try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); }
-    catch { setSyncStatus('err'); }
+    try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); return true; }
+    catch { setSyncStatus('err'); return false; }
   }
 
   async function handleSave() {
@@ -72,9 +72,13 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
       freeMembers: { ...(appData.freeMembers || {}), [key]: freeData },
     };
     const detail = `${lang === 'en' ? 'From' : 'Dari'} ${MONTH_NAMES[fromMonth]} ${fromYear}${noEnd ? (lang === 'en' ? ' (forever)' : ' (selamanya)') : (lang === 'en' ? ' to ' : ' s/d ') + MONTH_NAMES[toMonth] + ' ' + toYear}`;
-    await persist(newData, `[FREE] Set Free Member ${zone} - ${name}`, detail);
-    showToast(`${name} ${t('freemodal.setFree')}`);
-    onClose();
+    const ok = await persist(newData, `[FREE] Set Free Member ${zone} - ${name}`, detail);
+    if (ok) {
+      showToast(`${name} ${t('freemodal.setFree')}`);
+      onClose();
+    } else {
+      showToast(t('common.saveFailed'), 'err');
+    }
   }
 
   function handleRemove() {
@@ -86,9 +90,13 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         const key     = zone + '__' + name;
         const newFree = { ...(appData.freeMembers || {}) };
         delete newFree[key];
-        await persist({ ...appData, freeMembers: newFree }, `[PAY] Kembalikan ke Berbayar ${zone} - ${name}`, 'Free member dihapus');
-        showToast(`${name} ${t('freemodal.removed')}`);
-        onClose();
+        const ok = await persist({ ...appData, freeMembers: newFree }, `[PAY] Kembalikan ke Berbayar ${zone} - ${name}`, 'Free member dihapus');
+        if (ok) {
+          showToast(`${name} ${t('freemodal.removed')}`);
+          onClose();
+        } else {
+          showToast(t('common.saveFailed'), 'err');
+        }
       },
       { description: t('freemodal.removeNote') }
     );

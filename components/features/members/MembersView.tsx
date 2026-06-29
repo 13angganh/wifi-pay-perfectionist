@@ -50,9 +50,15 @@ export default function MembersView() {
   const idRef    = useRef<HTMLInputElement>(null);
   const tarifRef = useRef<HTMLInputElement>(null);
 
-  async function persist(newData: typeof appData, action: string, detail?: string) {
+  // FIX: persist() sekarang mengembalikan boolean sukses/gagal. Sebelumnya fungsi ini
+  // tidak return apa-apa, sehingga semua caller (addMember, saveEdit, deleteMember, dst)
+  // selalu menampilkan toast sukses TANPA SYARAT setelah `await persist(...)`, walau
+  // write ke Firebase gagal (mis. offline). Akibatnya: toast "berhasil" muncul bersamaan
+  // dengan pill "Gagal simpan" di header — inkonsisten dan menyesatkan, karena perubahan
+  // hanya tersimpan optimis di state lokal lalu hilang lagi setelah reload/re-fetch.
+  async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true; // mode tanpa login: tidak ada Firebase, anggap "sukses" lokal
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action, detail: detail || '' }, userEmail || '', () => ({
@@ -60,7 +66,11 @@ export default function MembersView() {
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      return true;
+    } catch {
+      setSyncStatus('err');
+      return false;
+    }
   }
   function openFree(z: Zone, n: string) { setFreeZone(z); setFreeName(n); setFreeOpen(true); }
   function openRiwayat(z: Zone, n: string) {
@@ -80,12 +90,16 @@ export default function MembersView() {
     const infoKey = `${zone}__${name}`;
     const newInfo = { ...(appData.memberInfo||{}), [infoKey]: { id, ip, ...(tarif ? { tarif:+tarif } : {}) } };
     const newData = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']: list, memberInfo: newInfo };
-    await persist(newData, `[ADD] ${tLog('log.action.addMember')} ${zone} - ${name}`, `ID:${id} IP:${ip}`);
-    showToast(`${name} ${t('members.added')}`);
-    if (nameRef.current)  nameRef.current.value  = '';
-    if (idRef.current)    idRef.current.value    = '';
-    if (tarifRef.current) tarifRef.current.value = '';
-    setAddIP('');
+    const ok = await persist(newData, `[ADD] ${tLog('log.action.addMember')} ${zone} - ${name}`, `ID:${id} IP:${ip}`);
+    if (ok) {
+      showToast(`${name} ${t('members.added')}`);
+      if (nameRef.current)  nameRef.current.value  = '';
+      if (idRef.current)    idRef.current.value    = '';
+      if (tarifRef.current) tarifRef.current.value = '';
+      setAddIP('');
+    } else {
+      showToast(t('common.saveFailed'), 'err');
+    }
   }
 
   function openEdit(name: string) {
@@ -122,8 +136,16 @@ export default function MembersView() {
       if (!trimmedNotes) delete newMemberInfo[`${zone}__${origName}`].notes;
     }
     const newData = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']:list, payments:newPayments, memberInfo:newMemberInfo };
-    await persist(newData, `[EDIT] ${tLog('log.action.editMember')} ${zone}`, `${origName} → ${newName}`);
-    showToast(`${newName} ${t('members.updated')}`); setEditOpen(false);
+    const ok = await persist(newData, `[EDIT] ${tLog('log.action.editMember')} ${zone}`, `${origName} → ${newName}`);
+    if (ok) {
+      showToast(`${newName} ${t('members.updated')}`);
+      setEditOpen(false);
+    } else {
+      // Gagal tersimpan ke server — JANGAN tutup modal, biarkan pengguna coba lagi
+      // (sebelumnya: toast sukses + modal ditutup tetap muncul walau write Firebase gagal,
+      // sehingga nama tampak berubah sesaat lalu kembali ke nama lama setelah reload).
+      showToast(t('common.saveFailed'), 'err');
+    }
   }
 
   async function deleteMember(name: string) {
@@ -136,8 +158,8 @@ export default function MembersView() {
       const nd = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']:filtered,
         payments:Object.fromEntries(Object.entries(appData.payments||{}).filter(([k])=>!k.startsWith(mk+'__'))),
         deletedMembers:{ ...(appData.deletedMembers||{}), [mk]:{ zone,name,deletedAt:Date.now(),payments:mp } } };
-      await persist(nd, `[DEL] ${tLog('log.action.deleteMember')} ${zone} - ${name}`);
-      showToast(`${name} ${t('common.deleted')}`,'err');
+      const ok = await persist(nd, `[DEL] ${tLog('log.action.deleteMember')} ${zone} - ${name}`);
+      showToast(ok ? `${name} ${t('common.deleted')}` : t('common.saveFailed'), 'err');
     }, { description: t('members.deleteNote') });
   }
 
@@ -148,16 +170,16 @@ export default function MembersView() {
     const nd = { ...appData, [d.zone==='KRS'?'krsMembers':'slkMembers']:list,
       payments:{ ...(appData.payments||{}), ...(d.payments||{}) },
       deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
-    await persist(nd, `[RESTORE] ${tLog('log.action.restoreMember')} ${d.zone} - ${d.name}`);
-    showToast(`${d.name} ${t('members.restored')}`, 'ok');
+    const ok = await persist(nd, `[RESTORE] ${tLog('log.action.restoreMember')} ${d.zone} - ${d.name}`);
+    showToast(ok ? `${d.name} ${t('members.restored')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
   }
 
   async function permanentDelete(key: string) {
     const d = appData.deletedMembers?.[key]; if(!d) return;
     showConfirm('[PURGE]', `${t('members.permDelete')} ${d.name}?`, t('members.permDeleteYes'), async () => {
       const nd = { ...appData, deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
-      await persist(nd, `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
-      showToast(`${d.name} ${t('members.deleted')}`,'err');
+      const ok = await persist(nd, `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
+      showToast(ok ? `${d.name} ${t('members.deleted')}` : t('common.saveFailed'), 'err');
     }, { description: t('members.permDeleteNote'), highlightColor: '#e05c5c' });
   }
 

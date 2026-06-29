@@ -34,9 +34,9 @@ export default function SettingsIPSection() {
   const [find,   setFind]   = useState('');
   const [replace,setReplace]= useState('');
 
-  async function persist(newData: typeof appData, action: string, detail?: string) {
+  async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action, detail: detail || '' }, userEmail || '', () => ({
@@ -44,7 +44,11 @@ export default function SettingsIPSection() {
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      return true;
+    } catch {
+      setSyncStatus('err');
+      return false;
+    }
   }
 
   // v11.5: konversi generik — cari substring `find` di IP, ganti dengan `replace`.
@@ -64,13 +68,17 @@ export default function SettingsIPSection() {
       return;
     }
 
-    await persist(
+    const ok = await persist(
       { ...appData, memberInfo: newInfo },
       `[IP] Konversi "${f}"→"${replace}" zona ${zone}`,
       `${count} member diperbarui`
     );
-    showToast(`${count} IP zona ${zone} ${t('settings.ip.converted')}`);
-    setFind(''); setReplace('');
+    if (ok) {
+      showToast(`${count} IP zona ${zone} ${t('settings.ip.converted')}`);
+      setFind(''); setReplace('');
+    } else {
+      showToast(t('common.saveFailed'), 'err');
+    }
   }
 
   function handleConvertClick() {

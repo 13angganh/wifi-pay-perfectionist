@@ -51,9 +51,11 @@ export default function RekapView() {
   const grand     = MONTHS.reduce((s, _, mi) =>
     s + mems.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
 
-  async function persist(newData: typeof appData, action: string, detail: string) {
+  // FIX: return boolean agar caller bisa cek hasil sebelum tampilkan toast sukses
+  // (lihat catatan sama di MembersView.tsx persist()).
+  async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     setAppData(newData);
-    if (!uid) return;
+    if (!uid) return true;
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action, detail }, userEmail || '', () => ({
@@ -61,7 +63,11 @@ export default function RekapView() {
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
       setSyncStatus('ok');
-    } catch { setSyncStatus('err'); }
+      return true;
+    } catch {
+      setSyncStatus('err');
+      return false;
+    }
   }
 
   function isLocked(name: string) {
@@ -147,11 +153,11 @@ export default function RekapView() {
         };
       }
     }
-    await persist(newData,
+    const ok = await persist(newData,
       `[PAY] ${tLog('log.action.batchPay')} Rekap ${activeZone} - ${entries.length} ${tLog('common.members')}`,
       `${MONTH_NAMES[mi]} ${selYear}`
     );
-    showToast(`${entries.length} ${t('rekap.batchSuccess')}`);
+    showToast(ok ? `${entries.length} ${t('rekap.batchSuccess')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
     exitBatch();
   }
 

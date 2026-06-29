@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { showToast } from '@/components/ui/Toast';
-import { getZoneTotal, isLunas, isFree, getPay, getArrears, rp } from '@/lib/helpers';
+import { getZoneTotal, isLunas, isFree, getPay, getArrears, getPrevMonth, calcPctDelta, rp } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { doJSONBackup, doJSONShare, isShareSupported, doWASummary } from '@/lib/export';
 import type { ViewName } from '@/types';
@@ -15,15 +15,19 @@ import {
   TrendingUp, TrendingDown,
   CheckCircle2, Clock, Gift,
   AlertTriangle, Database,
-  Share2, Wallet, Minus,
+  Share2, Wallet, Minus, ArrowRight,
 } from 'lucide-react';
 
 // ── PctBadge — top-level component (task 4.11: react-hooks/static-components) ──
-function PctBadge({ pct, prevMonthLabel }: { pct: number | null; prevMonthLabel: string }) {
+// v11.5.2: tambah invertColor — untuk metrik di mana NAIK berarti buruk (misal tunggakan),
+// kebalikan dari income di mana naik berarti baik. Tanpa ini, badge akan salah kasih warna
+// (hijau untuk tunggakan naik, padahal itu buruk).
+function PctBadge({ pct, prevMonthLabel, invertColor }: { pct: number | null; prevMonthLabel: string; invertColor?: boolean }) {
   if (pct === null) return null;
   const up = pct >= 0;
+  const isGood = invertColor ? !up : up;
   return (
-    <span style={{ fontSize:9, fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
+    <span style={{ fontSize:9, fontWeight:600, color: isGood ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
       {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
       {Math.abs(pct)}% vs {prevMonthLabel}
     </span>
@@ -32,20 +36,26 @@ function PctBadge({ pct, prevMonthLabel }: { pct: number | null; prevMonthLabel:
 
 export default function DashboardView() {
   const router = useRouter();
-  const { appData, syncStatus, selYear, selMonth, setSelYear, setSelMonth, setView } = useAppStore();
+  const { appData, syncStatus, selYear, selMonth, setSelYear, setSelMonth, setView, setViewWithPeriod } = useAppStore();
   const dy = selYear; const dm = selMonth;
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
 
   function nav(v: ViewName) { setView(v); router.push('/' + v); }
+  // v11.5: navigasi atomic ke Entry pada zona + bulan + tahun tertentu — dipakai saat
+  // klik member tunggakan agar langsung lompat ke bulan yang nunggak (kartu auto-expand),
+  // bukan bulan sekarang.
+  function goToEntryAt(zone: string, year: number, month: number, memberName?: string) {
+    setViewWithPeriod('entry', year, month, zone, memberName);
+    router.push('/entry');
+  }
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   // ── Income ──
   const krsTotal    = getZoneTotal(appData, 'KRS', dy, dm);
   const slkTotal    = getZoneTotal(appData, 'SLK', dy, dm);
   const totalIncome = krsTotal + slkTotal;
-  const prevDm      = dm === 0 ? 11 : dm - 1;
-  const prevDy      = dm === 0 ? dy - 1 : dy;
+  const { year: prevDy, month: prevDm } = getPrevMonth(dy, dm);
   const krsPrev     = getZoneTotal(appData, 'KRS', prevDy, prevDm);
   const slkPrev     = getZoneTotal(appData, 'SLK', prevDy, prevDm);
   const totalPrev   = krsPrev + slkPrev;
@@ -69,13 +79,31 @@ export default function DashboardView() {
   const slkFree  = slkAll.filter(m => isFree(appData, 'SLK', m, dy, dm)).length;
   const totalFree = krsFree + slkFree;
 
+  // ── v11.5.2: Insight kontekstual — tunggakan & rasio lunas, bulan ini vs bulan lalu ──
+  // Reuse prevDy/prevDm yang sudah dihitung di atas (sudah handle wrap tahun Jan→Des).
+  const totalBelumNow  = krsBelum + slkBelum;
+  const krsBelumPrev   = krsAll.filter(m => getPay(appData, 'KRS', m, prevDy, prevDm) === null && !isFree(appData, 'KRS', m, prevDy, prevDm)).length;
+  const slkBelumPrev   = slkAll.filter(m => getPay(appData, 'SLK', m, prevDy, prevDm) === null && !isFree(appData, 'SLK', m, prevDy, prevDm)).length;
+  const totalBelumPrev = krsBelumPrev + slkBelumPrev;
+  // Selisih tunggakan: negatif = turun (bagus), positif = naik (kurang bagus)
+  const tunggakanDelta = calcPctDelta(totalBelumNow, totalBelumPrev);
+
+  const totalAllMembers = krsAll.length + slkAll.length;
+  const totalLunasNow   = krsLunas + slkLunas;
+  const lunasPctNow     = totalAllMembers ? Math.round((totalLunasNow / totalAllMembers) * 100) : 0;
+  const krsLunasPrev    = krsAll.filter(m => isLunas(appData, 'KRS', m, prevDy, prevDm) && !isFree(appData, 'KRS', m, prevDy, prevDm)).length;
+  const slkLunasPrev    = slkAll.filter(m => isLunas(appData, 'SLK', m, prevDy, prevDm) && !isFree(appData, 'SLK', m, prevDy, prevDm)).length;
+  const totalLunasPrev  = krsLunasPrev + slkLunasPrev;
+  const lunasPctPrev    = totalAllMembers ? Math.round((totalLunasPrev / totalAllMembers) * 100) : 0;
+  const lunasPctDelta   = lunasPctNow - lunasPctPrev; // poin persentase, bukan rasio
+
   // ── Tunggakan ──
-  const topTunggak: { z: string; name: string; count: number; oldest: string }[] = [];
+  const topTunggak: { z: string; name: string; count: number; oldest: string; oldestY: number; oldestMi: number }[] = [];
   for (const z of ['KRS', 'SLK'] as const) {
     const mems = z === 'KRS' ? appData.krsMembers : appData.slkMembers;
     for (const name of mems) {
       const unpaid = getArrears(appData, z, name, dy, dm).filter(u => !isFree(appData, z, name, u.y, u.mi));
-      if (unpaid.length > 0) topTunggak.push({ z, name, count: unpaid.length, oldest: unpaid[0].label });
+      if (unpaid.length > 0) topTunggak.push({ z, name, count: unpaid.length, oldest: unpaid[0].label, oldestY: unpaid[0].y, oldestMi: unpaid[0].mi });
     }
   }
   topTunggak.sort((a, b) => b.count - a.count);
@@ -161,6 +189,48 @@ export default function DashboardView() {
         </div>
       </div>
 
+      {/* ── v11.5.2: Insight Kontekstual — tunggakan & rasio lunas vs bulan lalu ── */}
+      <div style={card}>
+        <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:10 }}>
+          {t('dashboard.insightTitle')}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          {/* Tunggakan bulan ini vs bulan lalu */}
+          <div>
+            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3 }}>{t('dashboard.insightTunggakan')}</div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color: totalBelumNow > 0 ? 'var(--c-belum)' : 'var(--c-lunas)' }}>
+                {totalBelumNow}
+              </span>
+              <span style={{ fontSize:10, color:'var(--txt4)' }}>{t('common.members')}</span>
+            </div>
+            {tunggakanDelta !== null ? (
+              <PctBadge pct={tunggakanDelta} prevMonthLabel={MONTH_NAMES[prevDm]} invertColor />
+            ) : (
+              <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:2 }}>{t('dashboard.insightNoBaseline')}</span>
+            )}
+          </div>
+          {/* Rasio lunas bulan ini vs bulan lalu */}
+          <div>
+            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3 }}>{t('dashboard.insightLunasRatio')}</div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>
+                {lunasPctNow}%
+              </span>
+            </div>
+            <span style={{
+              fontSize:9, fontWeight:600, marginLeft:2, display:'inline-flex', alignItems:'center', gap:2,
+              color: lunasPctDelta === 0 ? 'var(--txt4)' : lunasPctDelta > 0 ? 'var(--c-lunas)' : 'var(--c-belum)',
+            }}>
+              {lunasPctDelta === 0
+                ? <Minus size={9} />
+                : lunasPctDelta > 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+              {lunasPctDelta === 0 ? t('dashboard.insightSame') : `${Math.abs(lunasPctDelta)} pp vs ${MONTH_NAMES[prevDm]}`}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* KRS + SLK cards — shadow-md, progress bar 6px */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
         {([
@@ -234,6 +304,24 @@ export default function DashboardView() {
             </span>
           </div>
         )}
+        {(krsBelum + slkBelum) > 0 && (
+          <button
+            onClick={() => { setViewWithPeriod('entry', dy, dm); router.push('/entry'); }}
+            style={{
+              marginTop:10, width:'100%', display:'flex', alignItems:'center',
+              justifyContent:'center', gap:6,
+              background:'rgba(239,68,68,0.07)',
+              border:'1px solid rgba(239,68,68,0.2)',
+              color:'var(--c-belum)', borderRadius:'var(--r-sm)',
+              padding:'9px 12px', cursor:'pointer', fontSize:12,
+              fontWeight:700, fontFamily:"var(--font-sans),sans-serif",
+              transition:'all var(--t-fast)',
+            }}
+          >
+            <ArrowRight size={13} />
+            Input Bayar {bulanLbl}
+          </button>
+        )}
       </div>
 
       {/* Top tunggakan — tanpa aging widget */}
@@ -248,18 +336,34 @@ export default function DashboardView() {
           </div>
         ) : (
           top5.map((t2, i) => (
-            <div key={i} style={{
-              display:'flex', justifyContent:'space-between', alignItems:'center',
-              padding:'8px 0',
-              borderBottom: i < top5.length - 1 ? '1px solid var(--border2)' : 'none',
-            }}>
+            <div
+              key={i}
+              onClick={() => goToEntryAt(t2.z, t2.oldestY, t2.oldestMi, t2.name)}
+              role="button"
+              tabIndex={0}
+              aria-label={`${t2.name} — ${t2.count} bulan tunggakan, ke Entry ${t2.oldest}`}
+              style={{
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                padding:'8px 4px',
+                margin:'0 -4px',
+                borderRadius:'var(--r-sm)',
+                cursor:'pointer',
+                transition:'background var(--t-fast)',
+                borderBottom: i < top5.length - 1 ? '1px solid var(--border2)' : 'none',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background='var(--bg3)'}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background='transparent'}
+            >
               <div>
                 <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{t2.name}</span>
                 <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:6 }}>{t2.z}</span>
               </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{t2.count} {t('common.months')}</div>
-                <div style={{ fontSize:9, color:'var(--txt4)' }}>{t('common.since')} {t2.oldest}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ textAlign:'right' }}>
+                  <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{t2.count} {t('common.months')}</div>
+                  <div style={{ fontSize:9, color:'var(--txt4)' }}>{t('common.since')} {t2.oldest}</div>
+                </div>
+                <ChevronRight size={14} style={{ color:'var(--txt4)', flexShrink:0 }} />
               </div>
             </div>
           ))

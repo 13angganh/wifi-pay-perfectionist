@@ -1,6 +1,7 @@
 'use client';
 
 import { WifiOff, RefreshCw } from 'lucide-react';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 export default function OfflinePage() {
   return (
@@ -188,7 +189,7 @@ export default function OfflinePage() {
         <div>
           <div className="wp-offline-title">Tidak Ada Akses Internet</div>
           <p className="wp-offline-desc">
-            WiFi Pay memerlukan koneksi internet untuk mengakses data.
+            {APP_NAME} memerlukan koneksi internet untuk mengakses data.
             Aktifkan WiFi atau paket data, lalu coba lagi.
           </p>
         </div>
@@ -217,7 +218,7 @@ export default function OfflinePage() {
           Coba Lagi
         </button>
 
-        <div className="wp-offline-version">WiFi Pay v11.3 Next</div>
+        <div className="wp-offline-version">{APP_NAME} {APP_VERSION_FULL}</div>
 
       </div>
     </>

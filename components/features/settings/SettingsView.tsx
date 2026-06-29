@@ -1,7 +1,7 @@
 // components/features/settings/SettingsView.tsx
 'use client';
 
-import { Settings, Shield, Fingerprint, Mail, Map, Download, MessageCircle, Zap, Sun, Globe, Calendar, Info } from 'lucide-react';
+import { Settings, Shield, Fingerprint, Mail, Map, Download, MessageCircle, Zap, Sun, Globe, Calendar, Info, Network } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useAppStore } from '@/store/useAppStore';
 import SettingsPinSection      from './SettingsPinSection';
@@ -10,6 +10,7 @@ import SettingsEmailSection     from './SettingsEmailSection';
 import SettingsZoneSection      from './SettingsZoneSection';
 import SettingsTarifSection     from './SettingsTarifSection';
 import SettingsAppSection       from './SettingsAppSection';
+import SettingsIPSection        from './SettingsIPSection';
 import CollapsibleSection       from './CollapsibleSection';
 
 export default function SettingsView() {
@@ -58,6 +59,14 @@ export default function SettingsView() {
         <SettingsZoneSection />
       </CollapsibleSection>
 
+      {/* Konversi IP — v11.5: dipindah dari menu Members, kini fleksibel (bukan hanya oktet ke-2) */}
+      <CollapsibleSection
+        title="Konversi IP"
+        icon={<Network size={16} strokeWidth={1.5} />}
+      >
+        <SettingsIPSection />
+      </CollapsibleSection>
+
       {/* Export Data — hanya komponen ExportSection dari SettingsTarifSection */}
       <CollapsibleSection
         title="Export Data"
@@ -87,6 +96,7 @@ export default function SettingsView() {
         title="Tema Tampilan"
         icon={<Sun size={16} strokeWidth={1.5} />}
         badge={theme === 'light' ? 'Terang' : theme === 'gold' ? 'Emas' : 'Gelap'}
+        badgeColor="var(--c-lunas)"
       >
         <SettingsAppSection section="theme" />
       </CollapsibleSection>
@@ -96,6 +106,7 @@ export default function SettingsView() {
         title="Bahasa"
         icon={<Globe size={16} strokeWidth={1.5} />}
         badge={settings.language === 'en' ? 'English' : 'Indonesia'}
+        badgeColor="var(--c-lunas)"
       >
         <SettingsAppSection section="language" />
       </CollapsibleSection>

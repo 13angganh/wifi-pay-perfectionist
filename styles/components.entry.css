@@ -27,10 +27,31 @@
 .sbox-v { font-family: var(--font-sans), sans-serif; font-size: 19px; font-weight: 700; }
 
 /* ── Member Card ── */
-.mcard          { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-md); margin-bottom: 6px; transition: border-color var(--t-base-smooth), box-shadow var(--t-base-smooth), transform var(--t-base-smooth); }
+.mcard          { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-md); margin-bottom: 6px; position: relative; transition: border-color var(--t-base-smooth), box-shadow var(--t-base-smooth), transform var(--t-base-smooth); }
 .mcard:hover    { border-color: var(--border2); box-shadow: var(--shadow-sm); }
 .mcard.expanded { border-color: var(--zc); box-shadow: var(--shadow-z); }
 .mcard:active   { transform: scale(.98); }
+/* v11.5.2: micro-interaction "tandai lunas" — glow lembut yang bernapas (lihat
+   @keyframes paymentGlow di animations.css). .mcard sudah position:relative (di atas)
+   agar .mc-success-check (badge checkmark pojok) bisa absolute-positioned terhadap kartu ini. */
+.mcard.payment-success { animation: paymentGlow 0.7s ease-out; }
+.mc-success-check {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-lunas);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.4);
+  animation: checkPop 0.7s ease-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
 .mc-body { overflow: hidden; border-radius: 0 0 var(--r-md) var(--r-md); }
 .mc-top  { display: flex; align-items: center; gap: 8px; padding: 11px 12px; cursor: pointer; transition: background var(--t-fast-smooth); }
 .mc-top:active { background: var(--bg3); transform: scale(0.995); transition: transform 0.08s ease-out; }
@@ -119,20 +140,17 @@
   /* contain: style layout — optimasi repaint tanpa GPU layer baru */
   contain: style layout;
 }
-.rtable tr:nth-child(even) td.stk { background: var(--bg); }
 .rtable tr:hover td.stk { background: var(--bg3); }
-.rtable tr:nth-child(even) td { background: color-mix(in srgb, var(--bg) 98%, #fff); }
+.rtable tr:nth-child(even) td { background: var(--bg2); }
 .rtable tr:hover td { background: var(--bg3); }
-.cv { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
-.cz { background: rgba(34,197,94,0.10); color: var(--c-lunas); }
-.cn { color: var(--txt5); }
+.cv { background: color-mix(in srgb, var(--bg) 88%, var(--c-lunas)); color: var(--c-lunas); }
+.cz { background: color-mix(in srgb, var(--bg) 88%, var(--c-lunas)); color: var(--c-lunas); }
+.cn { background: var(--bg); color: var(--txt5); }
 body.light .rtable td.stk { background: var(--bg); }
-body.light .rtable tr:nth-child(even) td.stk { background: var(--bg); }
 body.light .rtable tr:hover td.stk { background: var(--bg3); }
 body.gold  .rtable th     { background: var(--bg); }
 body.gold  .rtable th.stk { background: var(--bg); }
 body.gold  .rtable td.stk { background: var(--bg); }
-body.gold  .rtable tr:nth-child(even) td.stk { background: var(--bg); }
 body.gold  .rtable tr:hover td.stk            { background: var(--bg3); }
 .rekap-exp-cell { outline: 2px solid var(--zc); outline-offset: -1px; }
 /* rtable-header: tabel header terpisah di atas body scroll container.
@@ -212,3 +230,23 @@ body.gold  .rtable tfoot td      { background: var(--bg3); }
 body.gold  .rtable tfoot td.stk  { background: var(--bg3); }
 body.light .rtable tfoot td      { background: var(--bg3); }
 body.light .rtable tfoot td.stk  { background: var(--bg3); }
+
+/* ── Rekap: animasi flash saat sel baru dibayar ── */
+@keyframes rekapPaidFlash {
+  0%   { background: rgba(34,197,94,0.35); }
+  100% { background: transparent; }
+}
+.rekap-cell-paid-flash {
+  animation: rekapPaidFlash 0.7s ease-out forwards;
+}
+/* ── Rekap: even row stk cells kontras (SATU-SATUNYA deklarasi — v11.5: duplikat
+   dead-code yang sebelumnya ada di atas file dengan nilai berbeda telah dihapus) ── */
+.rtable tr:nth-child(even) td.stk {
+  background: var(--bg2);
+}
+body.light .rtable tr:nth-child(even) td.stk {
+  background: var(--bg2);
+}
+body.gold .rtable tr:nth-child(even) td.stk {
+  background: var(--bg2);
+}

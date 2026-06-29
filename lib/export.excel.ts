@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════
 
 import type { AppData } from '@/types';
-import { MONTHS } from './constants';
+import { MONTHS, APP_NAME, APP_VERSION_FULL } from './constants';
 import { getPay } from './payment';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -43,9 +43,19 @@ export async function generatePDF(
     ? `Rekap WiFi Pay ${zone} - ${MONTHS[month]} ${year}`
     : `Rekap WiFi Pay ${zone} - ${year}`;
 
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text(title, 14, 16);
-  doc.setFontSize(9);  doc.setFont('helvetica','normal'); doc.setTextColor(150);
-  doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')}`, 14, 22); doc.setTextColor(0);
+  // Header branding WiFiPay
+  doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.setTextColor(201, 149, 42);
+  doc.text('WIFI PAY', 14, 10);
+  doc.setTextColor(0);
+  doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text(title, 14, 18);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(120);
+  doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')} · ${APP_NAME} ${APP_VERSION_FULL}`, 14, 24);
+  doc.setTextColor(0);
+  doc.setDrawColor(201, 149, 42); doc.setLineWidth(0.3);
+  doc.line(14, 26, 283, 26);
+  doc.setDrawColor(0); doc.setLineWidth(0.2);
 
   let head: string[][], body: (string|number)[][], foot: (string|number)[][];
 

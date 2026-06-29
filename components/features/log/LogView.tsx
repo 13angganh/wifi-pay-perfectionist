@@ -2,11 +2,12 @@
 'use client';
 
 import { useState } from 'react';
+import type React from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { fuzzyMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
-import { ScrollText, Search, User, X, RotateCcw } from 'lucide-react';
+import { ScrollText, Search, X, RotateCcw, Banknote, Trash2, Pencil, UserPlus, Undo2, Globe, Gift, FileText, Lock, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -14,14 +15,16 @@ export default function LogView() {
   const { appData, syncStatus, logSearch, setLogSearch, logType, setLogType } = useAppStore();
   const [logYear,  setLogYear]  = useState('');
   const [logMonth, setLogMonth] = useState('');
-  const [logName,  setLogName]  = useState('');
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const logs = appData.activityLog || [];
 
-  // Filter: logType — compatible dengan data lama (emoji) dan baru ([PREFIX])
+  // v11.5 FIX: gabungkan dua search box yang sebelumnya redundan (search aksi + filter nama)
+  // — keduanya mencari di field yang sama persis (action + detail), hanya beda algoritma
+  // (includes vs fuzzyMatch). Sekarang satu search box saja, pakai fuzzyMatch yang lebih
+  // fleksibel (superset dari includes untuk kasus ini), tanpa kehilangan kapabilitas apapun.
   let filtered = [...logs];
   if (logType === 'pay') {
     filtered = filtered.filter(l => l.action && (
@@ -33,31 +36,42 @@ export default function LogView() {
     ));
   }
   if (logSearch.trim()) {
-    const q = logSearch.trim().toLowerCase();
-    filtered = filtered.filter(l => (l.action || '').toLowerCase().includes(q) || (l.detail || '').toLowerCase().includes(q));
-  }
-  if (logName.trim()) {
-    filtered = filtered.filter(l =>
-      fuzzyMatch(l.action || '', logName) || fuzzyMatch(l.detail || '', logName)
-    );
+    filtered = filtered.filter(l => fuzzyMatch(l.action || '', logSearch) || fuzzyMatch(l.detail || '', logSearch));
   }
   if (logYear)  filtered = filtered.filter(l => new Date(l.ts).getFullYear() === +logYear);
   if (logMonth) filtered = filtered.filter(l => new Date(l.ts).getMonth() === +logMonth);
 
-  function reset() { setLogSearch(''); setLogYear(''); setLogMonth(''); setLogType('all'); setLogName(''); }
+  function reset() { setLogSearch(''); setLogYear(''); setLogMonth(''); setLogType('all'); }
 
-  // Detect payment-related log entries (new [PREFIX] format + legacy emoji)
-  const isPayLog = (action: string) =>
-    action && (
-      action.includes('Quick Pay') ||
-      action.startsWith('[PAY]') ||
-      action.startsWith('[DEL]') ||
-      action.startsWith('[FREE]') ||
-      /^[\u{1F4B0}\u{1F5D1}\u{1F193}]/u.test(action) ||
-      action.includes('Hapus bayar')
-    );
 
-  const isFiltered = logType !== 'all' || logSearch.trim() || logName.trim() || logYear || logMonth;
+  const isFiltered = logType !== 'all' || logSearch.trim() || logYear || logMonth;
+
+  function getLogMeta(action: string): { icon: React.ReactNode; color: string } {
+    const a = action || '';
+    if (a.startsWith('[PAY]') || a.includes('Quick Pay') || a.includes('bayar') || a.includes('Bayar'))
+      return { icon: <Banknote size={14} strokeWidth={1.5} />, color: 'rgba(34,197,94,0.6)' };
+    if (a.startsWith('[DEL]') || a.includes('Hapus'))
+      return { icon: <Trash2 size={14} strokeWidth={1.5} />, color: 'rgba(239,68,68,0.6)' };
+    if (a.startsWith('[EDIT]') || a.includes('Edit') || a.includes('Ubah'))
+      return { icon: <Pencil size={14} strokeWidth={1.5} />, color: 'rgba(59,130,246,0.6)' };
+    if (a.startsWith('[ADD]') || a.includes('Tambah'))
+      return { icon: <UserPlus size={14} strokeWidth={1.5} />, color: 'rgba(59,130,246,0.6)' };
+    if (a.startsWith('[RESTORE]') || a.startsWith('[UNDO]') || a.includes('Pulihkan') || a.includes('Batalkan'))
+      return { icon: <Undo2 size={14} strokeWidth={1.5} />, color: 'rgba(249,115,22,0.6)' };
+    if (a.startsWith('[IP]') || a.includes('Konversi IP'))
+      return { icon: <Globe size={14} strokeWidth={1.5} />, color: 'rgba(99,102,241,0.6)' };
+    if (a.startsWith('[FREE]') || a.includes('Gratis'))
+      return { icon: <Gift size={14} strokeWidth={1.5} />, color: 'rgba(168,85,247,0.6)' };
+    if (a.includes('Login') || a.includes('Masuk'))
+      return { icon: <LogIn size={14} strokeWidth={1.5} />, color: 'rgba(20,184,166,0.6)' };
+    if (a.includes('Logout') || a.includes('Keluar'))
+      return { icon: <LogOut size={14} strokeWidth={1.5} />, color: 'rgba(100,116,139,0.6)' };
+    if (a.includes('Kunci') || a.includes('Lock'))
+      return { icon: <Lock size={14} strokeWidth={1.5} />, color: 'rgba(245,158,11,0.6)' };
+    if (a.startsWith('[SYNC]') || a.includes('Sync'))
+      return { icon: <RefreshCw size={14} strokeWidth={1.5} />, color: 'rgba(14,165,233,0.6)' };
+    return { icon: <FileText size={14} strokeWidth={1.5} />, color: 'var(--border)' };
+  }
 
   return (
     <div>
@@ -67,22 +81,15 @@ export default function LogView() {
           <ScrollText size={11} /> {t('common.all')}
         </button>
         <button onClick={() => setLogType('pay')} style={{ flex:1, padding:6, borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', background: logType==='pay' ? 'var(--c-lunas)' : 'transparent', color: logType==='pay' ? '#0a0c12' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-          {t('log.payOnly')}
+          <Banknote size={11} /> {t('log.payOnly')}
         </button>
       </div>
 
-      {/* Search aksi */}
+      {/* Search — satu search box untuk cari aksi/nama/detail (v11.5: digabung dari 2 box) */}
       <div className="search-wrap" style={{ marginBottom:8, position:'relative', display:'flex', alignItems:'center' }}>
         <Search size={13} style={{ position:'absolute', left:10, color:'var(--txt4)', pointerEvents:'none' }} />
         <input className="search-box" style={{ margin:0, paddingLeft:30 }} placeholder={t('log.searchPlaceholder')} value={logSearch} onChange={e => setLogSearch(e.target.value)} />
         {logSearch && <button className="search-clear" onClick={() => setLogSearch('')} aria-label="Hapus pencarian"><X size={12} /></button>}
-      </div>
-
-      {/* Filter nama */}
-      <div className="search-wrap" style={{ marginBottom:8, position:'relative', display:'flex', alignItems:'center' }}>
-        <User size={13} style={{ position:'absolute', left:10, color:'var(--txt4)', pointerEvents:'none' }} />
-        <input className="search-box" style={{ margin:0, paddingLeft:30 }} placeholder={t('log.filterName')} value={logName} onChange={e => setLogName(e.target.value)} />
-        {logName && <button className="search-clear" onClick={() => setLogName('')} aria-label="Hapus filter"><X size={12} /></button>}
       </div>
 
       {/* Date filter */}
@@ -124,12 +131,15 @@ export default function LogView() {
               filtered.slice(0, 150).map((l, i) => {
                 const d  = new Date(l.ts);
                 const dt = `${d.toLocaleDateString()} ${d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' })}`;
-                const isPay = isPayLog(l.action);
+                const meta = getLogMeta(l.action);
                 return (
-                  <div key={i} className="log-item" style={{ borderLeft: `2px solid ${isPay ? 'rgba(34,197,94,0.4)' : 'var(--border)'}` }}>
-                    <div className="log-time">{dt} · {l.user || '—'}</div>
-                    <div className="log-action">{l.action}</div>
-                    {l.detail && <div className="log-detail">{l.detail}</div>}
+                  <div key={i} className="log-item" style={{ borderLeft:`3px solid ${meta.color}`, paddingLeft:10 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                      <span style={{ color:meta.color, display:'flex', alignItems:'center', flexShrink:0 }}>{meta.icon}</span>
+                      <div className="log-action" style={{ flex:1 }}>{l.action}</div>
+                    </div>
+                    {l.detail && <div className="log-detail" style={{ paddingLeft:20 }}>{l.detail}</div>}
+                    <div className="log-time" style={{ paddingLeft:20 }}>{dt} · {l.user || '—'}</div>
                   </div>
                 );
               })

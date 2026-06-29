@@ -16,6 +16,17 @@ import {
 } from 'lucide-react';
 import type { ViewName } from '@/types';
 
+// v11.5: APP_NAME & APP_VERSION terpusat — single source of truth untuk tampilan
+// nama & versi app di seluruh UI (Header, Sidebar, LoadingScreen, halaman login,
+// halaman offline, Settings, dan footer export PDF). Sebelumnya setiap tempat
+// hardcode string-nya sendiri, menyebabkan inkonsistensi (PDF export sempat
+// tampil "v11.4" tanpa suffix "Next" yang dipakai di semua tempat lain).
+// Saat naik versi: HANYA ubah baris ini, seluruh app otomatis konsisten.
+export const APP_NAME         = 'WiFi Pay';
+export const APP_VERSION      = 'v11.5.2';
+export const APP_VERSION_SUFFIX = 'Next';
+export const APP_VERSION_FULL = `${APP_VERSION} ${APP_VERSION_SUFFIX}`; // "v11.5 Next"
+
 // task 1.10: MONTHS adalah canonical ID — "Agu" (bukan "Agt"). MONTHS_ID dihapus (duplikat).
 export const MONTHS    = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 export const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];

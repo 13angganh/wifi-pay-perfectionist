@@ -39,6 +39,9 @@ const en: Record<string, string> = {
   'common.offline'   : 'Offline',
   'header.lock'      : 'LOCK',
   'header.unlock'    : 'OPEN',
+  // v11.5: label spesifik untuk toggle kunci di menu Member
+  'members.lock'     : 'LOCK MEMBERS',
+  'members.unlock'   : 'OPEN MEMBERS',
   'common.noData'    : 'No data',
   'common.noResult'  : 'No results',
   'common.total'     : 'Total',
@@ -153,6 +156,12 @@ const en: Record<string, string> = {
   // Dashboard tambahan
   'dashboard.thisMonth'  : 'Monthly Income',
   'dashboard.net'        : 'Net',
+  // v11.5.2: contextual insight card
+  'dashboard.insightTitle'      : 'This Month\'s Insight',
+  'dashboard.insightTunggakan'  : 'Arrears',
+  'dashboard.insightLunasRatio' : 'Paid Ratio',
+  'dashboard.insightNoBaseline' : 'No data for last month',
+  'dashboard.insightSame'       : 'Same as last month',
   'dashboard.unpaidTitle': 'Unpaid',
   'dashboard.topArrears' : 'Most Arrears',
   'dashboard.allPaid'    : 'All Paid!',
@@ -225,6 +234,10 @@ const en: Record<string, string> = {
   'members.ipLabel'        : 'IP / Router Link',
   'members.tarifLabel'     : 'Monthly Rate (×1000)',
   'members.tarifShort'     : 'Rate (×1000)',
+  // v11.5.2: catatan bebas per member
+  'members.notesLabel'     : 'Notes',
+  'members.notesPlaceholder': 'Free-text note about this member (optional)...',
+  'members.hasNotesHint'    : 'This member has a note',
   'members.namePlaceholder': 'Member name',
   'members.addTitle'       : 'ADD NEW MEMBER TO',
   'members.addTo'          : 'Add to',
@@ -372,6 +385,41 @@ const en: Record<string, string> = {
   // Header entry lock
   'header.entryLocked'           : 'Entry locked',
   'header.entryUnlocked'         : 'Entry unlocked',
+  // v11.5: toast spesifik untuk toggle kunci di menu Member
+  'members.locked'               : 'Member list locked',
+  'members.unlocked'             : 'Member list unlocked',
+  // v11.5.1: key untuk SettingsIPSection
+  'settings.ip.zoneLabel'        : 'ZONE',
+  'settings.ip.findLabel'        : 'FIND (IP/text portion to replace)',
+  'settings.ip.replaceLabel'     : 'REPLACE WITH',
+  'settings.ip.findRequired'     : 'Enter a value to search for',
+  'settings.ip.noneFound'        : 'No matching IP found in zone',
+  'settings.ip.noMatch'          : 'No matching IP found in zone',
+  'settings.ip.willBeChanged'    : 'member(s) will be updated in zone',
+  'settings.ip.converted'        : 'converted successfully',
+  'settings.ip.convertButton'    : 'Convert IP',
+  'settings.ip.convertYes'       : 'Convert',
+  'settings.ip.confirmPrefix'    : 'Convert all IPs in zone',
+  'settings.ip.confirmFrom'      : 'from',
+  'settings.ip.confirmTo'        : 'to',
+  'settings.ip.confirmNote'      : 'Only members in the selected zone whose IP contains this value will be changed.',
+  'settings.ip.note'             : 'This converts (find & replace) text in the IP/Router Link field for every member in the selected zone. Works on any octet or text portion — not limited to a fixed pattern.',
+  // v11.5.1: hint tarif default di Tunggakan
+  'tunggakan.tarifDefaultHint'   : 'Rate not set, using default',
+  // v11.5.1: key PIN yang ditemukan hilang saat audit (bug pre-existing)
+  'settings.pin.new'             : 'NEW PIN (6 DIGITS)',
+  'settings.pin.confirm'         : 'CONFIRM PIN',
+  'settings.pin.current'         : 'CURRENT PIN',
+  'settings.pin.activate'        : 'Activate PIN',
+  'settings.pin.change'          : 'Change PIN',
+  'settings.pin.deactivate'      : 'Deactivate PIN',
+  'settings.pin.invalid'         : 'PIN must be 6 digits',
+  'settings.pin.mismatch'        : 'PIN confirmation does not match',
+  'settings.pin.wrongCurrent'    : 'Current PIN is incorrect',
+  // v11.5.1: key lain yang juga ditemukan hilang saat audit
+  'common.searchMember'          : 'Search member name...',
+  'freemodal.existing'           : 'Current Free Members',
+  'settings.zones.placeholder'   : 'New zone name (e.g. PRM)',
 
   // RekapView
   'rekap.dateLocked'             : 'Data locked!',

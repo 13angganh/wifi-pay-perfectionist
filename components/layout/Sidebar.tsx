@@ -13,6 +13,7 @@ import { NAV_ITEMS } from '@/lib/navItems';
 import SidebarUserSection from './Sidebar.UserSection';
 import AccountModal from '@/components/modals/AccountModal';
 import type { ViewName } from '@/types';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 function getInitials(name: string | null, email: string | null): string {
   const n = name || email?.split('@')[0] || '?';
@@ -29,10 +30,11 @@ export default function Sidebar({ onNavigate }: Props) {
   const [showAccount, setShowAccount] = useState(false);
 
   function handleOpenAccount() {
-    // Tutup sidebar dulu di mobile, lalu buka modal
-    setSidebar(false);
-    // Delay kecil agar sidebar tutup dulu sebelum modal muncul
-    setTimeout(() => setShowAccount(true), 150);
+    // v11.5 FIX: jangan tutup sidebar sebelum modal terbuka — modal punya z-index lebih
+    // tinggi (300) dari sidebar (200), jadi sudah otomatis tampil di atasnya. Menutup
+    // sidebar dulu (dengan setTimeout) menyebabkan sidebar terlihat "autocollapse" sebelum
+    // modal muncul, lalu user harus buka sidebar lagi untuk melihat detail — sesuai laporan.
+    setShowAccount(true);
   }
 
   const initials    = getInitials(userName, userEmail);
@@ -46,12 +48,12 @@ export default function Sidebar({ onNavigate }: Props) {
           overflow:'hidden', padding:0,
           boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
         }}>
-          <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512}
+          <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512}
             style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         </div>
         <div>
-          <div className="sb-app-name">WiFi Pay</div>
-          <div style={{ fontSize:8, color:'var(--txt5)', letterSpacing:'.06em' }}>v11.3 Next</div>
+          <div className="sb-app-name">{APP_NAME}</div>
+          <div style={{ fontSize:8, color:'var(--txt5)', letterSpacing:'.06em' }}>{APP_VERSION_FULL}</div>
         </div>
       </div>
 
@@ -89,17 +91,8 @@ export default function Sidebar({ onNavigate }: Props) {
         onOpenAccount={handleOpenAccount}
       />
 
-      <div style={{
-        padding:'10px 16px',
-        borderTop:'1px solid var(--border)',
-        fontSize:9, color:'var(--txt5)',
-        letterSpacing:'.04em', textAlign:'center',
-      }}>
-        WiFi Pay v11.3 Next
-      </div>
-
       {/* AccountModal */}
-      <AccountModal open={showAccount} onClose={() => setShowAccount(false)} />
+      <AccountModal open={showAccount} onClose={() => { setShowAccount(false); setSidebar(false); }} />
     </>
   );
 }

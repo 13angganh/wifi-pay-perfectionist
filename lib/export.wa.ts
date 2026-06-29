@@ -34,3 +34,25 @@ export function doWASummary(data: AppData, year?: number, month?: number): void 
 
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
+
+// ── WA Blast per-member: pesan tunggakan individual ──
+export function doWABlast(
+  name:   string,
+  zone:   string,
+  unpaid: { label: string }[],
+  tarif:  number,
+): void {
+  if (unpaid.length === 0) return;
+  const months   = unpaid.map(u => u.label).join(', ');
+  const total    = unpaid.length * tarif * 1000;
+  const totalFmt = total.toLocaleString('id-ID');
+  const msg = [
+    `Halo *${name}*,`,
+    ``,
+    `Tagihan WiFi zona *${zone}* bulan *${months}* (${unpaid.length} bulan)`,
+    `sebesar *Rp ${totalFmt}* belum dibayar.`,
+    ``,
+    `Mohon segera melakukan pembayaran. Terima kasih 🙏`,
+  ].join('\n');
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+}

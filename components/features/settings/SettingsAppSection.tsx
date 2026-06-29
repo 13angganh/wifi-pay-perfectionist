@@ -8,6 +8,7 @@ import { useT } from '@/hooks/useT';
 import { Globe, Calendar, Check, Sun, Moon, Sparkles } from 'lucide-react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
 import type React from 'react';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 // ── ToggleChip top-level (task 4.11) ──
 function ToggleChip({ label, active, onClick }: { label:string; active:boolean; onClick:()=>void }) {
@@ -166,11 +167,11 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
             width:52, height:52, borderRadius:13, overflow:'hidden',
             marginBottom:6, boxShadow:'0 4px 16px rgba(201,149,42,0.2)',
           }}>
-            <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+            <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
           </div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>WiFi Pay</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>{APP_NAME}</div>
           <div style={{ fontSize:11, color:'var(--txt4)', lineHeight:2 }}>
-            <div>{t('settings.version')} v11.3 Next</div>
+            <div>{t('settings.version')} {APP_VERSION_FULL}</div>
             <div>Firebase: wifi-pay-online</div>
             <div>Server: Singapore</div>
           </div>

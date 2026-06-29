@@ -3,6 +3,7 @@
 'use client';
 
 import Image from 'next/image';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 export default function LoadingScreen() {
   return (
@@ -26,7 +27,7 @@ export default function LoadingScreen() {
       }}>
         <Image
           src="/icon-192.png"
-          alt="WiFi Pay"
+          alt={APP_NAME}
           width={192}
           height={192}
           style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
@@ -44,7 +45,7 @@ export default function LoadingScreen() {
         animation:'lsFade 0.5s 0.1s ease-out both',
         opacity:0,
       }}>
-        WiFi Pay
+        {APP_NAME}
       </div>
 
       {/* Tagline */}
@@ -57,7 +58,7 @@ export default function LoadingScreen() {
         animation:'lsFade 0.5s 0.2s ease-out both',
         opacity:0,
       }}>
-        v11.3 Next
+        {APP_VERSION_FULL}
       </div>
 
       {/* Progress bar */}

@@ -5,10 +5,11 @@ import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getArrears, isFree, getMembersForZone } from '@/lib/helpers';
+import { doWABlast } from '@/lib/export.wa';
 import { useT } from '@/hooks/useT';
 import {
   AlertTriangle, Star, Gift, CheckCircle2,
-  AlertCircle, Flame, Clock, Medal,
+  AlertCircle, Flame, Clock, Medal, MessageCircle,
 } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -23,7 +24,8 @@ export default function TunggakanView() {
   const [mode, setMode] = useState<TMode>('nakal');
   const [agingFilter, setAgingFilter] = useState<AgingFilter>('total');
   const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
+  const settings = useAppStore(s => s.settings);
+  const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const mems = getMembersForZone(activeZone, appData); // FIX: custom zone support
@@ -186,6 +188,24 @@ export default function TunggakanView() {
                   {x.unpaid.slice(0, 12).map(u => <span key={u.label} className="tmonth">{u.label}</span>)}
                   {x.unpaid.length > 12 && <span className="tmonth" style={{ color:'var(--txt2)' }}>+{x.unpaid.length - 12} lagi</span>}
                 </div>
+                <button
+                  onClick={() => {
+                    // v11.5 FIX: ambil tarif INDIVIDUAL member dari memberInfo, bukan selalu
+                    // quickAmounts[0] global. Setiap member bisa punya tarif beda (ada yang 50,
+                    // ada yang 100) — total tagihan WA blast harus dihitung dari tarif masing-masing.
+                    const memberTarif = appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif as number | undefined;
+                    doWABlast(x.name, activeZone, x.unpaid, memberTarif ?? settings?.quickAmounts?.[0] ?? 100);
+                  }}
+                  style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:5, background:'rgba(37,211,102,0.08)', border:'1px solid rgba(37,211,102,0.25)', color:'#22C55E', borderRadius:'var(--r-sm)', padding:'5px 10px', cursor:'pointer', fontSize:10, fontWeight:700, transition:'all var(--t-fast)' }}
+                >
+                  <MessageCircle size={11} />
+                  Kirim WA
+                </button>
+                {!appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif && (
+                  <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:6 }}>
+                    ({t('tunggakan.tarifDefaultHint')})
+                  </span>
+                )}
               </div>
             );
           })

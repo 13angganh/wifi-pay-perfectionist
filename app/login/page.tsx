@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogin, doRegister, doLoginGoogle, doResetPassword, switchAccount, getRememberedCred } from '@/hooks/useAuth';
 import { useT } from '@/hooks/useT';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 type LoginState = 'remembered' | 'form' | 'register';
 
@@ -144,12 +145,12 @@ export default function LoginPage() {
     }}>
       {/* Logo */}
       <div style={{ width:80, height:80, borderRadius:20, overflow:'hidden', marginBottom:16, boxShadow:'0 8px 32px rgba(201,149,42,0.3), 0 0 0 1px rgba(255,255,255,0.06)' }}>
-        <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
       </div>
       <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:26, fontWeight:800, letterSpacing:'-0.03em', marginBottom:2 }}>
-        WiFi Pay
+        {APP_NAME}
       </div>
-      <div style={{ fontSize:10, color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>v11.3 Next</div>
+      <div style={{ fontSize:10, color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>{APP_VERSION_FULL}</div>
 
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:24, width:'100%', maxWidth:360, boxShadow:'var(--shadow-md)' }}>
 
@@ -158,7 +159,7 @@ export default function LoginPage() {
           <div>
             <div style={{ textAlign:'center', marginBottom:24 }}>
               <div style={{ width:56, height:56, borderRadius:14, overflow:'hidden', margin:'0 auto 14px', boxShadow:'0 4px 16px rgba(201,149,42,0.25)' }}>
-                <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               </div>
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:22, color:'var(--txt)', letterSpacing:'-0.02em', lineHeight:1.2, marginBottom:6 }}>
                 {greeterName ? <>{t('login.greeting')}, {greeterName}</> : <>{t('login.greetingNew')}</>}

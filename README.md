@@ -1,3 +1,134 @@
+# WiFi Pay Next — Update v11.5.2
+
+> Gabungan: 2 perbaikan terisolasi untuk Rekap (rendering saat scroll) + 3 fitur baru. Tidak urgent — v11.5.1 tetap aman dan nyaman dipakai jika versi ini belum mau dipasang.
+
+## v11.5.2 — Perbaikan Rekap (low-risk, bukan garansi 100%)
+
+**Penting:** kedua perbaikan ini secara teknis benar dan diverifikasi (tidak ada error/regresi), tapi karena tidak bisa diuji secara visual langsung pada device sungguhan, tidak ada garansi ini akan menghilangkan SELURUH simptom yang dilaporkan (nama hilang saat scroll, scroll kurang smooth, konten tembus kolom judul). Keduanya kecil, terisolasi, dan mudah di-rollback (cukup pakai v11.5.1 lagi) jika tidak membantu.
+
+| # | Perbaikan | Detail teknis |
+|---|-----------|---------------|
+| 1 | Background solid sel nilai pembayaran | `.cv`/`.cz` sebelumnya transparan (`rgba(...,0.10)`), `.cn` tanpa background sama sekali. Background transparan pada tabel dengan kolom sticky adalah penyebab dikenal untuk artefak render saat scroll cepat (lihat histori proyek). Diganti `color-mix()` solid — fitur CSS standar, pola yang sudah dipakai aman di tempat lain di app ini. |
+| 2 | Scroll sync header tanpa delay | Header tabel Rekap sebelumnya mengikuti scroll body lewat `requestAnimationFrame`, yang menambah 1 frame delay tanpa manfaat performa (event scroll browser sudah dibatasi ke refresh rate). Diganti assignment langsung — header sinkron presisi dengan body, tanpa lag yang terlihat saat scroll horizontal cepat. |
+
+**Dengan sengaja TIDAK dilakukan:** GPU layer promotion (`transform: translateZ`/`will-change`) — histori proyek (CHANGES.md) mencatat eksplisit bahwa pendekatan ini pernah jadi PENYEBAB bug lain (blank hitam saat scroll), bukan solusi. Pendekatan itu dihindari sepenuhnya di update ini.
+
+## v11.5.2 — Fitur Baru
+
+| # | Fitur | Detail |
+|---|-------|--------|
+| 1 | Catatan per member | Textarea bebas di halaman Members (area Edit) — ditimpa setiap diedit ulang. Indikator ikon kecil di list member jika ada catatan (isi catatan hanya terlihat saat Edit dibuka). |
+| 2 | Insight kontekstual Dashboard | Card baru di Dashboard: jumlah tunggakan & rasio lunas, bulan ini dibandingkan bulan lalu, dengan badge naik/turun. Polaritas warna disesuaikan — untuk tunggakan, TURUN adalah hijau (baik), berbeda dari income di mana NAIK adalah hijau. |
+| 3 | Micro-interaction "tandai lunas" diperkuat | **Entry/MemberCard**: kartu kini glow hijau lembut (bernapas) + badge checkmark kecil muncul di pojok kartu saat bayar berhasil — diperkuat dari sebelumnya yang hanya toast+haptic. **Rekap**: flash minimal pada sel yang baru dibayar (animasi yang sudah dirancang sebelumnya di CSS, sekarang baru benar-benar disambungkan) — sengaja dibuat lebih halus dari Entry karena dipakai untuk klik cepat berturut-turut di grid padat. |
+
+**File yang berubah (v11.5.2):**
+
+| File | Perubahan |
+|------|-----------|
+| `styles/components.entry.css` | `.cv`/`.cz`/`.cn` solid background; class `.payment-success`/`.mc-success-check` (MemberCard glow+checkmark) |
+| `styles/animations.css` | Keyframes baru: `paymentGlow` (pulse bernapas), `checkPop` (checkmark muncul) |
+| `components/features/rekap/RekapView.tsx` | Scroll sync tanpa rAF; state `flashCell` untuk trigger flash minimal pada sel yang baru dibayar |
+| `components/features/rekap/RekapModal.tsx` | `onClose` menerima info sel yang dibayar (opsional) untuk trigger flash di parent — hanya untuk bayar sukses, bukan untuk hapus/tutup biasa |
+| `components/features/members/MemberCard.tsx` | Glow animasi + badge checkmark saat `showSuccess`, dengan `successKey` counter untuk memastikan animasi selalu replay meski diklik cepat berturut-turut |
+| `components/features/members/MembersView.tsx` | Field catatan di modal Edit; indikator ikon catatan di list member |
+| `components/features/dashboard/DashboardView.tsx` | Card insight baru; `PctBadge` diperluas dengan opsi `invertColor` (untuk metrik di mana naik = buruk) |
+| `types/index.ts` | `MemberInfo.notes?: string` |
+| `lib/payment.ts` | **Baru:** `getPrevMonth()`, `calcPctDelta()` — pure function, diekstrak dari logic Dashboard agar testable |
+| `lib/helpers.ts` | Re-export `getPrevMonth`, `calcPctDelta` |
+| `lib/locales/id.ts`, `en.ts` | Key baru: `members.notes*`, `members.hasNotesHint`, `dashboard.insight*` |
+| `lib/__tests__/helpers.test.ts` | +9 test: `getPrevMonth`, `calcPctDelta` |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **135/135 unit test lulus** (126 dari v11.5.1 + 9 baru) · diverifikasi dari diff lengkap terhadap v11.5.1 yang sebenarnya dikirim (bukan kode eksperimen).
+
+---
+
+# WiFi Pay Next — Update v11.5.1
+
+> Patch cepat dari v11.5, berdasarkan temuan setelah deploy. 3 laporan dari pengguna + 2 bug laten (pre-existing) yang ditemukan saat audit menyeluruh.
+
+## v11.5.1 — Ringkasan Perbaikan
+
+| # | Area | Perbaikan |
+|---|------|-----------|
+| 1 | Pengaturan — Badge | "Tema Tampilan" dan "Bahasa" sekarang juga bertanda hijau (`var(--c-lunas)`) seperti badge status lain, sesuai permintaan eksplisit agar semua badge "aktif" konsisten hijau. |
+| 2 | Members — Kunci/Buka | **Bug nyata ditemukan:** warna tombol "KUNCI MEMBER"/"BUKA MEMBER" terbalik — sebelumnya status TERKUNCI tampil hijau dan TERBUKA tampil merah (kebalikan dari konvensi Header yang sudah benar: terkunci=merah, terbuka=hijau). Sudah diperbaiki agar konsisten. |
+| 3 | Pengaturan — Konversi IP | **Bug nyata ditemukan:** label seperti "SETTINGS.IP.ZONELABEL" tampil mentah (raw key, dengan titik literal) di UI. Akar masalah: pola `t('key') \|\| 'fallback'` yang dipakai mengasumsikan `t()` mengembalikan nilai falsy untuk key yang belum terdaftar — padahal `t()` selalu mengembalikan key itu sendiri (truthy), sehingga fallback tidak pernah tercapai. Semua key `settings.ip.*` kini didaftarkan resmi di `lib/locales/id.ts` dan `en.ts`. |
+
+**Bonus — ditemukan saat audit menyeluruh (bug lama, sudah ada sebelum v11.5):**
+- Key terjemahan PIN (`settings.pin.new`, `.confirm`, `.current`, `.activate`, `.change`, `.deactivate`, `.invalid`, `.mismatch`, `.wrongCurrent`) tidak pernah terdaftar di locale — layar setup/ganti PIN menampilkan raw key.
+- `common.searchMember`, `freemodal.existing`, `settings.zones.placeholder` juga hilang dari locale.
+- Satu pola `t('key') || 'fallback'` lain ditemukan di `TunggakanView.tsx` (hint tarif default) — diganti dengan key locale yang benar (`tunggakan.tarifDefaultHint`), karena key lama yang dipakai (`membercard.setTarifHint`) berisi HTML inline yang tidak cocok untuk konteks teks biasa.
+
+**Pencegahan regresi — test baru:**
+- `lib/__tests__/i18n-and-ui-consistency.test.ts` (11 test baru): men-scan **seluruh** source code untuk memvalidasi setiap pemanggilan `t('key.literal')` benar-benar terdaftar di kedua file locale (id.ts & en.ts), mendeteksi key yang hanya ada di satu bahasa, mendeteksi pola `t('key') || 'fallback'` yang berbahaya, dan memvalidasi konvensi warna kunci/buka konsisten antara Header dan Members.
+
+**File yang berubah (v11.5.1):**
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/settings/SettingsView.tsx` | Tambah `badgeColor="var(--c-lunas)"` ke badge Tema Tampilan & Bahasa |
+| `components/features/members/MembersView.tsx` | Fix warna terbalik tombol kunci/buka member |
+| `components/features/settings/SettingsIPSection.tsx` | Hapus pola fallback `\|\| 'teks'` yang tidak berfungsi; pakai key locale resmi |
+| `components/features/tunggakan/TunggakanView.tsx` | Pakai key locale baru `tunggakan.tarifDefaultHint` (bukan `membercard.setTarifHint` yang salah konteks) |
+| `lib/locales/id.ts`, `en.ts` | Tambah 14 key `settings.ip.*`, 9 key `settings.pin.*`, + `common.searchMember`, `freemodal.existing`, `settings.zones.placeholder`, `tunggakan.tarifDefaultHint` |
+| `lib/__tests__/i18n-and-ui-consistency.test.ts` | **Baru** — 11 test: cakupan key i18n menyeluruh + konvensi warna lock/unlock + badge hijau |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **126/126 unit test lulus** (115 dari v11.5 + 11 baru).
+
+---
+
+# WiFi Pay Next — Update v11.5
+
+> Patch perbaikan v11.4 → v11.5. Fokus pada 10 temuan: WA Blast tarif per-member, lebar kolom rekap, navigasi dashboard (klik tunggakan), konsistensi versi tampilan, bug autocollapse akun, performa scroll rekap, konsistensi icon & search log, migrasi konversi IP ke Settings, dan audit konsistensi badge status.
+
+---
+
+## v11.5 — Ringkasan Perbaikan
+
+| # | Area | Perbaikan |
+|---|------|-----------|
+| 1 | WA Blast | Total tagihan kini memakai **tarif individual member** (`memberInfo.tarif`), bukan selalu tarif default global. Member dengan tarif 50rb vs 100rb sekarang dihitung benar. |
+| 2 | Rekap | Kolom NAMA dipersempit (120px → 86px) — lebih proporsional, tidak memakan ruang berlebih. |
+| 3, 4 | Dashboard | Klik member di "Top Tunggakan" sekarang **langsung membuka Entry pada bulan tunggakan tertua** dengan kartu member auto-expand. Sebelumnya baris ini tidak punya `onClick` sama sekali (tombol tidak berfungsi). Juga memperbaiki dua tombol "BUKA" (Header vs Members) yang membingungkan karena label identik — Members kini berlabel "BUKA MEMBER" / "KUNCI MEMBER". |
+| 5 | Versi & Nama App | `APP_NAME`/`APP_VERSION` kini terpusat di `lib/constants.ts` (single source of truth). Memperbaiki PDF export yang sebelumnya tampil "v11.4" tanpa suffix "Next" (tidak konsisten dengan tempat lain), dan menghapus duplikasi versi di footer Sidebar. |
+| 6 | Akun (Sidebar) | Modal akun sekarang terbuka langsung tanpa menutup sidebar dahulu — sebelumnya sidebar auto-collapse sebelum modal muncul, sehingga harus dibuka ulang untuk melihat opsi ganti akun/keluar. |
+| 7 | Rekap (Performa) | Throttle `requestAnimationFrame` pada scroll handler halaman (`AppShell`) — mengurangi overhead render berlebih saat scroll cepat di tabel besar (100+ baris), mengatasi jank/delay yang dirasakan. |
+| 8 | Log | Tombol filter "Bayar" sekarang punya icon (sebelumnya hanya "Semua" yang punya icon — inkonsisten). Dua search box yang fungsinya identik ("Cari aksi" & "Filter nama", keduanya mencari field yang sama) digabung menjadi satu search box. |
+| 9 | Konversi IP | Dipindah dari menu Members ke **Pengaturan** sebagai section collapsible. Sekarang bisa cari & ganti **substring apa pun** pada IP (bukan hanya oktet ke-2 `.13→.90` yang hardcoded) — fleksibel untuk skenario konversi apa pun. |
+| 10 | Badge Status | Diaudit menyeluruh — badge "Aktif" (PIN, Sidik Jari, Tanggal Otomatis) sudah konsisten hijau (`var(--c-lunas)`) di kode. Tidak ditemukan bug nyata; perbedaan visual yang terlihat adalah badge status (hijau) vs badge informasi netral (Tema/Bahasa, abu — sesuai desain karena bukan representasi ON/OFF). |
+
+**File yang berubah (v11.5):**
+
+| File | Perubahan |
+|------|-----------|
+| `lib/constants.ts` | **Baru:** `APP_NAME`, `APP_VERSION`, `APP_VERSION_FULL` — single source of truth versi/nama app |
+| `lib/member.ts` | **Baru:** `convertMemberIPs()` — fungsi murni konversi IP find & replace, unit-tested |
+| `lib/export.wa.ts` | (tidak berubah — sudah benar; bug ada di caller) |
+| `lib/export.excel.ts` | PDF footer pakai `APP_NAME`/`APP_VERSION_FULL` (fix inkonsistensi "v11.4" tanpa suffix) |
+| `lib/helpers.ts` | Re-export `convertMemberIPs` |
+| `store/slices/viewSlice.ts` | **Baru:** `setViewWithPeriod()` — navigasi atomic dengan periode eksplisit + auto-expand member. `setView()` dapat opsi `keepPeriod` untuk navigasi terprogram tanpa reset periode |
+| `components/layout/AppShell.tsx` | Pathname-sync effect pakai `keepPeriod:true` (fix race condition reset periode). Scroll handler di-throttle rAF |
+| `components/layout/Header.tsx`, `Sidebar.tsx`, `LoadingScreen.tsx` | Pakai `APP_NAME`/`APP_VERSION_FULL` terpusat. Sidebar: hapus duplikasi footer versi, fix autocollapse modal akun |
+| `components/features/dashboard/DashboardView.tsx` | Tombol tunggakan kini punya `onClick` → `goToEntryAt()` |
+| `components/features/tunggakan/TunggakanView.tsx` | WA Blast pakai tarif individual member |
+| `components/features/rekap/RekapView.tsx` | Kolom NAMA dipersempit (header + body colgroup) |
+| `components/features/log/LogView.tsx` | Icon filter "Bayar" ditambahkan, search box digabung jadi satu |
+| `components/features/members/MembersView.tsx` | Tombol konversi IP dipindah (lihat `SettingsIPSection.tsx`), label kunci member diperjelas, refactor `addRef` ke individual refs |
+| `components/features/settings/SettingsView.tsx` | Tambah section "Konversi IP" |
+| `components/features/settings/SettingsIPSection.tsx` | **Baru** — UI konversi IP fleksibel di Settings |
+| `components/features/settings/SettingsAppSection.tsx` | Pakai `APP_NAME`/`APP_VERSION_FULL` terpusat |
+| `app/login/page.tsx`, `app/offline/page.tsx` | Pakai `APP_NAME`/`APP_VERSION_FULL` terpusat |
+| `public/offline.html` | Versi disinkronkan manual ke v11.5 (file statis, tidak bisa import TS constants) |
+| `lib/locales/id.ts`, `en.ts` | Tambah key `members.lock`/`unlock`/`locked`/`unlocked` (disambiguasi dari `header.lock`/`unlock`) |
+| `styles/components.entry.css` | Hapus deklarasi CSS zebra-stripe duplikat (dead code, tidak mengubah hasil visual) |
+| `store/__tests__/viewSlice.test.ts` | **Baru** — 13 test untuk `setView`/`setViewWithPeriod` |
+| `lib/__tests__/export.wa.test.ts` | **Baru** — 7 test untuk `doWABlast` |
+| `lib/__tests__/helpers.test.ts` | Tambah 10 test untuk `convertMemberIPs` |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **115/115 unit test lulus** (85 lama + 30 baru).
+
+---
+
 # WiFi Pay Next — Update v11.2
 
 > Patch perbaikan dan peningkatan dari v11.1. Fokus pada 4 area: grafik gelap, zona dinamis, area klik IP, dan sistem bahasa.
@@ -120,6 +251,38 @@ File lain tidak berubah.
 ## Changelog
 
 ```
+v11.5.2 Next — Rekap Fix + 3 Fitur Baru (Jun 2026)
+🔧 Fix (low-risk, bukan garansi 100%): background solid .cv/.cz/.cn — kemungkinan penyebab nama hilang saat scroll
+🔧 Fix: scroll sync header Rekap tanpa rAF delay — kemungkinan penyebab konten tembus kolom judul
+✨ Fitur: Catatan bebas per member (textarea, hanya di halaman Members)
+✨ Fitur: Insight kontekstual Dashboard — tunggakan & rasio lunas vs bulan lalu
+✨ Fitur: Micro-interaction "tandai lunas" diperkuat (glow+checkmark di Entry, flash minimal di Rekap)
+✅ Test: +9 unit test baru (getPrevMonth, calcPctDelta) — total 135/135 lulus
+
+v11.5.1 Next — Patch Pasca-Deploy (Jun 2026)
+✅ Fix: Badge "Tema Tampilan" & "Bahasa" di Pengaturan kini hijau (konsisten dengan badge status lain)
+✅ Fix: Warna tombol "KUNCI MEMBER"/"BUKA MEMBER" yang terbalik (terkunci sempat hijau, terbuka sempat merah)
+✅ Fix: Raw translation key (mis. "settings.ip.zoneLabel") tampil mentah di Konversi IP — root cause: t('key') || 'fallback' tidak pernah bekerja karena t() selalu return truthy
+✅ Fix: Key terjemahan PIN, search member, free member modal, placeholder zona yang hilang (bug lama, ditemukan saat audit)
+✅ Test: +11 unit test baru — scan otomatis cakupan key i18n + konvensi warna lock/unlock
+
+v11.5 Next — Perbaikan 10 Temuan (Jun 2026)
+✅ Fix: WA Blast total tagihan kini pakai tarif individual member (bukan tarif default global)
+✅ Fix: Kolom NAMA di Rekap dipersempit (120px → 86px)
+✅ Fix: Dashboard "Top Tunggakan" — klik member sekarang berfungsi, langsung ke Entry bulan tunggakan tertua + auto-expand kartu
+✅ Fix: Bug race condition navigasi — setView() tidak lagi menimpa balik periode/expandedCard saat navigasi terprogram (setViewWithPeriod baru)
+✅ Fix: Disambiguasi tombol "BUKA" Header vs Members (label "BUKA MEMBER"/"KUNCI MEMBER")
+✅ Fix: Versi/nama app dipusatkan (lib/constants.ts) — PDF export sebelumnya tampil "v11.4" tanpa suffix "Next", kini konsisten
+✅ Fix: Hapus duplikasi tampilan versi di footer Sidebar
+✅ Fix: Modal akun tidak lagi auto-collapse sidebar sebelum terbuka
+✅ Fix: Render jank/delay saat scroll cepat di Rekap — scroll handler AppShell di-throttle rAF
+✅ Fix: Icon filter "Bayar" di Log yang sebelumnya hilang (inkonsisten dengan "Semua")
+✅ Fix: Gabung 2 search box redundan di Log (Cari aksi + Filter nama → 1 search box)
+✅ Fitur: Konversi IP dipindah ke Pengaturan, kini fleksibel (cari/ganti substring apa pun, bukan hanya oktet ke-2)
+✅ Refactor: addRef di MembersView jadi individual useRef (defensif terhadap eslint-plugin-react-hooks v7 false-positive)
+✅ Cleanup: Hapus dead-code CSS duplikat untuk zebra-stripe Rekap (tidak mengubah hasil visual)
+✅ Test: +30 unit test baru (setView/setViewWithPeriod, doWABlast, convertMemberIPs) — total 115/115 lulus
+
 v11.2 Next — Fase 2: UI Primitives (Apr 2026)
 ✅ Baru: components/ui/Button.tsx — CVA variants (primary, secondary, ghost, danger, icon)
 ✅ Baru: components/ui/Input.tsx — CVA variants dengan label, error, icon support
@@ -148,7 +311,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.2 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.5.2 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

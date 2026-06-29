@@ -1,7 +1,7 @@
 // components/features/rekap/RekapView.tsx — Fase 4: Skeleton + EmptyState
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
@@ -38,6 +38,13 @@ export default function RekapView() {
 
   const [batchColIdx,   setBatchColIdx]   = useState<number | null>(null);
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
+  // v11.5.2: flash minimal saat bayar sukses dari RekapModal — TIDAK dipicu saat modal
+  // ditutup tanpa aksi (X / klik luar), hanya saat quickPay/manualPay benar-benar sukses.
+  // successKey memastikan re-trigger animasi CSS meski sel yang sama dibayar dua kali
+  // berturut-turut sebelum animasi pertama selesai.
+  const [flashCell, setFlashCell] = useState<{ name: string; month: number; zone: string; year: number; successKey: number } | null>(null);
+  const flashKeyCounter = useRef(0);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mems     = getMembersForZone(activeZone, appData); // FIX: custom zone support
   const filtered  = mems.filter(m => fuzzyMatch(m, search));
@@ -61,12 +68,23 @@ export default function RekapView() {
     return globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   }
 
-  function closeModal() {
+  // v11.5.2: closeModal menerima info sel yang baru dibayar (opsional) — jika diisi,
+  // trigger flash minimal pada sel itu. Dipanggil tanpa argumen untuk tutup biasa (X/klik luar).
+  function closeModal(paidCell?: { name: string; month: number }) {
     modalClosing.current = true;
     inputDirty.current   = false;
     setRekapExpanded(null);
     setTimeout(() => { modalClosing.current = false; }, 200);
+    if (paidCell) {
+      flashKeyCounter.current += 1;
+      setFlashCell({ ...paidCell, zone: activeZone, year: selYear, successKey: flashKeyCounter.current });
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setFlashCell(null), 750);
+    }
   }
+
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+
 
   function exitBatch() {
     setBatchColIdx(null);
@@ -284,14 +302,14 @@ export default function RekapView() {
         <table className="rtable rtable-header" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
             <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:110, minWidth:110 }} />
+            <col style={{ width:86, minWidth:68 }} />
             {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
             <col style={{ width:80, minWidth:80 }} />
           </colgroup>
           <thead>
             <tr>
               <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center', borderBottom:'2px solid var(--border)' }}>#</th>
-              <th className="stk" style={{ left:30, textAlign:'left', width:110, minWidth:110, borderBottom:'2px solid var(--border)' }}>NAMA</th>
+              <th className="stk" style={{ left:30, textAlign:'left', width:86, minWidth:68, borderBottom:'2px solid var(--border)' }}>NAMA</th>
               {MONTH_NAMES.map((m, mi) => (
                 <th key={m} style={{
                   width:36, minWidth:36,
@@ -316,17 +334,19 @@ export default function RekapView() {
         className="rekap-wrap"
         style={{ borderRadius:'0 0 var(--r-md) var(--r-md)', borderTop:'none' }}
         onScroll={e => {
-          // rAF untuk smooth header sync — hindari layout thrashing langsung di event handler
+          // Assignment langsung (synchronous) — TANPA requestAnimationFrame.
+          // Event scroll browser sudah dibatasi ke refresh rate display (~60fps);
+          // membungkus operasi scrollLeft sederhana ini dengan rAF hanya menambah
+          // 1 frame delay tanpa manfaat performa, dan delay itulah yang membuat
+          // header terlihat "ketinggalan" sesaat saat scroll horizontal cepat.
           const sl = (e.target as HTMLDivElement).scrollLeft;
-          requestAnimationFrame(() => {
-            if (headerScrollRef.current) headerScrollRef.current.scrollLeft = sl;
-          });
+          if (headerScrollRef.current) headerScrollRef.current.scrollLeft = sl;
         }}
       >
         <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
           <colgroup>
             <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:110, minWidth:110 }} />
+            <col style={{ width:86, minWidth:68 }} />
             {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
             <col style={{ width:80, minWidth:80 }} />
           </colgroup>
@@ -349,11 +369,13 @@ export default function RekapView() {
                   : v !== null ? (v * 1000).toLocaleString('id-ID') : '—';
 
                 const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
+                const isFlashing = flashCell?.name === name && flashCell?.month === mi
+                  && flashCell?.zone === activeZone && flashCell?.year === selYear;
 
                 return (
                   <td
-                    key={mi}
-                    className={`${cls}${isExp ? ' rekap-exp-cell' : ''}`}
+                    key={isFlashing ? `${mi}-flash-${flashCell!.successKey}` : mi}
+                    className={`${cls}${isExp ? ' rekap-exp-cell' : ''}${isFlashing ? ' rekap-cell-paid-flash' : ''}`}
                     style={{
                       opacity: isDimmed ? 0.2 : 1,
                       pointerEvents: isDimmed ? 'none' : undefined,
@@ -377,7 +399,7 @@ export default function RekapView() {
               return (
                 <tr key={name} data-name={name}>
                   <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
-                  <td className="stk" style={{ left:30, minWidth:110, maxWidth:110, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
+                  <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
                   <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
                 </tr>

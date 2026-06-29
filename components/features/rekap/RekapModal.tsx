@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 interface RekapModalProps {
   inputDirty: React.MutableRefObject<boolean>;
   modalClosing: React.MutableRefObject<boolean>;
-  onClose: () => void;
+  onClose: (paidCell?: { name: string; month: number }) => void;
 }
 
 export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapModalProps) {
@@ -71,7 +71,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     }
     // FIX 8+9: Optimistic — update state + toast LANGSUNG, Firebase async
     setAppData(newData);
-    onClose();
+    onClose({ name, month });
     showToastUndo(`${name} → ${rp(amt)}`, async () => {
       const revert = { ...appData, payments: { ...appData.payments } };
       if (prevVal === null) delete revert.payments[k];
@@ -94,14 +94,15 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       delete newData.payments[k];
       await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
       showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
+      onClose();
     } else {
       const amt = +val;
       if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
       newData.payments[k] = amt;
       await persist(newData, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
       showToast(`${name} ${MONTH_NAMES[month]} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
+      onClose({ name, month });
     }
-    onClose();
   }
 
   async function clearPay(e: React.MouseEvent) {
@@ -128,7 +129,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   return (
     <motion.div
       style={{ position:'fixed', inset:0, zIndex:8000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop: Math.round(window.innerHeight * 0.18), background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
-      onClick={onClose}
+      onClick={() => onClose()}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
     >
       <motion.div
@@ -149,7 +150,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
             <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
             <div style={{ fontSize:10, color:'var(--zc)', marginTop:2 }}>{activeZone} · {MONTH_NAMES[month]} {selYear}</div>
           </div>
-          <button onClick={onClose} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <button onClick={() => onClose()} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <X size={14} />
           </button>
         </div>

@@ -13,6 +13,7 @@ import {
   Cloud, RotateCw, AlertTriangle, WifiOff,
 } from 'lucide-react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
+import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
 
 interface Props { onToggleSidebar: () => void; }
 
@@ -101,13 +102,13 @@ export default function Header({ onToggleSidebar }: Props) {
               overflow:'hidden', flexShrink:0,
               boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
             }}>
-              <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             </div>
             <div>
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>
-                WiFi Pay
+                {APP_NAME}
               </div>
-              <div style={{ fontSize:9, color:'var(--txt4)' }}>v11.3 Next</div>
+              <div style={{ fontSize:9, color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
             </div>
           </div>
 

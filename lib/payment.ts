@@ -61,3 +61,17 @@ export function getArrears(data: AppData, zone: string, name: string, upToYear: 
   }
   return unpaid;
 }
+
+// ── v11.5.2: bulan sebelumnya, dengan wrap tahun (Januari → Desember tahun lalu) ──
+export function getPrevMonth(year: number, month: number): { year: number; month: number } {
+  return month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
+}
+
+// ── v11.5.2: persentase perubahan dari `prev` ke `now`, generik untuk insight dashboard.
+// Mengembalikan null jika tidak ada baseline yang masuk akal untuk dihitung (prev=0 tapi
+// now>0 — itu kenaikan "tak terhingga" secara persentase, tidak informatif ditampilkan).
+// Jika prev=0 DAN now=0, hasilnya 0 (kondisi netral/stabil, bukan "tidak ada data"). ──
+export function calcPctDelta(now: number, prev: number): number | null {
+  if (prev > 0) return Math.round(((now - prev) / prev) * 100);
+  return now > 0 ? null : 0;
+}

@@ -69,6 +69,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const [isLongPressing, setIsLongPressing] = useState(false);
   // UX: success flash setelah payment tersimpan
   const [showSuccess,   setShowSuccess]   = useState(false);
+  // v11.5.2: counter untuk force re-trigger animasi checkmark (lihat .mc-success-check) —
+  // tanpa ini, klik bayar dua kali cepat berturut-turut bisa membuat browser skip replay
+  // animasi karena elemen dianggap "tidak berubah" (key sama).
+  const [successKey,    setSuccessKey]    = useState(0);
 
   const isSavingRef    = useRef(false);  // sync guard
   const inputDirty     = useRef(false);
@@ -137,6 +141,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       setSyncStatus('ok');
       // UX: brief success flash
       setShowSuccess(true);
+      setSuccessKey(k => k + 1);
       setTimeout(() => setShowSuccess(false), 700);
       haptic.success();
       return true;
@@ -337,7 +342,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       <div
         ref={cardRef}
         id={`card-${name.replace(/\s/g, '_')}`}
-        className={`mcard ${isExp ? 'expanded' : ''} ${isLongPressing ? 'long-pressing' : ''}`}
+        className={`mcard ${isExp ? 'expanded' : ''} ${isLongPressing ? 'long-pressing' : ''} ${showSuccess ? 'payment-success' : ''}`}
         style={{
           borderLeft:  `3px solid ${showSuccess ? 'var(--c-lunas)' : batchSelected ? 'var(--zc)' : statusBorder}`,
           borderRadius: 'var(--r-md)',
@@ -353,6 +358,14 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         onPointerCancel={cancelLongPress}
         onContextMenu={e => e.preventDefault()}
       >
+        {/* v11.5.2: badge checkmark pojok — micro-interaction "tandai lunas" yang diperkuat.
+            key={successKey} memaksa React remount elemen ini setiap trigger baru, sehingga
+            animasi CSS (checkPop) selalu replay dari awal meski diklik cepat berturut-turut. */}
+        {showSuccess && (
+          <div key={successKey} className="mc-success-check" aria-hidden="true">
+            <Check size={13} strokeWidth={3} />
+          </div>
+        )}
         {/* Top row */}
         <div className="mc-top" onClick={handleToggle} style={{ userSelect:'none' }}>
           {batchMode && (

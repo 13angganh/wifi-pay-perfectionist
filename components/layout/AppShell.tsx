@@ -77,11 +77,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const t = useT();
 
   // Scroll shadow — tampilkan gradient bottom jika masih ada konten di bawah
+  // v11.5 FIX: throttle dengan requestAnimationFrame — handler scroll sebelumnya dipanggil
+  // puluhan kali per detik tanpa throttle, menyebabkan overhead re-render berlebih saat
+  // scroll cepat di halaman berat seperti Rekap (tabel 100+ baris) → terlihat seperti jank/delay.
   const [showScrollFade, setShowScrollFade] = useState(true);
+  const scrollFadeRaf = useRef<number | null>(null);
+  useEffect(() => () => { if (scrollFadeRaf.current !== null) cancelAnimationFrame(scrollFadeRaf.current); }, []);
   function handleContentScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
-    setShowScrollFade(!atBottom);
+    if (scrollFadeRaf.current !== null) return; // sudah ada rAF pending, skip
+    scrollFadeRaf.current = requestAnimationFrame(() => {
+      scrollFadeRaf.current = null;
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+      setShowScrollFade(prev => (prev === !atBottom ? prev : !atBottom));
+    });
   }
 
 
@@ -90,9 +99,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   usePWA(); // task 1.15: hook hasil pecah dari AppShell
 
   // Sync route → view
+  // v11.5 FIX: gunakan keepPeriod:true — effect ini hanya untuk sinkronisasi currentView
+  // saat route berubah (termasuk back/forward browser). Reset period (selYear/selMonth)
+  // sudah ditangani secara eksplisit oleh navigate() di bawah untuk navigasi sidebar biasa,
+  // dan oleh setViewWithPeriod() untuk navigasi terprogram (misal klik tunggakan di dashboard).
+  // Tanpa keepPeriod:true di sini, setView akan selalu menimpa balik selYear/selMonth
+  // setelah router.push — menyebabkan navigasi ke bulan tertentu selalu gagal.
   useEffect(() => {
     const seg = pathname.split('/')[1] as ViewName;
-    if (seg) setView(seg);
+    if (seg) setView(seg, { keepPeriod: true });
   }, [pathname, setView]);
 
   // Apply theme class ke body

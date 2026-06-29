@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, getYears, MONTHS_EN } from '@/lib/constants';
 import { getPay, isFree, rp } from '@/lib/helpers';
-import { ChevronLeft, ChevronRight, X, Gift, CheckCircle2, XCircle, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Gift, CheckCircle2, XCircle, Calendar, TrendingUp, Banknote, Award } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -86,6 +86,22 @@ export default function RiwayatModal({ open, onClose }: Props) {
   });
 
   const totalMonths = 12;
+
+  // Statistik lintas tahun
+  let statLunas   = 0;
+  let statNominal = 0;
+  let statFirst   = '';
+  for (const yr of getYears()) {
+    for (let mi = 0; mi < 12; mi++) {
+      const sv  = getPay(appData, riwayatZone, riwayatName, yr, mi);
+      const sfr = isFree(appData, riwayatZone, riwayatName, yr, mi);
+      if (sv !== null || sfr) {
+        statLunas++;
+        if (sv && sv > 0) statNominal += sv;
+        if (!statFirst) statFirst = `${MONTHS[mi]} ${yr}`;
+      }
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -173,6 +189,36 @@ export default function RiwayatModal({ open, onClose }: Props) {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
           <span style={{ fontSize:11, color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
           <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
+        </div>
+
+        {/* Statistik lintas tahun */}
+        <div style={{ display:'flex', gap:6, marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
+          <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
+            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+              <Award size={9} /> TOTAL
+            </div>
+            <div style={{ fontSize:13, fontWeight:800, color:'var(--c-lunas)', fontFamily:"var(--font-sans),sans-serif" }}>
+              {statLunas} bln
+            </div>
+          </div>
+          <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
+            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+              <Banknote size={9} /> BAYAR
+            </div>
+            <div style={{ fontSize:11, fontWeight:800, color:'var(--zc)', fontFamily:"var(--font-mono),monospace" }}>
+              {rp(statNominal)}
+            </div>
+          </div>
+          {statFirst ? (
+            <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
+              <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+                <TrendingUp size={9} /> MULAI
+              </div>
+              <div style={{ fontSize:9, fontWeight:700, color:'var(--txt2)', fontFamily:"var(--font-sans),sans-serif", lineHeight:1.3 }}>
+                {statFirst}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Rows — HANYA bagian ini yang scroll */}

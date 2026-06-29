@@ -39,6 +39,11 @@ const id: Record<string, string> = {
   'common.offline'   : 'Offline',
   'header.lock'      : 'KUNCI',
   'header.unlock'    : 'BUKA',
+  // v11.5: label spesifik untuk toggle kunci di menu Member — dibedakan dari header.lock/unlock
+  // (yang mengontrol kunci ENTRY PEMBAYARAN global) agar tidak membingungkan, karena toggle
+  // ini di Members mengontrol izin EDIT/HAPUS/TAMBAH MEMBER, bukan entry pembayaran.
+  'members.lock'     : 'KUNCI MEMBER',
+  'members.unlock'   : 'BUKA MEMBER',
   'common.noData'    : 'Tidak ada data',
   'common.noResult'  : 'Tidak ada hasil',
   'common.total'     : 'Total',
@@ -153,6 +158,12 @@ const id: Record<string, string> = {
   // Dashboard tambahan
   'dashboard.thisMonth'  : 'Pendapatan Bulan Ini',
   'dashboard.net'        : 'Bersih',
+  // v11.5.2: card insight kontekstual — tunggakan & rasio lunas vs bulan lalu
+  'dashboard.insightTitle'      : 'Insight Bulan Ini',
+  'dashboard.insightTunggakan'  : 'Tunggakan',
+  'dashboard.insightLunasRatio' : 'Rasio Lunas',
+  'dashboard.insightNoBaseline' : 'Tidak ada data bulan lalu',
+  'dashboard.insightSame'       : 'Sama dengan bulan lalu',
   'dashboard.unpaidTitle': 'Belum Bayar',
   'dashboard.topArrears' : 'Tunggakan Terbanyak',
   'dashboard.allPaid'    : 'Semua Lunas!',
@@ -225,6 +236,10 @@ const id: Record<string, string> = {
   'members.ipLabel'        : 'IP / Link Router',
   'members.tarifLabel'     : 'Tarif Bulanan (×1000)',
   'members.tarifShort'     : 'Tarif (×1000)',
+  // v11.5.2: catatan bebas per member (textarea, ditimpa saat diedit ulang)
+  'members.notesLabel'     : 'Catatan',
+  'members.notesPlaceholder': 'Catatan bebas tentang member ini (opsional)...',
+  'members.hasNotesHint'    : 'Member ini punya catatan',
   'members.namePlaceholder': 'Nama member',
   'members.addTitle'       : 'TAMBAH MEMBER BARU KE',
   'members.addTo'          : 'Tambah ke',
@@ -372,6 +387,47 @@ const id: Record<string, string> = {
   // Header entry lock
   'header.entryLocked'           : 'Entry dikunci',
   'header.entryUnlocked'         : 'Entry dibuka',
+  // v11.5: toast spesifik untuk toggle kunci di menu Member
+  'members.locked'               : 'Daftar member dikunci',
+  'members.unlocked'             : 'Daftar member dibuka',
+  // v11.5.1: key untuk SettingsIPSection — sebelumnya TIDAK ADA di file ini, sehingga
+  // t() mengembalikan raw key string (mis. "settings.ip.zoneLabel") karena fallback "||"
+  // di kode tidak pernah tercapai (t() tidak mengembalikan falsy untuk key yang hilang).
+  'settings.ip.zoneLabel'        : 'ZONA',
+  'settings.ip.findLabel'        : 'CARI (bagian IP/teks yang ingin diganti)',
+  'settings.ip.replaceLabel'     : 'GANTI DENGAN',
+  'settings.ip.findRequired'     : 'Isi nilai yang dicari',
+  'settings.ip.noneFound'        : 'Tidak ada IP yang cocok di zona',
+  'settings.ip.noMatch'          : 'Tidak ada IP yang cocok di zona',
+  'settings.ip.willBeChanged'    : 'member akan diubah di zona',
+  'settings.ip.converted'        : 'berhasil dikonversi',
+  'settings.ip.convertButton'    : 'Konversi IP',
+  'settings.ip.convertYes'       : 'Konversi',
+  'settings.ip.confirmPrefix'    : 'Konversi semua IP zona',
+  'settings.ip.confirmFrom'      : 'dari',
+  'settings.ip.confirmTo'        : 'ke',
+  'settings.ip.confirmNote'      : 'Hanya member di zona terpilih yang IP-nya mengandung nilai ini akan diubah.',
+  'settings.ip.note'             : 'Konversi mencari dan mengganti teks pada field IP/Link Router setiap member di zona terpilih. Bisa untuk oktet manapun atau bagian teks lain — tidak terbatas pada satu pola tertentu.',
+  // v11.5.1: hint tarif default di Tunggakan — teks polos (BUKAN membercard.setTarifHint
+  // yang mengandung HTML inline untuk dangerouslySetInnerHTML, tidak cocok dirender sebagai teks biasa)
+  'tunggakan.tarifDefaultHint'   : 'Tarif belum diset, pakai default',
+  // v11.5.1: ditemukan saat audit menyeluruh — key PIN ini sudah dipakai sejak lama
+  // (SettingsPinSection.Setup.tsx & .Change.tsx) tapi TIDAK PERNAH terdaftar di locale,
+  // menyebabkan label/error PIN tampil sebagai raw key string. Bug pre-existing, bukan
+  // diperkenalkan sesi ini — diperbaiki sekaligus karena pola persis sama dengan bug #3.
+  'settings.pin.new'             : 'PIN BARU (6 DIGIT)',
+  'settings.pin.confirm'         : 'KONFIRMASI PIN',
+  'settings.pin.current'         : 'PIN SAAT INI',
+  'settings.pin.activate'        : 'Aktifkan PIN',
+  'settings.pin.change'          : 'Ganti PIN',
+  'settings.pin.deactivate'      : 'Nonaktifkan PIN',
+  'settings.pin.invalid'         : 'PIN harus 6 digit angka',
+  'settings.pin.mismatch'        : 'Konfirmasi PIN tidak cocok',
+  'settings.pin.wrongCurrent'    : 'PIN saat ini salah',
+  // v11.5.1: key lain yang juga ditemukan hilang saat audit
+  'common.searchMember'          : 'Cari nama member...',
+  'freemodal.existing'           : 'Member Free Saat Ini',
+  'settings.zones.placeholder'   : 'Nama zona baru (mis. PRM)',
 
   // RekapView
   'rekap.dateLocked'             : 'Data terkunci!',

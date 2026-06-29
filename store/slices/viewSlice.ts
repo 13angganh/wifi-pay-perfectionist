@@ -17,7 +17,11 @@ export interface ViewSlice {
   activeZone:  Zone;
   currentView: ViewName;
   setZone:     (z: Zone) => void;
-  setView:     (v: ViewName) => void;
+  setView:     (v: ViewName, opts?: { keepPeriod?: boolean }) => void;
+  // v11.5: navigasi atomic ke view tertentu dengan periode (tahun/bulan) eksplisit.
+  // Dipakai saat klik member tunggakan di dashboard agar langsung lompat ke bulan yang benar
+  // tanpa race dengan reset period di setView biasa.
+  setViewWithPeriod: (v: ViewName, year: number, month: number, zone?: Zone, targetMember?: string) => void;
 
   // Period selector (dashboard/rekap/entry global)
   selYear:     number;
@@ -101,18 +105,43 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
     activeZone: z, search: '', filterStatus: 'all',
     expandedCard: null, entryCardYear: {}, entryCardMonth: {},
   }),
-  setView: (v) => set(() => {
+  setView: (v, opts) => set(() => {
     const _n = new Date();
+    const keepPeriod = opts?.keepPeriod === true;
     return {
-      currentView: v, expandedCard: null,
+      currentView: v,
       search: '', filterStatus: 'all',
       entryScrollTop: 0, rekapExpanded: null,
-      // FIX 6: reset ke bulan/tahun saat ini setiap navigasi
-      selYear:  _n.getFullYear(),
-      selMonth: _n.getMonth(),
-      ...(v !== 'entry' ? { entryCardYear: {}, entryCardMonth: {} } : {}),
+      // FIX 6 (v11.2): reset ke bulan/tahun saat ini setiap navigasi biasa.
+      // v11.5: kecuali jika keepPeriod=true (dipanggil dari setViewWithPeriod / navigasi terprogram).
+      ...(keepPeriod ? {} : { selYear: _n.getFullYear(), selMonth: _n.getMonth() }),
+      // v11.5 FIX: keepPeriod=true berarti "navigasi ini murni sinkronisasi" (dipanggil oleh
+      // AppShell's pathname-sync effect setelah router.push) — JANGAN hapus expandedCard /
+      // entryCardYear / entryCardMonth yang baru saja di-set oleh setViewWithPeriod, atau
+      // auto-expand kartu member dari dashboard "klik tunggakan" akan tertimpa balik ke null
+      // tepat setelah berhasil di-set (race condition yang sama persis yang ingin dihindari).
+      ...(keepPeriod
+        ? {}
+        : {
+            expandedCard: null,
+            ...(v !== 'entry' ? { entryCardYear: {}, entryCardMonth: {} } : {}),
+          }),
     };
   }),
+  // v11.5: set currentView + selYear + selMonth dalam satu operasi atomic — menghindari
+  // race condition saat dashboard "klik tunggakan" perlu pindah ke Entry pada bulan tertentu.
+  // targetMember opsional: jika diisi, kartu member tersebut otomatis ter-expand pada
+  // bulan/tahun yang dituju (entryCardYear/Month per-member juga di-set agar konsisten
+  // dengan logika default MemberCard yang membaca entryCardYear[name] bukan selYear global).
+  setViewWithPeriod: (v, year, month, zone, targetMember) => set((s) => ({
+    currentView: v, expandedCard: targetMember ?? null,
+    search: '', filterStatus: 'all',
+    entryScrollTop: 0, rekapExpanded: null,
+    selYear: year, selMonth: month,
+    ...(zone ? { activeZone: zone } : {}),
+    entryCardYear:  targetMember ? { ...s.entryCardYear,  [targetMember]: year  } : (v !== 'entry' ? {} : s.entryCardYear),
+    entryCardMonth: targetMember ? { ...s.entryCardMonth, [targetMember]: month } : (v !== 'entry' ? {} : s.entryCardMonth),
+  })),
 
   // Period selector
   selYear:     now.getFullYear(),

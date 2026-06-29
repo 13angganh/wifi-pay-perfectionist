@@ -14,8 +14,9 @@ import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, getZoneTotal, isLunas, isFree, rp } from '@/lib/helpers';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 import { useT } from '@/hooks/useT';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { chartTheme, ZC_KRS, ZC_SLK, ZC_TOT, zoneColor } from '@/lib/design-tokens';
 
 // Register semua Chart.js components yang dipakai
@@ -48,8 +49,9 @@ export default function GrafikView() {
   const [p2Year,  setP2Year]  = useState(new Date().getFullYear() - 1);
   const [p2Month, setP2Month] = useState(new Date().getMonth() === 0 ? 11 : new Date().getMonth() - 1);
 
-  const az   = activeZone as string;
-  const mems = az === 'KRS' ? appData.krsMembers : az === 'SLK' ? appData.slkMembers : [...appData.krsMembers, ...appData.slkMembers];
+  const az      = activeZone as string;
+  const mems    = az === 'KRS' ? appData.krsMembers : az === 'SLK' ? appData.slkMembers : [...appData.krsMembers, ...appData.slkMembers];
+  const hasData = mems.length > 0;
 
   const zc    = zoneColor(az);
   const zcKRS = ZC_KRS;
@@ -251,6 +253,16 @@ export default function GrafikView() {
           {getYears().map(y => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
+
+      {/* Empty state saat tidak ada member */}
+      {!hasData && (
+        <EmptyState
+          icon={BarChart2}
+          title="Belum Ada Data Grafik"
+          description="Tambahkan member dan data pembayaran untuk melihat grafik statistik."
+          size="md"
+        />
+      )}
 
       {/* Stat cards */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>

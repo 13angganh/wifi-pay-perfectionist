@@ -5,8 +5,8 @@
 
 export { fbKey } from './firebase-key';
 export { rp, rpShort, formatDate } from './format';
-export { getKey, getPay, isFree, isLunas, getEffectivePay, getZoneTotal, getArrears } from './payment';
-export { getAllActiveZones, getMembersForZone, fuzzyMatch } from './member';
+export { getKey, getPay, isFree, isLunas, getEffectivePay, getZoneTotal, getArrears, getPrevMonth, calcPctDelta } from './payment';
+export { getAllActiveZones, getMembersForZone, fuzzyMatch, convertMemberIPs } from './member';
 
 import { AppData } from '@/types';
 

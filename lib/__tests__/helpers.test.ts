@@ -4,10 +4,10 @@
 // Task 4.03 — unit tests konstanta: getYears, MONTHS
 import { describe, it, expect } from 'vitest';
 import type { AppData } from '@/types';
-import { getKey, getPay, isFree, isLunas, getEffectivePay, getArrears } from '@/lib/payment';
+import { getKey, getPay, isFree, isLunas, getEffectivePay, getArrears, getPrevMonth, calcPctDelta } from '@/lib/payment';
 import { rp, rpShort, formatDate } from '@/lib/format';
 import { fbKey } from '@/lib/firebase-key';
-import { fuzzyMatch } from '@/lib/member';
+import { fuzzyMatch, convertMemberIPs } from '@/lib/member';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 
 // ── Fixture factory ──────────────────────────────────────────────────────────
@@ -283,6 +283,97 @@ describe('fuzzyMatch', () => {
   });
 });
 
+// ── convertMemberIPs (v11.5) ────────────────────────────────────────────────
+// Konversi IP fleksibel — sebelumnya hardcoded hanya oktet ke-2 ".13"→".90".
+
+describe('convertMemberIPs', () => {
+  it('mengganti substring yang cocok pada IP member di zona terkait', () => {
+    const info = {
+      'KRS__ANI':  { ip: '10.13.200.2' },
+      'KRS__BUDI': { ip: '10.13.201.5' },
+    };
+    const { newInfo, count } = convertMemberIPs(info, ['ANI', 'BUDI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(2);
+    expect(newInfo['KRS__ANI'].ip).toBe('10.90.200.2');
+    expect(newInfo['KRS__BUDI'].ip).toBe('10.90.201.5');
+  });
+
+  it('hanya mengubah member yang IP-nya mengandung substring "find"', () => {
+    const info = {
+      'KRS__ANI':  { ip: '10.13.200.2' },
+      'KRS__BUDI': { ip: '192.168.1.5' }, // tidak mengandung "10.13"
+    };
+    const { newInfo, count } = convertMemberIPs(info, ['ANI', 'BUDI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(1);
+    expect(newInfo['KRS__ANI'].ip).toBe('10.90.200.2');
+    expect(newInfo['KRS__BUDI'].ip).toBe('192.168.1.5'); // tidak berubah
+  });
+
+  it('mengembalikan count 0 jika tidak ada IP yang cocok', () => {
+    const info = { 'KRS__ANI': { ip: '192.168.1.1' } };
+    const { count } = convertMemberIPs(info, ['ANI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(0);
+  });
+
+  it('mengabaikan member di zona lain (tidak ikut diproses)', () => {
+    const info = {
+      'KRS__ANI': { ip: '10.13.200.2' },
+      'SLK__ANI': { ip: '10.13.200.2' }, // nama sama, zona beda — harus tidak ikut
+    };
+    const { newInfo, count } = convertMemberIPs(info, ['ANI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(1);
+    expect(newInfo['KRS__ANI'].ip).toBe('10.90.200.2');
+    expect(newInfo['SLK__ANI'].ip).toBe('10.13.200.2'); // tidak tersentuh
+  });
+
+  it('bisa mengganti oktet manapun, bukan hanya oktet ke-2 (fix utama v11.5)', () => {
+    // Sebelumnya hardcoded hanya oktet ke-2 (".13"→".90"). Sekarang fleksibel:
+    // contoh ini mengganti oktet PERTAMA (10 → 192).
+    const info = { 'KRS__ANI': { ip: '10.13.200.2' } };
+    const { newInfo, count } = convertMemberIPs(info, ['ANI'], 'KRS', '10.', '192.');
+    expect(count).toBe(1);
+    expect(newInfo['KRS__ANI'].ip).toBe('192.13.200.2');
+  });
+
+  it('aman terhadap karakter titik (.) sebagai literal, bukan regex wildcard', () => {
+    // Jika implementasi memakai regex tanpa escape, "." akan match karakter apapun.
+    // Pastikan "10.13" HANYA cocok dengan literal titik, bukan "10X13" dsb.
+    const info = {
+      'KRS__ANI':  { ip: '10.13.1.1' },
+      'KRS__BUDI': { ip: '10X13.1.1' }, // tidak boleh ikut ter-replace
+    };
+    const { newInfo, count } = convertMemberIPs(info, ['ANI', 'BUDI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(1);
+    expect(newInfo['KRS__BUDI'].ip).toBe('10X13.1.1');
+  });
+
+  it('mengganti SEMUA kemunculan substring dalam satu IP, bukan hanya yang pertama', () => {
+    const info = { 'KRS__ANI': { ip: '13.13.13.13' } };
+    const { newInfo } = convertMemberIPs(info, ['ANI'], 'KRS', '13', '99');
+    expect(newInfo['KRS__ANI'].ip).toBe('99.99.99.99');
+  });
+
+  it('tidak memutasi object info asli (immutability)', () => {
+    const info = { 'KRS__ANI': { ip: '10.13.1.1' } };
+    const infoCopy = JSON.parse(JSON.stringify(info));
+    convertMemberIPs(info, ['ANI'], 'KRS', '10.13', '10.90');
+    expect(info).toEqual(infoCopy); // info asli tidak berubah
+  });
+
+  it('mempertahankan field lain di MemberInfo (id, tarif) saat IP diganti', () => {
+    const info = { 'KRS__ANI': { ip: '10.13.1.1', id: 'C001', tarif: 100 } };
+    const { newInfo } = convertMemberIPs(info, ['ANI'], 'KRS', '10.13', '10.90');
+    expect(newInfo['KRS__ANI'].id).toBe('C001');
+    expect(newInfo['KRS__ANI'].tarif).toBe(100);
+  });
+
+  it('member tanpa IP (undefined) tidak menyebabkan error dan tidak terhitung', () => {
+    const info = { 'KRS__ANI': {} };
+    const { count } = convertMemberIPs(info, ['ANI'], 'KRS', '10.13', '10.90');
+    expect(count).toBe(0);
+  });
+});
+
 // ── MONTHS ───────────────────────────────────────────────────────────────────
 
 describe('MONTHS (task 4.03)', () => {
@@ -338,5 +429,42 @@ describe('getYears (task 4.03)', () => {
   it('tidak frozen di build time — memasukkan tahun berjalan + 2', () => {
     const thisYear = new Date().getFullYear();
     expect(getYears()).toContain(thisYear + 2);
+  });
+});
+
+// ── getPrevMonth (v11.5.2 — dashboard insight) ──────────────────────────────
+
+describe('getPrevMonth', () => {
+  it('bulan biasa: mundur 1 bulan, tahun tidak berubah', () => {
+    expect(getPrevMonth(2026, 5)).toEqual({ year: 2026, month: 4 });
+  });
+  it('Januari (month=0): wrap ke Desember tahun sebelumnya', () => {
+    expect(getPrevMonth(2026, 0)).toEqual({ year: 2025, month: 11 });
+  });
+  it('Desember (month=11): mundur ke November, tahun tidak berubah', () => {
+    expect(getPrevMonth(2026, 11)).toEqual({ year: 2026, month: 10 });
+  });
+});
+
+// ── calcPctDelta (v11.5.2 — dashboard insight) ──────────────────────────────
+
+describe('calcPctDelta', () => {
+  it('naik dari prev ke now → persentase positif', () => {
+    expect(calcPctDelta(12, 8)).toBe(50); // (12-8)/8 = 50%
+  });
+  it('turun dari prev ke now → persentase negatif', () => {
+    expect(calcPctDelta(8, 12)).toBe(-33); // (8-12)/12 ≈ -33.33% → rounded -33
+  });
+  it('tidak berubah → 0%', () => {
+    expect(calcPctDelta(10, 10)).toBe(0);
+  });
+  it('prev=0, now=0 → 0 (kondisi netral, BUKAN null)', () => {
+    expect(calcPctDelta(0, 0)).toBe(0);
+  });
+  it('prev=0, now>0 → null (tidak ada baseline yang masuk akal untuk dihitung)', () => {
+    expect(calcPctDelta(5, 0)).toBeNull();
+  });
+  it('hasil dibulatkan ke integer terdekat', () => {
+    expect(calcPctDelta(7, 3)).toBe(133); // (7-3)/3 = 133.33...% → 133
   });
 });

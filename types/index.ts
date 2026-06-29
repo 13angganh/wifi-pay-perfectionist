@@ -6,6 +6,7 @@ export interface MemberInfo {
   id?: string;       // ID Pelanggan
   ip?: string;       // IP / Link Router
   tarif?: number;    // Tarif bulanan ×1000
+  notes?: string;    // v11.5.2: catatan bebas per member (ditimpa saat diedit ulang)
   [key: string]: string | number | undefined; // date_YYYY_M fields
 }
 

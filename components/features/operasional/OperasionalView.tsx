@@ -7,6 +7,7 @@ import { getZoneTotal, rp } from '@/lib/helpers'
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { X } from 'lucide-react';
@@ -57,6 +58,7 @@ export default function OperasionalView() {
   const netIncome   = grossIncome - totalOps;
 
   async function persist(newData: typeof appData): Promise<boolean> {
+    const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
@@ -67,8 +69,10 @@ export default function OperasionalView() {
       }));
       setSyncStatus('ok');
       return true;
-    } catch {
+    } catch (err) {
+      logger.error('Gagal simpan data operasional ke Firebase', err);
       setSyncStatus('err');
+      setAppData(prevData);
       return false;
     }
   }

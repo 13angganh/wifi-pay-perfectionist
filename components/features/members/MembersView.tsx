@@ -8,11 +8,12 @@ import { useAppStore } from '@/store/useAppStore';
 
 import { isFree, rp } from '@/lib/helpers';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import FreeMemberModal from '@/components/modals/FreeMemberModal';
 import RiwayatModal    from '@/components/modals/RiwayatModal';
-import { Users, Trash2, X, Gift, Lock, LockOpen, StickyNote } from 'lucide-react';
+import { Users, Trash2, X, Gift, Lock, LockOpen, StickyNote, Loader2 } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Zone } from '@/types';
@@ -41,6 +42,16 @@ export default function MembersView() {
   const [freeZone, setFreeZone] = useState<Zone>('KRS');
   const [riwOpen,  setRiwOpen]  = useState(false);
   const [addIP,    setAddIP]    = useState('');
+  // FIX v11.5.4: double-submit guard. Sebelumnya tombol Simpan/Add tidak punya proteksi
+  // sama sekali — kalau ditekan dua kali sebelum request pertama selesai (mis. koneksi
+  // lambat, atau accidental double-tap), persist() PERTAMA sudah mengubah appData.krsMembers
+  // (mis. "HAJI ZAINI" → "H.ZAINI") secara synchronous SEBELUM Firebase selesai. saveEdit()
+  // KEDUA yang berjalan di tengah-tengah itu akan mencari origName lama ("HAJI ZAINI") di
+  // list yang sudah berubah → tidak ketemu → "Member tidak ditemukan", walau prosesnya
+  // sendiri sebenarnya valid. isSavingRef mem-block semua persist() lain selagi satu
+  // proses simpan masih berjalan (pola sama dengan MemberCard.tsx Entry).
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   const t = useT();
   const zone = newMemberZone;
@@ -50,15 +61,29 @@ export default function MembersView() {
   const idRef    = useRef<HTMLInputElement>(null);
   const tarifRef = useRef<HTMLInputElement>(null);
 
-  // FIX: persist() sekarang mengembalikan boolean sukses/gagal. Sebelumnya fungsi ini
-  // tidak return apa-apa, sehingga semua caller (addMember, saveEdit, deleteMember, dst)
-  // selalu menampilkan toast sukses TANPA SYARAT setelah `await persist(...)`, walau
-  // write ke Firebase gagal (mis. offline). Akibatnya: toast "berhasil" muncul bersamaan
-  // dengan pill "Gagal simpan" di header — inkonsisten dan menyesatkan, karena perubahan
-  // hanya tersimpan optimis di state lokal lalu hilang lagi setelah reload/re-fetch.
+  // FIX v11.5.5 — BUG KRUSIAL: persist() sebelumnya memanggil setAppData(newData) SEBELUM
+  // tahu hasil simpan ke Firebase. Jika Firebase gagal, state lokal SUDAH TERLANJUR berubah
+  // (mis. "HAJI ZAINI" sudah jadi "H.ZAINI" di appData.krsMembers) walau server belum
+  // menyimpan apa pun. Akibatnya: percobaan SIMPAN ULANG (retry) — tanpa perlu double-tap
+  // sama sekali — akan mencari origName lama ("HAJI ZAINI") di array yang sudah berubah,
+  // tidak ketemu, dan gagal dengan "Member tidak ditemukan". Ini terjadi pada SETIAP retry
+  // setelah kegagalan pertama, bukan cuma kasus tap ganda.
+  //
+  // FIX: simpan snapshot appData SEBELUM optimistic update. Jika Firebase gagal, KEMBALIKAN
+  // (rollback) state lokal ke snapshot itu — supaya retry berikutnya mencari origName di
+  // data yang konsisten dengan yang sebenarnya ada di server.
+  //
+  // Tambahan: catch {} sebelumnya membuang pesan error Firebase asli, sehingga kegagalan
+  // selalu generik tanpa bisa didiagnosis (PERMISSION_DENIED? auth invalid? offline?).
+  // Sekarang error asli di-log lewat logger.error() (selalu tercatat di console, dev & prod)
+  // agar penyebab pasti kegagalan bisa diperiksa lewat DevTools.
   async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
+    if (isSavingRef.current) return false;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    const prevData = appData; // snapshot untuk rollback jika gagal
     setAppData(newData);
-    if (!uid) return true; // mode tanpa login: tidak ada Firebase, anggap "sukses" lokal
+    if (!uid) { setIsSaving(false); isSavingRef.current = false; return true; }
     setSyncStatus('loading');
     try {
       await persistPayment(uid, newData, { action, detail: detail || '' }, userEmail || '', () => ({
@@ -67,9 +92,14 @@ export default function MembersView() {
       }));
       setSyncStatus('ok');
       return true;
-    } catch {
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
+      setAppData(prevData); // rollback: batalkan optimistic update agar retry konsisten
       return false;
+    } finally {
+      setIsSaving(false);
+      isSavingRef.current = false;
     }
   }
   function openFree(z: Zone, n: string) { setFreeZone(z); setFreeName(n); setFreeOpen(true); }
@@ -79,6 +109,7 @@ export default function MembersView() {
   }
 
   async function addMember() {
+    if (isSavingRef.current) return; // double-tap guard
     const name  = nameRef.current?.value.trim().toUpperCase() || '';
     const id    = idRef.current?.value.trim()   || '';
     const ip    = addIP.trim();
@@ -109,6 +140,7 @@ export default function MembersView() {
   }
 
   async function saveEdit() {
+    if (isSavingRef.current) return; // double-tap guard — lihat catatan isSavingRef
     const { zone, origName, name, id, ip, tarif, notes } = editData;
     const newName = name.trim().toUpperCase();
     if (!newName) { showToast(t('members.nameRequired'),'err'); return; }
@@ -150,6 +182,7 @@ export default function MembersView() {
 
   async function deleteMember(name: string) {
     showConfirm('🗑️', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
+      if (isSavingRef.current) return; // double-tap guard
       const list     = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
       const filtered = list.filter(m => m !== name);
       const mk       = `${zone}__${name}`;
@@ -164,6 +197,7 @@ export default function MembersView() {
   }
 
   async function restoreMember(key: string) {
+    if (isSavingRef.current) return; // double-tap guard
     const d = appData.deletedMembers?.[key]; if(!d) return;
     const list = d.zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
     if (!list.includes(d.name)) { list.push(d.name); list.sort(); }
@@ -177,6 +211,7 @@ export default function MembersView() {
   async function permanentDelete(key: string) {
     const d = appData.deletedMembers?.[key]; if(!d) return;
     showConfirm('[PURGE]', `${t('members.permDelete')} ${d.name}?`, t('members.permDeleteYes'), async () => {
+      if (isSavingRef.current) return; // double-tap guard
       const nd = { ...appData, deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
       const ok = await persist(nd, `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
       showToast(ok ? `${d.name} ${t('members.deleted')}` : t('common.saveFailed'), 'err');
@@ -300,7 +335,11 @@ export default function MembersView() {
                   <input ref={tarifRef} type="number" inputMode="decimal" className="af-input" placeholder="100" autoComplete="off" />
                 </div>
               </div>
-              <button style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:13, fontWeight:600, cursor:'pointer', minHeight:40 }} onClick={addMember}>
+              <button
+                disabled={isSaving}
+                style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:13, fontWeight:600, cursor: isSaving ? 'not-allowed' : 'pointer', minHeight:40, opacity: isSaving ? 0.6 : 1 }}
+                onClick={addMember}
+              >
                 + {t('members.addTo')} {zone}
               </button>
             </div>
@@ -436,7 +475,14 @@ export default function MembersView() {
                 style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:13, fontFamily:"var(--font-sans),sans-serif", resize:'vertical', minHeight:64 }}
               />
             </div>
-            <button className="modal-action" onClick={saveEdit}>{t('members.saveChanges')}</button>
+            <button className="modal-action" disabled={isSaving} style={{ opacity: isSaving ? 0.6 : 1, cursor: isSaving ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }} onClick={saveEdit}>
+              {isSaving && <Loader2 size={14} className="spin-members" />}
+              {t('members.saveChanges')}
+            </button>
+            <style>{`
+              @keyframes spin-members-kf { to { transform: rotate(360deg); } }
+              .spin-members { animation: spin-members-kf 0.8s linear infinite; }
+            `}</style>
           </div>
         </div>
       )}

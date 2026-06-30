@@ -8,6 +8,7 @@ import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { Search, X, Gift, CheckCheck, LayoutList } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -51,9 +52,11 @@ export default function RekapView() {
   const grand     = MONTHS.reduce((s, _, mi) =>
     s + mems.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
 
-  // FIX: return boolean agar caller bisa cek hasil sebelum tampilkan toast sukses
-  // (lihat catatan sama di MembersView.tsx persist()).
+  // FIX v11.5.5: rollback state lokal + log error asli jika Firebase gagal (lihat
+  // catatan detail di MembersView.tsx persist() — bug yang sama: tanpa rollback, retry
+  // setelah gagal bisa mencari data di state yang sudah berubah duluan secara optimis).
   async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
+    const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
@@ -64,8 +67,10 @@ export default function RekapView() {
       }));
       setSyncStatus('ok');
       return true;
-    } catch {
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
+      setAppData(prevData);
       return false;
     }
   }

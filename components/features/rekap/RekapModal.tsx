@@ -7,6 +7,7 @@ import { getPay, isFree, rp, getKey } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { X, Gift, Lock } from 'lucide-react';
@@ -42,8 +43,13 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   const tarif     = info.tarif as number | undefined;
   const quickAmts = settings?.quickAmounts || [50, 80, 90, 100, 150, 200];
 
-  // FIX: return boolean agar caller bisa cek hasil sebelum tampilkan toast sukses.
-  async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
+  // FIX v11.5.5: rollback state lokal + log error asli jika Firebase gagal (lihat
+  // catatan detail di MembersView.tsx persist()). prevData diterima sebagai PARAMETER
+  // eksplisit (bukan dibaca dari closure `appData`) — penting untuk quickPay(), yang
+  // sudah memanggil setAppData(newData) SEBELUM memanggil persist() secara fire-and-forget;
+  // kalau prevData dibaca dari closure appData di dalam persist(), nilainya bisa sudah
+  // ke-update duluan oleh re-render React, sehingga rollback jadi tidak efektif.
+  async function persist(newData: typeof appData, action: string, detail: string, prevData: typeof appData = appData): Promise<boolean> {
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
@@ -54,16 +60,19 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       }));
       setSyncStatus('ok');
       return true;
-    } catch {
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
+      setAppData(prevData);
       return false;
     }
   }
 
   function quickPay(amt: number) {
     if (locked) { showToast(t('rekap.dateLocked'), 'err'); return; }
-    const k       = getKey(activeZone, name, selYear, month);
-    const prevVal = getPay(appData, activeZone, name, selYear, month);
+    const k         = getKey(activeZone, name, selYear, month);
+    const prevVal   = getPay(appData, activeZone, name, selYear, month);
+    const snapshot  = appData; // simpan SEBELUM optimistic update, untuk rollback yang benar
     const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
     if (settings?.autoDate) {
       const today   = new Date().toISOString().slice(0, 10);
@@ -87,7 +96,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     // FIX: jika write Firebase di background ini gagal, beri tahu user secara eksplisit
     // — sebelumnya gagal diam-diam, hanya terlihat dari pill header yang mudah terlewat,
     // dan saat app dibuka ulang pembayaran ini hilang tanpa penjelasan.
-    persist(newData, `[PAY] ${tLog('log.action.quickPay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`)
+    persist(newData, `[PAY] ${tLog('log.action.quickPay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`, snapshot)
       .then(ok => { if (!ok) showToast(t('common.saveFailed'), 'err'); });
   }
 

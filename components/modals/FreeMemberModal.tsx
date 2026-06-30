@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { saveDB } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { Gift, CreditCard, X, Check } from 'lucide-react';
@@ -50,11 +51,17 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   }, [open, zone, name, appData.freeMembers]);
 
   async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
+    const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
     try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); return true; }
-    catch { setSyncStatus('err'); return false; }
+    catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
+      setSyncStatus('err');
+      setAppData(prevData);
+      return false;
+    }
   }
 
   async function handleSave() {

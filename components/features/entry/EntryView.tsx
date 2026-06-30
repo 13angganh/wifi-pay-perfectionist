@@ -7,6 +7,7 @@ import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import MemberCard from '../members/MemberCard';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -117,6 +118,7 @@ export default function EntryView() {
       return;
     }
 
+    const prevData = appData; // snapshot untuk rollback jika gagal
     setAppData(newData);
     let ok = true;
     if (uid) {
@@ -130,7 +132,11 @@ export default function EntryView() {
           lockedEntries: useAppStore.getState().lockedEntries,
         }));
         setSyncStatus('ok');
-      } catch { setSyncStatus('err'); ok = false; }
+      } catch (err) {
+        logger.error('Gagal simpan batch pay Entry ke Firebase', err);
+        setSyncStatus('err'); ok = false;
+        setAppData(prevData); // rollback: batalkan optimistic update
+      }
     }
     if (ok) {
       showToast(`✓ ${details.length} ${t('entry.batchSuccess')}`);

@@ -9,6 +9,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp } from '@/lib/helpers';
 import { saveDB } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import RiwayatModal from '@/components/modals/RiwayatModal';
@@ -133,6 +134,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     if (isSavingRef.current) return false;
     isSavingRef.current = true;
     setIsSaving(true);
+    const prevData = appData; // snapshot untuk rollback jika gagal (FIX v11.5.5)
     setAppData(newData);
     if (!uid) { setIsSaving(false); isSavingRef.current = false; return true; }
     setSyncStatus('loading');
@@ -145,8 +147,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       setTimeout(() => setShowSuccess(false), 700);
       haptic.success();
       return true;
-    } catch {
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
+      setAppData(prevData); // rollback: batalkan optimistic update agar retry konsisten
       haptic.error();
       return false;
     } finally {
@@ -197,8 +201,9 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   }
 
   function doQuickPay(amt: number) {
-    const k       = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
-    const prevVal = entryVal; // simpan untuk undo
+    const k         = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
+    const prevVal   = entryVal; // simpan untuk undo
+    const snapshot  = appData; // FIX v11.5.5: simpan SEBELUM optimistic update, untuk rollback
     const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
     if (settings?.autoDate) {
       const today   = new Date().toISOString().slice(0, 10);
@@ -223,7 +228,8 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       showToast(`${name} dibatalkan`, 'info');
     });
     // Firebase write di background
-    // FIX: jika gagal, beri toast eksplisit — sebelumnya gagal diam-diam (hanya pill header)
+    // FIX: jika gagal, beri toast eksplisit + rollback state ke snapshot sebelum optimistic
+    // update, supaya percobaan berikutnya tidak bertumpu pada data yang belum tersimpan.
     if (uid) {
       setSyncStatus('loading');
       saveDB(uid, newData,
@@ -231,7 +237,12 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
           detail: `${MONTH_NAMES[cardMonth]} ${cardYear}: ${rp(amt)}` },
         userEmail || ''
       ).then(() => setSyncStatus('ok'))
-       .catch(() => { setSyncStatus('err'); showToast(t('common.saveFailed'), 'err'); });
+       .catch((err) => {
+         logger.error(`Gagal simpan quickPay ke Firebase — ${name}`, err);
+         setSyncStatus('err');
+         setAppData(snapshot);
+         showToast(t('common.saveFailed'), 'err');
+       });
     }
   }
 

@@ -1,3 +1,73 @@
+# WiFi Pay Next — Update v11.5.5
+
+> **Bug paling krusial dari rangkaian fix v11.5.3/v11.5.4.** Laporan: "tiap edit member selalu gagal tersimpan, dan saat klik ulang member tidak ditemukan." Ini BUKAN race condition double-tap (sudah ditutup di v11.5.4) — ini bug desain yang lebih dasar: begitu simpan ke Firebase gagal SEKALI (apa pun sebabnya), retry berikutnya rusak SECARA OTOMATIS, tanpa perlu tap ganda sama sekali. Sudah diperbaiki di seluruh app (10 file), plus ditambahkan logging error asli supaya penyebab kegagalan Firebase yang sesungguhnya bisa diperiksa lewat console browser.
+
+## v11.5.5 — Fix Krusial: State Lokal Tidak Pernah Rollback Saat Simpan Gagal
+
+**Root cause sebenarnya (lebih dalam dari v11.5.3/v11.5.4):** Semua fungsi `persist()` di seluruh app punya urutan: (1) `setAppData(newData)` — state lokal diubah duluan, **synchronous**, **tanpa syarat**; (2) baru `await` kirim ke Firebase. Sebelum perbaikan ini, kalau langkah (2) gagal, state lokal dari langkah (1) **tidak pernah dikembalikan**. Untuk edit nama:
+
+1. Edit "HAJI ZAINI" → "H.ZAINI", tekan Simpan **satu kali saja** (tidak perlu double-tap).
+2. State lokal langsung berubah: array member sekarang berisi "H.ZAINI", "HAJI ZAINI" lenyap dari situ.
+3. Kirim ke Firebase **gagal** (sebab aslinya tidak pernah terlihat — lihat poin "Logging" di bawah).
+4. Toast "Gagal tersimpan ke server" muncul, modal tetap terbuka (sesuai fix v11.5.3) supaya bisa dicoba lagi.
+5. Tekan "Simpan" lagi (retry, tanpa mengubah apa pun) → kode mencari "HAJI ZAINI" di array member... tapi array itu **sudah** berisi "H.ZAINI" sejak langkah 2. "HAJI ZAINI" tidak ada lagi di sana.
+6. → **"Member tidak ditemukan."**
+
+Jadi begitu satu kali gagal, **setiap retry berikutnya otomatis ikut gagal** dengan pesan yang berbeda dan membingungkan — bukan karena menu Member rusak, tapi karena state lokal sudah "kebablasan" berubah sebelum tahu hasil sebenarnya, dan tidak pernah dikembalikan.
+
+**Perbaikan struktural:** setiap `persist()`/handler simpan di **10 file** sekarang menyimpan *snapshot* state sebelum optimistic update. Jika Firebase gagal, state dikembalikan (rollback) ke snapshot itu — sehingga percobaan simpan berikutnya selalu bertumpu pada data yang benar-benar cocok dengan apa yang ada di server, bukan pada hasil percobaan gagal sebelumnya.
+
+**Perbaikan diagnostik (sama pentingnya):** seluruh blok `catch {}` di app ini sebelumnya membuang pesan error Firebase yang sebenarnya — jadi "Gagal simpan" selalu generik, tidak pernah kelihatan apakah itu `PERMISSION_DENIED`, sesi auth kadaluwarsa, offline, atau data tidak valid. Sekarang setiap kegagalan dicatat lewat `logger.error()` (sudah ada di project, mencatat ke console di dev **maupun produksi**) — jadi penyebab pasti kegagalan yang berulang bisa diperiksa langsung lewat DevTools → Console di browser/WebView, tanpa perlu menebak.
+
+> **Catatan penting untuk Hakiki:** rollback ini memperbaiki *konsekuensi* dari kegagalan (retry yang rusak), tapi **tidak otomatis memperbaiki kenapa Firebase-nya gagal di awal**. Kalau setelah update ini simpan tetap gagal terus-menerus (bukan cuma sesekali karena koneksi), tolong buka Console di browser/WebView saat kejadian — sekarang akan ada baris log `[WiFi Pay] ❌ Gagal simpan ke Firebase — action: ...` lengkap dengan error code aslinya (mis. `PERMISSION_DENIED`, `auth/...`, dll). Itu kunci untuk diagnosis langkah selanjutnya — kemungkinan terkait rules Firebase, status login/token, atau koneksi yang memang konsisten buruk di sisi device.
+
+**File yang berubah (v11.5.5):**
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MembersView.tsx` | `persist()`: rollback ke snapshot + `logger.error()` saat gagal |
+| `components/features/members/MemberCard.tsx` | `persist()` & `doQuickPay()`: rollback + logging (snapshot diambil sebelum optimistic update, dioper eksplisit untuk `doQuickPay`) |
+| `components/features/rekap/RekapView.tsx` | `persist()`: rollback + logging |
+| `components/features/rekap/RekapModal.tsx` | `persist()` menerima `prevData` sebagai parameter eksplisit (bukan baca closure `appData`, supaya tidak salah snapshot untuk `quickPay()` yang fire-and-forget) + logging |
+| `components/features/entry/EntryView.tsx` | `executeBatch()`: rollback + logging |
+| `components/modals/FreeMemberModal.tsx` | `persist()`: rollback + logging |
+| `components/features/operasional/OperasionalView.tsx` | `persist()`: rollback + logging |
+| `components/features/settings/SettingsIPSection.tsx` | `persist()`: rollback + logging |
+| `components/features/settings/SettingsZoneSection.tsx` | `persistData()`: rollback + logging |
+| `components/layout/Header.tsx` | `toggleGlobalLock()`: rollback (state lock + appData) + logging |
+| `lib/constants.ts` | Versi → v11.5.5 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **135/135 unit test lulus** (tidak ada regresi; tidak ada test baru — perubahan murni pada penanganan kegagalan async yang sudah ada).
+
+---
+
+# WiFi Pay Next — Update v11.5.4
+
+> Patch lanjutan dari v11.5.3 — menutup race condition lain yang ditemukan saat menguji fix sebelumnya: edit nama member bisa gagal dengan pesan "Member tidak ditemukan" jika tombol "Simpan" tertekan dua kali (double-tap, atau tap kedua karena koneksi lambat) sebelum proses simpan pertama selesai. **Menu Member tetap berfungsi normal untuk edit/tambah/hapus** — bug ini spesifik untuk kasus tap berulang di tengah proses simpan, bukan kegagalan total fitur.
+
+## v11.5.4 — Fix: Race Condition "Member Tidak Ditemukan" Akibat Double-Tap
+
+**Root cause:** Tombol "Simpan" di modal Edit Member (dan tombol "+ Tambah" di form Add Member) tidak punya proteksi sama sekali terhadap penekanan ganda. Urutan kejadian:
+
+1. Tap "Simpan" → `saveEdit()` jalan, menemukan member di list, lalu memanggil `persist()`.
+2. Baris pertama di dalam `persist()` adalah `setAppData(newData)` — ini synchronous, jadi state lokal **langsung** berubah (mis. "HAJI ZAINI" → "H.ZAINI" di list member), SEBELUM proses kirim ke Firebase (yang memakan waktu, terutama saat koneksi lambat) selesai.
+3. Jika dalam rentang waktu menunggu itu tombol "Simpan" tertekan lagi, `saveEdit()` berjalan untuk **kedua kalinya** dengan data form yang sama (nama asal masih "HAJI ZAINI").
+4. Tapi list member yang dipakai untuk pencarian sekarang sudah berisi "H.ZAINI" (hasil langkah 2) — "HAJI ZAINI" sudah tidak ada lagi di sana.
+5. Pencarian `list.indexOf("HAJI ZAINI")` gagal → `idx === -1` → toast **"Member tidak ditemukan"**, walau proses pertamanya sendiri valid dan (jika koneksi normal) akan tetap berhasil tersimpan.
+
+**Perbaikan:** menambahkan double-submit guard (`isSavingRef`) di `MembersView.tsx` — pola yang sama dengan yang sudah dipakai di `MemberCard.tsx` (Entry). Selagi satu proses simpan masih berjalan, semua percobaan simpan lain (edit, tambah, hapus, restore, purge) langsung diabaikan tanpa efek samping apa pun — tidak ada toast aneh, tidak ada race. Tombol "Simpan" dan "+ Tambah" juga sekarang menunjukkan status nonaktif + spinner kecil selama proses berjalan, supaya pengguna tahu prosesnya masih berjalan dan tidak perlu (atau tidak bisa) menekan lagi.
+
+**File yang berubah (v11.5.4):**
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MembersView.tsx` | `isSavingRef`/`isSaving` guard di `persist()` + early-return di `addMember`/`saveEdit`/`deleteMember`/`restoreMember`/`permanentDelete`; tombol "Simpan" & "+ Tambah" dapat status disabled+spinner saat menyimpan |
+| `lib/constants.ts` | Versi → v11.5.4 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **135/135 unit test lulus** (tidak ada regresi).
+
+---
+
 # WiFi Pay Next — Update v11.5.3
 
 > Patch fix konsistensi toast sukses/gagal vs status sync — bug yang dilaporkan saat edit nama member ("H.ZAINI berhasil diupdate" tapi pill header menunjukkan "Gagal simpan", dan nama balik ke semula setelah app ditutup-buka kembali). Root cause sama ditemukan di 9 file lain saat audit menyeluruh ke seluruh menu Entry, Rekap, dan Member — semua sudah diperbaiki dengan pola yang konsisten.

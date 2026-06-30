@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { saveDB } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { useT } from '@/hooks/useT';
 import type { CustomZone } from '@/types';
 import {
@@ -23,11 +24,17 @@ export default function SettingsZoneSection() {
   const [newZonaColor, setNewZonaColor] = useState('#8B5CF6');
 
   async function persistData(newData: typeof appData, action: string, detail: string): Promise<boolean> {
+    const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
     try { await saveDB(uid, newData, { action, detail }, userEmail || ''); setSyncStatus('ok'); return true; }
-    catch { setSyncStatus('err'); return false; }
+    catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
+      setSyncStatus('err');
+      setAppData(prevData);
+      return false;
+    }
   }
 
   const zonaHidden: string[] = settings.hiddenZones ?? [];

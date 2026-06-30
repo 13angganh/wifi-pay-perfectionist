@@ -18,6 +18,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { persistPayment } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { getMembersForZone, convertMemberIPs } from '@/lib/member';
 import { useT } from '@/hooks/useT';
 import { Repeat } from 'lucide-react';
@@ -35,6 +36,7 @@ export default function SettingsIPSection() {
   const [replace,setReplace]= useState('');
 
   async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
+    const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
@@ -45,8 +47,10 @@ export default function SettingsIPSection() {
       }));
       setSyncStatus('ok');
       return true;
-    } catch {
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
+      setAppData(prevData);
       return false;
     }
   }

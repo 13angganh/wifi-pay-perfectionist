@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { saveDB } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
 import { useT } from '@/hooks/useT';
@@ -60,6 +61,8 @@ export default function Header({ onToggleSidebar }: Props) {
 
   async function toggleGlobalLock() {
     const next = !globalLocked;
+    const prevLocked = globalLocked;
+    const prevData = appData;
     setGlobalLocked(next);
     setAppData({ ...appData, _globalLocked: next }); // BUG-001: sync appData agar tidak stale
     let ok = true;
@@ -68,7 +71,12 @@ export default function Header({ onToggleSidebar }: Props) {
         setSyncStatus('loading');
         await saveDB(uid, { ...appData, _globalLocked: next });
         setSyncStatus('ok');
-      } catch { setSyncStatus('err'); ok = false; }
+      } catch (err) {
+        logger.error('Gagal simpan toggleGlobalLock ke Firebase', err);
+        setSyncStatus('err'); ok = false;
+        setGlobalLocked(prevLocked); // rollback
+        setAppData(prevData);
+      }
     }
     if (ok) {
       showToast(next ? t('header.entryLocked') : t('header.entryUnlocked'), next ? 'info' : 'ok');

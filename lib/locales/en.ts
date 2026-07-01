@@ -221,6 +221,7 @@ const en: Record<string, string> = {
   // Members tambahan
   'members.nameRequired'   : 'Name is required',
   'members.nameDuplicate'  : 'Name already exists!',
+  'members.nameInvalidChar': 'Name cannot contain . # $ [ ] / characters',
   'members.notFound'       : 'Member not found',
   'members.added'          : 'added!',
   'members.updated'        : 'updated successfully!',

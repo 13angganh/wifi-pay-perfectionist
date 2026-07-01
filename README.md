@@ -1,3 +1,35 @@
+# WiFi Pay Next — Update v11.5.6
+
+> **ROOT CAUSE SEBENARNYA — sudah dikonfirmasi langsung oleh Hakiki: edit "HAJI ZAINI" → "H-ZAINI" (pakai strip, bukan titik) BERHASIL tersimpan.** Bug "edit member selalu gagal" dari v11.5.3–v11.5.5 ternyata bukan soal race condition atau koneksi sama sekali — **Firebase Realtime Database menolak SELURUH operasi simpan jika ada satu saja nama field objek yang mengandung karakter `.` `#` `$` `[` `]` `/`**. Nama "H.ZAINI" mengandung titik, dipakai sebagai bagian nama field di `memberInfo`, sehingga Firebase menolak total. Root cause v11.5.3–v11.5.5 (toast tidak sinkron dengan status simpan, race condition double-tap, state tidak rollback saat gagal) **tetap valid dan tetap berguna** — tapi semuanya cuma menangani *akibat*, bukan penyebab aslinya. v11.5.6 menutup penyebab aslinya.
+
+## v11.5.6 — Root Cause Fix: Validasi Karakter Terlarang Firebase di Nama Member
+
+**Apa yang sebenarnya terjadi:** Firebase Realtime Database punya aturan ketat — nama field di dalam objek (disebut "key") **tidak boleh** mengandung karakter `.` `#` `$` `[` `]` `/`. Ini bukan soal isi/value field (jadi nomor IP `10.90.200.8` aman-aman saja sebagai *value*), tapi soal nama field-nya sendiri.
+
+Di app ini, nama member dipakai langsung sebagai bagian nama field saat menyimpan info tambahan (ID, IP, tarif, catatan), status free member, dan riwayat member yang dihapus — formatnya `ZONA__NAMA` (mis. `"KRS__HAJI ZAINI"`). Ketika Hakiki mengganti nama "HAJI ZAINI" jadi "H.ZAINI", sistem mencoba membuat field bernama `"KRS__H.ZAINI"` — **field dengan titik di dalamnya**. Firebase RTDB menolak ini, dan karena cara app menyimpan data (kirim semua data sekaligus dalam satu operasi, bukan per-bagian), **penolakan pada satu field ini membuat SELURUH proses penyimpanan gagal** — bukan cuma field itu saja yang gagal, tapi semuanya, termasuk data lain yang sebenarnya valid.
+
+Ini menjelaskan dengan tepat semua yang dilaporkan Hakiki: member baru "A" → "ASU" berhasil (nama "ASU" tidak ada karakter bermasalah), pembayaran di Entry & Rekap semua berhasil (nama-nama member yang dibayar tidak ada yang mengandung titik), tapi "HAJI ZAINI" → "H.ZAINI" gagal terus — dan setelah gagal, percobaan ulang malah memunculkan "Member tidak ditemukan" (ini bagian dari bug terpisah yang sudah diperbaiki di v11.5.5: tampilan sudah terlanjur berubah duluan sebelum tahu hasil sebenarnya).
+
+**Perbaikan:** menambahkan validasi nama member di form Tambah Member dan Edit Member — kalau nama mengandung karakter `.` `#` `$` `[` `]` `/`, sistem langsung menolak dengan pesan jelas ("Nama tidak boleh mengandung karakter . # $ [ ] /") **sebelum** sempat dicoba disimpan ke server. Ini mencegah masalah dari sumbernya, bukan menambal satu-satu di puluhan tempat berbeda di app yang membentuk nama field serupa (ditemukan ada di hampir setiap menu — Entry, Rekap, Member, Tunggakan, Settings).
+
+**Workaround untuk nama yang sudah terlanjur ingin dipakai:** ganti karakter bermasalah dengan yang aman — titik (`.`) bisa diganti tanda hubung (`-`) atau spasi. Contoh: "H.ZAINI" → "H-ZAINI" (sudah dikonfirmasi berhasil) atau "H ZAINI".
+
+**Audit data:** seluruh 162 nama member yang sudah tersimpan di database Hakiki (104 KRS + 58 SLK) sudah diperiksa — **tidak ada satu pun** yang mengandung karakter bermasalah ini, jadi tidak perlu migrasi atau perbaikan data apa pun. Masalah ini murni soal mencegah kejadian serupa terulang di masa depan.
+
+**File yang berubah (v11.5.6):**
+
+| File | Perubahan |
+|------|-----------|
+| `lib/firebase-key.ts` | Fungsi baru `hasInvalidFirebaseKeyChars()` — validator karakter terlarang Firebase |
+| `components/features/members/MembersView.tsx` | Validasi dipanggil di `addMember()` dan `saveEdit()` sebelum proses simpan |
+| `lib/locales/id.ts`, `en.ts` | Key baru: `members.nameInvalidChar` |
+| `lib/__tests__/helpers.test.ts` | 9 unit test baru untuk `hasInvalidFirebaseKeyChars()` — regression test permanen untuk bug ini |
+| `lib/constants.ts` | Versi → v11.5.6 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning · **144/144 unit test lulus** (135 sebelumnya + 9 test baru khusus untuk bug ini, memastikan tidak regresi di masa depan).
+
+---
+
 # WiFi Pay Next — Update v11.5.5
 
 > **Bug paling krusial dari rangkaian fix v11.5.3/v11.5.4.** Laporan: "tiap edit member selalu gagal tersimpan, dan saat klik ulang member tidak ditemukan." Ini BUKAN race condition double-tap (sudah ditutup di v11.5.4) — ini bug desain yang lebih dasar: begitu simpan ke Firebase gagal SEKALI (apa pun sebabnya), retry berikutnya rusak SECARA OTOMATIS, tanpa perlu tap ganda sama sekali. Sudah diperbaiki di seluruh app (10 file), plus ditambahkan logging error asli supaya penyebab kegagalan Firebase yang sesungguhnya bisa diperiksa lewat console browser.

@@ -9,6 +9,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { isFree, rp } from '@/lib/helpers';
 import { persistPayment } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { hasInvalidFirebaseKeyChars } from '@/lib/firebase-key';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import FreeMemberModal from '@/components/modals/FreeMemberModal';
@@ -115,6 +116,7 @@ export default function MembersView() {
     const ip    = addIP.trim();
     const tarif = tarifRef.current?.value.trim() || '';
     if (!name) { showToast(t('members.nameRequired'),'err'); return; }
+    if (hasInvalidFirebaseKeyChars(name)) { showToast(t('members.nameInvalidChar'),'err'); return; }
     const list = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
     if (list.includes(name)) { showToast(t('members.nameDuplicate'),'err'); return; }
     list.push(name); list.sort();
@@ -144,6 +146,7 @@ export default function MembersView() {
     const { zone, origName, name, id, ip, tarif, notes } = editData;
     const newName = name.trim().toUpperCase();
     if (!newName) { showToast(t('members.nameRequired'),'err'); return; }
+    if (hasInvalidFirebaseKeyChars(newName)) { showToast(t('members.nameInvalidChar'),'err'); return; }
     const list = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
     const idx  = list.indexOf(origName);
     if (idx === -1) { showToast(t('members.notFound'),'err'); return; }

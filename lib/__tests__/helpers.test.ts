@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import type { AppData } from '@/types';
 import { getKey, getPay, isFree, isLunas, getEffectivePay, getArrears, getPrevMonth, calcPctDelta } from '@/lib/payment';
 import { rp, rpShort, formatDate } from '@/lib/format';
-import { fbKey } from '@/lib/firebase-key';
+import { fbKey, hasInvalidFirebaseKeyChars } from '@/lib/firebase-key';
 import { fuzzyMatch, convertMemberIPs } from '@/lib/member';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 
@@ -53,6 +53,46 @@ describe('fbKey', () => {
   });
   it('string kosong tetap kosong', () => {
     expect(fbKey('')).toBe('');
+  });
+});
+
+// ── hasInvalidFirebaseKeyChars ─────────────────────────────────────────────
+// v11.5.6 — regression test untuk bug nyata: member "HAJI ZAINI" diedit ke
+// "H.ZAINI" SELALU gagal tersimpan ke Firebase RTDB (set() ditolak total),
+// padahal member lain berhasil diedit normal. Root cause: nama member dipakai
+// langsung sebagai Firebase object key di memberInfo/freeMembers/deletedMembers
+// (mis. `${zone}__${name}`) tanpa sanitasi — Firebase RTDB menolak SELURUH
+// write jika ADA SATU SAJA object key mengandung . # $ [ ] /. Validator ini
+// dipakai di titik input (form Add/Edit Member) untuk mencegah nama bermasalah
+// masuk sejak awal, alih-alih menambal tiap titik pembentukan key satu-satu.
+
+describe('hasInvalidFirebaseKeyChars', () => {
+  it('mendeteksi titik (kasus nyata: "H.ZAINI")', () => {
+    expect(hasInvalidFirebaseKeyChars('H.ZAINI')).toBe(true);
+  });
+  it('mendeteksi pagar #', () => {
+    expect(hasInvalidFirebaseKeyChars('NAMA#1')).toBe(true);
+  });
+  it('mendeteksi dollar $', () => {
+    expect(hasInvalidFirebaseKeyChars('NAMA$1')).toBe(true);
+  });
+  it('mendeteksi kurung siku [ ]', () => {
+    expect(hasInvalidFirebaseKeyChars('NAMA[1]')).toBe(true);
+  });
+  it('mendeteksi garis miring /', () => {
+    expect(hasInvalidFirebaseKeyChars('NAMA/1')).toBe(true);
+  });
+  it('nama dengan spasi tetap valid (tidak terdeteksi)', () => {
+    expect(hasInvalidFirebaseKeyChars('HAJI ZAINI')).toBe(false);
+  });
+  it('nama dengan tanda hubung tetap valid — workaround yang dipakai user', () => {
+    expect(hasInvalidFirebaseKeyChars('H-ZAINI')).toBe(false);
+  });
+  it('nama biasa tanpa karakter spesial tetap valid', () => {
+    expect(hasInvalidFirebaseKeyChars('BUDI')).toBe(false);
+  });
+  it('string kosong dianggap valid (validasi "wajib diisi" terpisah)', () => {
+    expect(hasInvalidFirebaseKeyChars('')).toBe(false);
   });
 });
 

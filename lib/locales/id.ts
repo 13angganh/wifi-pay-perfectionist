@@ -223,6 +223,7 @@ const id: Record<string, string> = {
   // Members tambahan
   'members.nameRequired'   : 'Nama wajib diisi',
   'members.nameDuplicate'  : 'Nama sudah ada!',
+  'members.nameInvalidChar': 'Nama tidak boleh mengandung karakter . # $ [ ] /',
   'members.notFound'       : 'Member tidak ditemukan',
   'members.added'          : 'ditambahkan!',
   'members.updated'        : 'berhasil diupdate!',

@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/useAppStore';
 
 import { isFree, rp } from '@/lib/helpers';
 import { persistPayment } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { hasInvalidFirebaseKeyChars } from '@/lib/firebase-key';
 import { showToast } from '@/components/ui/Toast';
@@ -96,7 +97,14 @@ export default function MembersView() {
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData); // rollback: batalkan optimistic update agar retry konsisten
+      // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts), bukan replace
+      // total ke prevData — lihat penjelasan lengkap di persist() MemberCard.tsx. Fungsi ini
+      // dipanggil dari 5 tempat berbeda (add/edit/delete/restore/purge member) yang masing-masing
+      // menyentuh kombinasi field berbeda (krsMembers/slkMembers, memberInfo, deletedMembers,
+      // payments) — selectiveRollback mendeteksi otomatis field mana yang benar-benar berubah,
+      // jadi satu fix ini berlaku benar untuk kelimanya tanpa perlu hardcode per call site.
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
       return false;
     } finally {
       setIsSaving(false);

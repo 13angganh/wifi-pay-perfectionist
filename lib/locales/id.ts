@@ -47,6 +47,9 @@ const id: Record<string, string> = {
   'members.unlock'   : 'BUKA MEMBER',
   'common.noData'    : 'Tidak ada data',
   'common.noResult'  : 'Tidak ada hasil',
+  'common.active'    : 'Aktif',
+  'common.inactive'  : 'Nonaktif',
+  'common.cancel'    : 'Batal',
   'common.total'     : 'Total',
   'common.month'     : 'Bulan',
   'common.year'      : 'Tahun',
@@ -116,11 +119,28 @@ const id: Record<string, string> = {
   'settings.theme.lightDesc' : 'Tampilan terang, cocok untuk siang hari',
   'settings.theme.darkDesc'  : 'Tampilan gelap, nyaman untuk mata',
   'settings.theme.goldDesc'  : 'Tampilan elegan dengan aksen emas premium',
-  'settings.export'          : 'Export Data',
+  'settings.export'          : 'Export & Import Data',
   'settings.autoDate'        : 'Tanggal Otomatis',
   'settings.quickPay'        : 'Quick Pay Amount',
   'settings.appInfo'         : 'Info Aplikasi',
   'settings.version'         : 'Versi',
+
+  // v11.5.12: judul & badge header CollapsibleSection di SettingsView.tsx — sebelumnya
+  // hardcoded, tidak pernah tersambung ke sistem terjemahan sama sekali (beda dari
+  // teks sub-konten di dalamnya yang sudah lama terhubung). Nilai di sini SAMA PERSIS
+  // dengan teks yang sudah tampil sekarang (bukan mengubah copy) — hanya menyambungkan
+  // ke t() agar versi Inggrisnya juga benar-benar muncul.
+  'settings.pinSectionTitle'       : 'PIN Keamanan',
+  'settings.biometricSectionTitle' : 'Sidik Jari & Face ID',
+  'settings.emailSectionTitle'     : 'Email & Reset Password',
+  'settings.ipSectionTitle'        : 'Konversi IP',
+  'settings.waSummaryTitle'        : 'Ringkasan WhatsApp',
+  'settings.quickPaySectionTitle'  : 'Quick Pay',
+  'settings.autoDateSectionTitle'  : 'Tanggal Bayar Otomatis',
+  'settings.autoDateBadgeAuto'     : 'Otomatis',
+  'settings.autoDateBadgeManual'   : 'Manual',
+  'settings.languageBadgeEn'       : 'English',
+  'settings.languageBadgeId'       : 'Indonesia',
 
   // Sync
   'sync.saved'               : 'Tersimpan',
@@ -172,6 +192,7 @@ const id: Record<string, string> = {
   'dashboard.backupNow'  : 'Backup Sekarang',
   'dashboard.waSummary'  : 'Ringkasan WA',
   'dashboard.sendWA'     : 'Kirim Ringkasan',
+  'dashboard.inputPay'   : 'Input Bayar',
   'dashboard.periodNote' : 'Periode sesuai selector di atas',
 
   // Common tambahan
@@ -204,6 +225,7 @@ const id: Record<string, string> = {
   'log.allMonths'         : 'Semua Bulan',
   'log.autoDelete'        : 'LOG · Log dihapus otomatis 30 hari',
   'log.emptyDesc'         : 'Belum ada aktivitas yang tercatat',
+  'log.noResultsDesc'     : 'Coba ubah kata kunci atau filter pencarian',
 
   // Entry tambahan
   'entry.locked'           : 'Data terkunci! Unlock dulu',
@@ -348,6 +370,8 @@ const id: Record<string, string> = {
   // Settings JSON Backup
   'settings.jsonBackup'          : 'JSON Backup',
   'settings.jsonBackupDesc'      : 'Download langsung',
+  'settings.importData'          : 'Import Data',
+  'settings.importDataDesc'      : 'Dari file JSON',
   'settings.jsonBackupDone'      : 'Backup JSON didownload',
 
   // Settings Share
@@ -484,6 +508,8 @@ const id: Record<string, string> = {
   'grafik.period2': 'Periode 2',
   'grafik.diff': 'selisih periode',
   'grafik.proj': 'proj.',
+  'grafik.noDataTitle': 'Belum Ada Data Grafik',
+  'grafik.noDataDesc': 'Tambahkan member dan data pembayaran untuk melihat grafik statistik.',
   'rekap.batchHint': 'tap sel untuk pilih/batal',
   'rekap.searchPlaceholder': 'Cari member...',
 
@@ -497,6 +523,10 @@ const id: Record<string, string> = {
   'riwayat.noHistory': 'Belum ada riwayat pembayaran tahun',
   'riwayat.prevYear': 'Tahun sebelumnya',
   'riwayat.nextYear': 'Tahun berikutnya',
+  'riwayat.statTotal': 'TOTAL',
+  'riwayat.statBayar': 'BAYAR',
+  'riwayat.statMulai': 'MULAI',
+  'riwayat.monthAbbr': 'bln',
   'log.action.deletePay': 'Hapus bayar',
   'log.action.quickPay': 'Quick Pay',
   'log.action.pay': 'Bayar',
@@ -524,6 +554,108 @@ const id: Record<string, string> = {
   'freemodal.until': 'Sampai dengan',
   'freemodal.save': 'Simpan Free Member',
   'freemodal.remove': 'Kembalikan Berbayar',
+
+  // v11.5.11: AccountModal — sebelumnya belum pernah di-i18n-kan sama sekali
+  'account.title': 'Akun',
+  'account.close': 'Tutup',
+  'account.loggedInAs': 'LOGIN SEBAGAI',
+  'account.badgeEmail': '✉ EMAIL',
+  'account.badgeGoogle': 'G GOOGLE',
+  'account.linkGoogle': 'Hubungkan Akun Google',
+  'account.linking': 'Menghubungkan...',
+  'account.googleLinked': '✓ Google sudah terhubung — bisa login via Google atau Email',
+  'account.switchAccount': '↔ Ganti Akun',
+  'account.switchConfirmYes': 'Ganti Akun',
+  'account.switchConfirmQuestion': 'Ganti akun? Kamu akan keluar dari akun ini.',
+  'account.logout': 'Keluar',
+  'account.googleLinkedToast': 'Google berhasil dihubungkan ✓',
+
+  // v11.5.12: SettingsBiometricSection — sebelumnya belum pernah di-i18n-kan sama sekali
+  'biometric.enablePinFirst':     'Aktifkan PIN dulu sebelum menggunakan biometrik',
+  'biometric.enabled':            'Biometrik berhasil diaktifkan',
+  'biometric.registerFailed':     'Gagal mendaftarkan biometrik',
+  'biometric.notSupportedOrCancel': 'Biometrik tidak didukung atau dibatalkan',
+  'biometric.disableConfirm':     'Nonaktifkan biometrik?',
+  'biometric.disableYes':         'Nonaktifkan',
+  'biometric.disabled':           'Biometrik dinonaktifkan',
+  'biometric.verifySuccess':      'Verifikasi berhasil ✓',
+  'biometric.verifyFailed':       'Verifikasi gagal',
+  'biometric.cancelled':          'Biometrik dibatalkan',
+  'biometric.title':              'Sidik Jari & Face ID',
+  'biometric.subtitle':           'Buka kunci app dengan biometrik tanpa PIN',
+  'biometric.checkingDevice':     'Memeriksa perangkat...',
+  'biometric.notSupported':       'Perangkat ini tidak mendukung sidik jari / Face ID, atau izin belum diberikan.',
+  'biometric.enablePinWarning':   '⚠️ Aktifkan PIN terlebih dahulu untuk menggunakan biometrik.',
+  'biometric.enableBtn':          'Aktifkan Biometrik',
+  'biometric.testBtn':            'Uji Biometrik',
+  'biometric.reregisterBtn':      'Daftarkan Ulang',
+  'biometric.disableBtn':         'Nonaktifkan Biometrik',
+  'biometric.privacyNote':        'Data biometrik tidak dikirim ke server — verifikasi terjadi langsung di perangkat Anda via API browser standar (WebAuthn).',
+
+  // v11.5.12: SettingsEmailSection — sebelumnya belum pernah di-i18n-kan sama sekali
+  'emailSection.enterNew':        'Masukkan email baru',
+  'emailSection.sameAsCurrent':   'Email sama dengan yang sekarang',
+  'emailSection.invalidFormat':   'Format email tidak valid',
+  'emailSection.verifySent':      'Email verifikasi terkirim — cek inbox ',
+  'emailSection.title':           'Ubah Email Akun',
+  'emailSection.currentLabel':    'Saat ini:',
+  'emailSection.verifySentDesc':  'Email verifikasi terkirim. Cek inbox dan klik link untuk konfirmasi perubahan.',
+  'emailSection.newEmailLabel':   'EMAIL BARU',
+  'emailSection.firebaseNote':    'Firebase akan kirim email verifikasi ke alamat baru. Email lama tetap aktif sampai kamu klik link konfirmasi di inbox.',
+  'emailSection.sending':         'Mengirim...',
+  'emailSection.sendVerifyBtn':   'Kirim Email Verifikasi',
+  'emailSection.forgotPassword':  'Lupa password? Kirim link reset ke email aktif.',
+  'emailSection.resetSentDesc':   '✓ Link reset terkirim ke',
+  'emailSection.sendResetBtn':    '🔑 Kirim Link Reset Password',
+
+  // v11.5.12: ShareModal — sebelumnya belum pernah di-i18n-kan sama sekali
+  'share.creating':          'Membuat file...',
+  'share.ready':             'File siap, WhatsApp dibuka!',
+  'share.failed':            'Gagal generate file',
+  'share.title':             'Share Rekap',
+  'share.closeAria':         'Tutup modal share',
+  'share.typeLabel':         'TIPE REKAP',
+  'share.monthly':           'Bulanan',
+  'share.yearly':            'Tahunan',
+  'share.monthLabel':        'BULAN',
+  'share.yearLabel':         'TAHUN',
+  'share.zoneLabel':         'ZONA',
+  'share.zoneCombined':      'KRS + SLK (Gabungan)',
+  'share.formatLabel':       'FORMAT',
+  'share.creatingBtn':       'Membuat...',
+  'share.generateBtn':       'Generate & Share via WhatsApp',
+
+  // v11.5.12: ExportModal — sebelumnya belum pernah di-i18n-kan sama sekali
+  'exportModal.jsonSuccess':      'Backup JSON berhasil diunduh',
+  'exportModal.excelSuccess':     'berhasil!',
+  'exportModal.shareSuccess':     'Backup berhasil dibagikan',
+  'exportModal.shareCancelled':   'Share dibatalkan atau tidak didukung',
+  'exportModal.title':            'Export Data',
+  'exportModal.closeAria':        'Tutup modal export',
+  'exportModal.formatLabel':      'FORMAT',
+  'exportModal.jsonBackup':       'JSON (Backup)',
+  'exportModal.yearLabel':        'TAHUN',
+  'exportModal.zoneLabel':        'ZONA',
+  'exportModal.shareInfoBold':     'Bagikan',
+  'exportModal.shareInfoRest':     'untuk kirim via Gmail, WhatsApp, Google Drive, dll — file langsung jadi attachment.',
+  'exportModal.download':         'Download',
+  'exportModal.sharing':          'Membagikan...',
+  'exportModal.share':            'Bagikan',
+
+  // v11.5.12: ImportModal — sebelumnya belum pernah di-i18n-kan sama sekali
+  'importModal.invalidFile':    'File tidak valid!',
+  'importModal.successPrefix':  'Import OK!',
+  'importModal.cloudSyncDone':  'Cloud sync selesai!',
+  'importModal.syncFailed':     'Sync gagal:',
+  'importModal.readFailed':     'Gagal baca file:',
+  'importModal.confirmTitle':   'Import data ini?',
+  'importModal.confirmDesc':    'Seluruh data saat ini (member, pembayaran, info) akan DIGANTI TOTAL dengan isi file ini. Tindakan ini tidak bisa dibatalkan. Pastikan file ini benar sebelum lanjut.',
+  'importModal.confirmYes':     'Ya, Ganti Data',
+  'importModal.summaryPayments': 'data pembayaran',
+
+  // v11.5.12: Sisa temuan kecil dari audit menyeluruh
+  'sidebar.accountAria':   'Buka pengaturan akun',
+  'sidebar.manageAccount': 'Kelola akun',
 
 };
 

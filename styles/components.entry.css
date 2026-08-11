@@ -86,9 +86,27 @@
 .rekap-outer { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
 .rekap-head  { display: none; } /* tidak dipakai lagi — dihapus dari JSX */
 
-/* rekap-wrap: hanya overflow-x. Overflow-y TIDAK boleh diset (visible/auto/scroll)
-   karena akan memutus sticky thead — biarkan #content parent yang handle scroll vertikal. */
-.rekap-wrap  { overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain;
+/* rekap-wrap: hanya overflow-x. Overflow-y TIDAK boleh diset ke auto/scroll/hidden
+   karena akan memutus sticky thead — biarkan #content parent yang handle scroll vertikal.
+   FIX v11.5.7 — ROOT CAUSE dari blank-render random saat scroll:
+   overflow-y:visible di sini TIDAK netral. Spec CSS Overflow §3 (computed value rule)
+   menyatakan: begitu SALAH SATU axis overflow diset ke nilai selain visible (di sini
+   overflow-x:auto), maka axis lainnya yang visible otomatis DIKOMPUTASI ULANG oleh browser
+   menjadi auto juga — bukan tetap visible. Jadi .rekap-wrap diam-diam menjadi scroll
+   container untuk KEDUA axis meski tak pernah terlihat scrollbar vertikal (karena
+   tinggi tabel selalu pas dengan kontennya).
+   Efeknya: td.stk (position:sticky; left:0) yang sticky-nya menggantung ke .rekap-wrap
+   berada di dalam nested scroll container (vertikal ganda: #content DAN .rekap-wrap).
+   Sinkronisasi horizontal antara header dan body dilakukan manual via JS (onScroll di
+   RekapView.tsx), bukan native — sehingga saat #content discroll vertikal cepat,
+   Chromium kadang tidak mentrigger repaint compositor layer td.stk sampai ada event
+   scroll LAIN (geser horizontal, atau scroll balik arah) yang memaksa recompute layer.
+   Persis gejala: "kadang harus scroll dulu baru terender", posisi random berpindah.
+   FIX: overflow-y:clip (bukan visible). Berbeda dari visible, clip TIDAK mengalami
+   computed-value override — ia eksplisit tidak pernah membuat scrollport, sehingga
+   .rekap-wrap benar-benar murni scroll container SATU axis (horizontal saja).
+   Chrome for Android full support semua versi untuk overflow:clip. */
+.rekap-wrap  { overflow-x: auto; overflow-y: clip; overscroll-behavior-x: contain;
                /* touch-action: pan-x — biarkan browser handle scroll horizontal tabel saja */
                touch-action: pan-x pan-y;
                border: 1px solid var(--border); border-radius: var(--r-md);
@@ -102,7 +120,7 @@
 .rtable th   {
   padding: 9px 8px;
   padding-right: 10px;
-  font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt4);
+  font-family: var(--font-sans), sans-serif; font-size: 9px; color: var(--txt2);
   font-weight: 600; letter-spacing: .06em; white-space: nowrap;
   background: var(--bg);
   position: sticky;
@@ -124,7 +142,27 @@
   padding-right: 8px;
 }
 
-.rtable td   { padding: 7px 8px; padding-right: 10px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: right; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg); contain: style; }
+.rtable td   { padding: 7px 8px; padding-right: 10px; border-bottom: 1px solid var(--bg3); white-space: nowrap; text-align: right; cursor: pointer; transition: background var(--t-fast-smooth); font-family: var(--font-mono), monospace; background: var(--bg);
+  /* v11.5.8: contain:style → contain:content (layout+paint+style, TANPA size — aman
+     diterapkan luas tanpa perlu dimensi eksplisit). FIX untuk bug KEDUA yang dilaporkan
+     terpisah dari sticky-column v11.5.7: "blank sesaat lalu recover cepat" saat scroll
+     CEPAT, khusus di baris data biasa (bukan kolom sticky kiri, bukan header — keduanya
+     sudah tidak bermasalah). Root cause: ~1.300+ sel <td> untuk satu zona dirender
+     sekaligus tanpa virtualisasi; saat fling-scroll cepat, Chromium/WebView bisa
+     tertinggal me-rasterize sel yang baru masuk viewport, menampilkan blank sesaat
+     sampai catch up. contain:content mengizinkan browser skip repaint descendant sel
+     yang sedang offscreen dan menaruh descendant yang discroll ke paint layer
+     teroptimasi — persis mengatasi "constant repaints as descendants appear/disappear
+     during scrolling" (CSS-Tricks). Menurut spec W3C, paint containment (dan turunannya
+     content/strict) TIDAK BEREFEK pada internal table box SELAIN table-cell — jadi
+     <tr> tidak pernah bisa jadi target yang benar untuk ini, hanya <td> yang efektif.
+     AMAN untuk td.stk: containment (layout/paint/content/strict) memang menciptakan
+     containing block baru untuk descendant position:absolute/fixed — persis risiko yang
+     disebut di komentar contain:style pada td.stk di bawah — TAPI td.stk punya deklarasi
+     contain:style-nya SENDIRI yang eksplisit dan lebih spesifik, yang SELALU menang di
+     cascade atas rule umum .rtable td ini, terlepas urutan deklarasi. Jadi menaikkan
+     containment di sini tidak pernah bisa menyentuh kolom sticky sama sekali. */
+  contain: content; }
 
 /* td.stk = kolom # dan NAMA: sticky kiri.
    Background solid di semua state penting untuk mencegah blank hitam. */
@@ -137,8 +175,12 @@
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   /* isolation: isolate agar stacking context terkontrol (tidak GPU layer explosion) */
   isolation: isolate;
-  /* contain: style layout — optimasi repaint tanpa GPU layer baru */
-  contain: style layout;
+  /* v11.5.7: contain:style SAJA (bukan "style layout"). contain:layout menciptakan
+     containing block + stacking context tambahan pada elemen yang position:sticky —
+     tidak salah secara spec, tapi menambah beban recalculation yang tidak perlu pada
+     elemen sticky. Root cause blank-render sudah diperbaiki di overflow-y .rekap-wrap;
+     ini murni pengurangan risiko tambahan, bukan fix utama. */
+  contain: style;
 }
 .rtable tr:hover td.stk { background: var(--bg3); }
 .rtable tr:nth-child(even) td { background: var(--bg2); }

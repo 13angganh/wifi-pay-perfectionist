@@ -67,6 +67,49 @@ export function getPrevMonth(year: number, month: number): { year: number; month
   return month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
 }
 
+// ── v11.5.7: resolusi bulan/tahun yang ditampilkan di kartu member (Entry).
+// Prioritas: nilai yang sudah disimpan per-member (entryCardYear/Month[name]) — ini berarti
+// kartu sudah pernah dibuka sebelumnya dan "terkunci" ke bulan saat itu, tidak boleh ikut
+// bergeser meski toggle period Entry (selYear/selMonth) berubah setelahnya (mencegah kartu
+// yang sedang diisi user tergeser mendadak). Jika belum pernah tersimpan, fallback ke
+// selYear/selMonth — yaitu toggle period Entry yang sedang aktif — BUKAN ke tanggal
+// kalender sistem. Ini memperbaiki bug: toggle atas ke bulan X lalu membuka kartu baru
+// dulu menampilkan bulan kalender hari ini, mengabaikan toggle X sepenuhnya. ──
+export function resolveEntryCardPeriod(
+  name: string,
+  entryCardYear: Record<string, number>,
+  entryCardMonth: Record<string, number>,
+  selYear: number,
+  selMonth: number,
+): { year: number; month: number } {
+  return {
+    year:  entryCardYear[name]  ?? selYear,
+    month: entryCardMonth[name] ?? selMonth,
+  };
+}
+
+// ── v11.5.10: resolusi tampilan header kartu member (border kiri, badge status, nominal
+// ringkas) di Entry. Kartu TERTUTUP → selalu ikuti toggle period atas (toggleVal/
+// toggleFree) — status ringkas untuk bulan yang sedang dilihat user secara umum. Kartu
+// TERBUKA → header harus konsisten dengan isi form BULAN/NOMINAL di dalamnya
+// (cardVal/cardFree, yang sudah ikut cardYear/cardMonth kartu itu sendiri) — supaya
+// border/badge tidak menampilkan status bulan lain sementara form di bawahnya
+// menampilkan bulan yang berbeda. ──
+export function resolveDisplayStatus(
+  isExpanded: boolean,
+  toggleVal: number | null,
+  toggleFree: boolean,
+  cardVal: number | null,
+  cardFree: boolean,
+): { val: number | null; free: boolean; statusBorder: 'var(--c-free)' | 'var(--c-lunas)' | 'var(--c-belum)' } {
+  const val  = isExpanded ? cardVal  : toggleVal;
+  const free = isExpanded ? cardFree : toggleFree;
+  const statusBorder = free
+    ? 'var(--c-free)'
+    : (val !== null ? 'var(--c-lunas)' : 'var(--c-belum)');
+  return { val, free, statusBorder };
+}
+
 // ── v11.5.2: persentase perubahan dari `prev` ke `now`, generik untuk insight dashboard.
 // Mengembalikan null jika tidak ada baseline yang masuk akal untuk dihitung (prev=0 tapi
 // now>0 — itu kenaikan "tak terhingga" secara persentase, tidak informatif ditampilkan).

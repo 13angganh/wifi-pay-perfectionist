@@ -18,6 +18,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { persistPayment } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { getMembersForZone, convertMemberIPs } from '@/lib/member';
 import { useT } from '@/hooks/useT';
@@ -35,6 +36,8 @@ export default function SettingsIPSection() {
   const [find,   setFind]   = useState('');
   const [replace,setReplace]= useState('');
 
+  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — lihat penjelasan
+  // lengkap di persist() MemberCard.tsx.
   async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
@@ -50,7 +53,8 @@ export default function SettingsIPSection() {
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData);
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
       return false;
     }
   }

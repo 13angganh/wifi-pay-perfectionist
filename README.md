@@ -1,3 +1,464 @@
+# WiFi Pay Next — Update v11.5.19
+
+> Tindak lanjut dari temuan terpisah di v11.5.18: pesan error PIN yang tidak hilang otomatis, sekarang diminta untuk ikut diperbaiki.
+
+## Bug: Pesan "PIN salah, coba lagi" tidak hilang otomatis
+
+Di v11.5.18, `setTimeout(600ms)` yang mereset `digits` setelah PIN salah tidak memanggil `setError('')` — pesan error baru hilang saat user mulai mengetik ulang. Efeknya: setelah PIN salah, dot indikator sudah kosong lagi dan siap menerima input baru, tapi teks "PIN salah, coba lagi" masih nyangkut di layar selama itu — kombinasi yang membingungkan, terlihat seperti komponen macet padahal sudah siap dipakai lagi.
+
+Diperbaiki dengan menambahkan `setError('')` di dalam callback `setTimeout` yang sama, sejajar dengan `setDigits(...)` dan `setShake(false)` yang sudah ada di situ.
+
+Test regresi yang ditambahkan di v11.5.18 (`PinLock.test.tsx`) diperluas: test yang sebelumnya sengaja menunggu digits reset saja kini juga memverifikasi pesan error ikut hilang di titik yang sama. Sama seperti v11.5.18, kode sempat dikembalikan sementara ke versi tanpa `setError('')` untuk membuktikan assersi barunya benar-benar gagal seperti yang diharapkan, sebelum fix dikembalikan.
+
+## File yang berubah (v11.5.19)
+
+| File | Perubahan |
+|------|-----------|
+| `components/ui/PinLock.tsx` | `setError('')` ditambahkan ke callback `setTimeout` reset PIN salah |
+| `components/ui/__tests__/PinLock.test.tsx` | Test digabung: 1 test kini memverifikasi digits DAN pesan error, keduanya reset otomatis |
+| `lib/constants.ts` | Versi → v11.5.19 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **204/204 unit test lulus** (jumlah test tidak bertambah — perluasan assersi pada test yang sudah ada, bukan test baru) · assersi baru dikonfirmasi menangkap bug lewat revert-sementara-ke-versi-lama sebelum fix dikembalikan.
+
+---
+
+# WiFi Pay Next — Update v11.5.18
+
+> Bug dari laporan penggunaan nyata: saat mengetik PIN di layar login, jumlah digit yang tampil kadang 6 kadang 4, padahal PIN sudah 6 digit sejak beberapa versi lalu.
+
+## Bug: Jumlah digit PIN tidak konsisten (6 vs 4) saat login
+
+`components/ui/PinLock.tsx` menyimpan PIN yang sedang diketik di state `digits`, diinisialisasi sebagai array 6 elemen. Tapi baris yang mereset `digits` setelah PIN salah dimasukkan masih memakai `setDigits(['','','',''])` — array 4 elemen, sisa dari sebelum PIN di-upgrade dari 4 ke 6 digit. Dot indikator dan input tersembunyi sama-sama di-`map()` dari `digits`, jadi begitu user salah mengetik PIN sekali, keduanya mendadak menyusut dari 6 slot ke 4 slot di tengah sesi yang sama — persis gejala yang dilaporkan.
+
+Diperbaiki dengan menyamakan array reset itu jadi 6 elemen, konsisten dengan state awal.
+
+## Test regresi (komponen React pertama di test suite proyek ini)
+
+Ditambahkan `components/ui/__tests__/PinLock.test.tsx` — merender `PinLock` sungguhan dan mengetik PIN lewat numpad, persis alur asli user, bukan menguji state secara langsung. Proses menulis test ini sempat menemukan dua hal di luar bug utamanya sendiri:
+
+- Import chain `PinLock` → `useAppStore` → `dataSlice` → `lib/db.ts` → `lib/firebase.ts` menginisialisasi koneksi Firebase sungguhan saat modul di-import, yang butuh kredensial environment nyata. Di-mock di level test (`vi.mock('@/lib/firebase', ...)`) supaya test PIN tidak bergantung pada koneksi eksternal.
+- **Temuan terpisah, TIDAK diperbaiki di versi ini:** pesan error "PIN salah, coba lagi" tidak pernah hilang otomatis — `setTimeout(600ms)` yang mereset digit tidak memanggil `setError('')`, jadi pesan itu baru hilang saat user mulai mengetik ulang. Ini dikonfirmasi lewat investigasi timer langsung (spy pada `setTimeout`, advance timer, render ulang DOM), bukan sekadar dugaan. Perilaku ini sudah ada sebelum v11.5.18 dan di luar cakupan laporan bug ini (soal jumlah digit, bukan soal pesan error) — dicatat di sini apa adanya, keputusan apakah perlu diperbaiki diserahkan ke penggunanya.
+
+Untuk membuktikan test regresinya benar-benar menangkap bug (bukan lulus kebetulan), kode sempat dikembalikan sementara ke versi 4-elemen dan dikonfirmasi 2 dari 4 test gagal seperti yang diharapkan, sebelum fix dikembalikan.
+
+## File yang berubah (v11.5.18)
+
+| File | Perubahan |
+|------|-----------|
+| `components/ui/PinLock.tsx` | Reset `digits` setelah PIN salah kini 6 elemen, bukan 4 |
+| `components/ui/__tests__/PinLock.test.tsx` | Baru — 4 test regresi untuk alur PIN salah/benar via numpad sungguhan |
+| `lib/constants.ts` | Versi → v11.5.18 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **204/204 unit test lulus** (200 sebelumnya + 4 baru) · test regresi dikonfirmasi menangkap bug lewat revert-sementara-ke-versi-lama sebelum fix dikembalikan.
+
+---
+
+# WiFi Pay Next — Update v11.5.17
+
+> Satu bug lanjutan dari laporan penggunaan nyata di menu Rekap tahunan (PDF terlampir): baris GRAND TOTAL yang baru ditambahkan di v11.5.16 ternyata cuma berisi satu angka rupiah gabungan seluruh tahun — 12 kolom bulan (Jan..Des) di baris itu tetap kosong, padahal setiap halaman sudah punya subtotal per bulannya sendiri ("TOTAL HALAMAN").
+
+## Bug: GRAND TOTAL di PDF Rekap tahunan tidak punya angka per bulan
+
+Baris footer "GRAND TOTAL" (ditambahkan v11.5.16 untuk memisahkan grand total dari subtotal per halaman) hanya mengisi 2 sel: label "GRAND TOTAL" dan satu angka rupiah di kolom "Total" paling kanan — 12 kolom bulan lainnya sengaja dibiarkan string kosong sejak awal ditulis. Ini persis yang dilaporkan: rekap tahunan tidak punya grand total seluruh halaman untuk tiap bulannya, cuma total tahunan gabungan.
+
+Diperbaiki dengan menghitung total per bulan langsung dari data mentah (pola yang sama seperti perhitungan grand total tahunan yang sudah ada), lalu mengisi tiap kolom bulan di baris GRAND TOTAL dengan angka itu — akumulasi seluruh member lintas semua halaman, bukan cuma halaman terakhir.
+
+Percobaan pertama perbaikan ini sempat salah: label "GRAND TOTAL" awalnya ditaruh di kolom bulan terakhir (Des), karena di mode tahunan tidak ada kolom kosong khusus untuk label seperti di mode bulanan. Begitu kolom Des juga diisi angka totalnya, angka itu menimpa teks labelnya sendiri — dikonfirmasi langsung dengan generate PDF nyata dan membaca isinya via `pdftotext`, bukan sekadar dugaan dari kode. Diperbaiki dengan memindah label ke kolom "Nama" (satu-satunya kolom yang secara alami tak butuh angka di baris grand-total), sehingga ke-12 bulan bisa terisi tanpa terkecuali. Mode bulanan (rekap 1 bulan) tidak disentuh sama sekali — label di sana tetap di posisi aslinya karena tidak mengalami masalah yang sama.
+
+Sudah diverifikasi dengan generate PDF nyata dari data uji 40 member multi-halaman: baris GRAND TOTAL menampilkan angka per bulan yang benar (diperiksa langsung lewat `pdftotext -layout`, bukan cuma dibaca dari kode), label tetap utuh, dan mode bulanan terbukti tidak berubah lewat PDF uji terpisah.
+
+## File yang berubah (v11.5.17)
+
+| File | Perubahan |
+|------|-----------|
+| `lib/export.excel.ts` | `generatePDF()`: baris GRAND TOTAL (mode tahunan) kini diisi per bulan, bukan cuma 1 angka rupiah gabungan; label dipindah ke kolom "Nama" agar tidak menimpa kolom bulan Des |
+| `lib/constants.ts` | Versi → v11.5.17 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **200/200 unit test lulus** (tidak ada test baru — sama seperti v11.5.16, perubahan ini pada `generatePDF()` yang outputnya file biner PDF; validasi dilakukan dengan generate PDF nyata dari data multi-halaman lalu memeriksa teksnya langsung via `pdftotext`, termasuk kasus mode bulanan untuk memastikan tidak ada regresi).
+
+---
+
+# WiFi Pay Next — Update v11.5.16
+
+> Dua bug dari laporan penggunaan nyata di menu Rekap ALL (PDF terlampir): warna zebra-stripe & teks yang hampir tak terbaca, dan angka "TOTAL" yang ternyata sama persis di setiap halaman alih-alih subtotal halaman itu sendiri. Investigasi kedua bug ini juga menemukan satu masalah insidental lama (bukan bagian dari laporan) yang ikut dibereskan sekalian demi kerapian kode.
+
+## Bug: zebra-stripe & teks PDF Rekap hampir tak terbaca
+
+Warna baris selang-seling (`alternateRowStyles`) dan warna baris footer (`footStyles`) sebelumnya nyaris identik satu sama lain (RGB `[15,18,28]` vs `[20,24,36]`), dan warna teks header (`[170,170,160]`, abu redup) berada di atas latar yang juga gelap (`[30,34,49]`) — kombinasi kontras rendah yang membuat sebagian teks sulit terbaca, terutama saat dicetak atau di-zoom.
+
+Diperbaiki dengan mengambil warna langsung dari token tema resmi app (`lib/design-tokens.ts` — `bg2`/`bg3`/`bg4` untuk latar, `txt2` untuk teks), sehingga PDF kini konsisten dengan tampilan dark-theme app itu sendiri dan kontrasnya sudah pasti memadai karena token yang sama sudah dipakai dan terbukti terbaca di seluruh UI aplikasi.
+
+## Bug: "TOTAL" di PDF Rekap ALL sama persis di setiap halaman, bukan subtotal halaman
+
+Root cause: `jspdf-autotable` (library pembuat tabel PDF) punya perilaku default `showFoot: 'everyPage'` — artinya baris `foot` yang didefinisikan di kode (berisi **satu angka grand total untuk seluruh periode**) otomatis digambar ulang di **setiap** halaman apa adanya. Karena angkanya memang satu angka yang sama, hasilnya persis seperti yang dilaporkan: baris "TOTAL" di halaman 1, 2, 3, dst semuanya menunjukkan angka identik — bukan subtotal member-member yang ada di halaman itu.
+
+Diperbaiki dengan pendekatan berbeda sepenuhnya, bukan sekadar mengubah opsi:
+- Grand total asli kini hanya digambar **sekali**, di halaman terakhir (`showFoot: 'lastPage'`), dengan label "GRAND TOTAL" berwarna hijau agar jelas berbeda dari subtotal.
+- Baris baru "TOTAL HALAMAN" ditambahkan di setiap halaman, dihitung ulang murni dari baris-baris yang **benar-benar tercetak di halaman itu** — bukan diambil dari opsi `foot` statis.
+- Nilai numerik untuk perhitungan ini diambil dari data mentah (bukan dari teks tabel yang sudah diformat), untuk menghindari salah baca akibat titik pemisah ribuan Indonesia (mis. string "10.180" bila diparsing sebagai angka biasa bisa salah terbaca sebagai "10,18").
+
+Sudah diverifikasi dengan generate PDF nyata dari data uji multi-halaman: subtotal tiap halaman berbeda satu sama lain sesuai isi halamannya masing-masing, dan totalnya menjumlah tepat ke grand total yang tampil di halaman terakhir.
+
+## Perbaikan insidental: warning konsol "width could not fit page" pada setiap export PDF
+
+Ditemukan saat menginvestigasi dua bug di atas, di luar cakupan laporan awal — bukan disebabkan oleh perubahan pada versi ini. Kode lama sempat memanggil `autoTable(doc, { head:[[]], body:[] })` (tabel kosong tanpa kolom) di awal fungsi, dengan komentar "Daftarkan plugin autotable". Ditelusuri ke source code `jspdf-autotable`: pendaftaran plugin ke instance PDF sebenarnya sudah terjadi **otomatis** saat library ini pertama kali dimuat — pemanggilan manual dengan tabel kosong itu tidak pernah benar-benar dibutuhkan sejak awal, dan efek sampingnya justru memicu warning tersebut pada console setiap kali PDF dibuat (tabel 0-kolom membuat kalkulasi lebar minimum vs lebar halaman jadi tidak wajar).
+
+Baris tersebut dihapus. Dikonfirmasi lewat pengujian langsung: warning hilang total, sementara tabel data yang sesungguhnya di bawahnya tetap tergambar tanpa perubahan apa pun (bukan cuma tampak sama — subtotal per halaman dan grand total pada data uji tetap menghasilkan angka yang identik sebelum dan sesudah baris ini dihapus).
+
+## File yang berubah (v11.5.16)
+
+| File | Perubahan |
+|------|-----------|
+| `lib/export.excel.ts` | `generatePDF()`: palet warna disamakan dengan token tema app; subtotal per halaman dihitung ulang dari baris yang benar-benar tercetak di halaman itu (bukan lagi grand total statis yang diulang); grand total dipisah tegas ke halaman terakhir saja; baris inisialisasi plugin yang sudah tidak diperlukan (sumber warning konsol) dihapus |
+| `lib/constants.ts` | Versi → v11.5.16 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **200/200 unit test lulus** (tidak ada test baru — perubahan ini murni pada `generatePDF()`, yang tidak tercakup unit test yang ada karena outputnya adalah file biner PDF; validasi dilakukan dengan generate PDF nyata dari data multi-halaman dan pemeriksaan visual + numerik langsung terhadap hasilnya, termasuk verifikasi independen bahwa subtotal tiap halaman menjumlah tepat ke grand total).
+
+---
+
+> Dua laporan bug dari penggunaan nyata di menu Entry (screenshot terlampir), plus satu upgrade framework yang sudah direncanakan sejak beberapa minggu lalu: Next.js akhirnya mencapai versi 16.3 stable, momen yang sudah ditetapkan sebagai syarat sebelumnya.
+
+## Bug: kartu member tak bisa diklik saat batch pembayaran berisi 4+ member
+
+Bottom sheet preview batch (mengambang di bagian bawah layar, `position:fixed`) punya tinggi yang tumbuh mengikuti jumlah member yang dipilih — makin banyak dipilih, makin tinggi. Tapi ruang kosong penyeimbang di akhir daftar kartu member selalu tetap di angka 300px, berapa pun jumlah member. Begitu sheet tumbuh melebihi 300px (sekitar 4 member ke atas), sheet mulai menutupi kartu paling bawah **secara fisik** — sheet tetap menerima ketukan di area itu meski kartu di baliknya masih tampak sebagian, sehingga ketukan di kartu itu tidak pernah benar-benar sampai. Ini sebab laporan: kartu ZAHDAN terlihat tapi tidak merespons ketukan begitu daftar terpilih bertambah.
+
+Diperbaiki dengan mengukur tinggi asli sheet secara langsung (bukan dihitung manual dari jumlah item, supaya tidak basi kalau layout-nya berubah lagi nanti) dan menyesuaikan ruang kosong penyeimbang mengikuti angka itu — sehingga daftar kartu selalu bisa di-scroll sepenuhnya melewati sheet, apa pun jumlah member yang dipilih.
+
+## Bug: tak bisa menambah member lain ke batch saat masuk lewat fitur pencarian
+
+Kotak pencarian disembunyikan total begitu mode pembayaran batch aktif — padahal apa pun yang sempat diketik di kotak itu sebelumnya (mis. "Zam") tetap tersimpan dan terus dipakai untuk menyaring daftar, tanpa ada cara mengubah atau menghapusnya karena kotaknya sendiri sudah hilang dari layar. Akibatnya: begitu mode batch dimulai dari hasil pencarian nama tertentu, daftar member yang tampil selamanya cuma hasil pencarian itu — mustahil menambah member lain ke pembayaran gabungan.
+
+Diperbaiki dengan membuat kotak pencarian tetap tampil selama mode batch berlangsung, sehingga pencarian bisa diubah atau dihapus kapan saja untuk melihat dan menambah member lain ke daftar terpilih.
+
+## Upgrade: Next.js 16.2.6 → 16.3.0 (stable, rilis 3 Agustus 2026)
+
+Sesuai rencana yang sudah ditetapkan sebelumnya (skip 16.2.12 karena update itu murni patch keamanan untuk fitur yang tidak dipakai app ini — middleware, i18n locales, Server Actions, rewrites — sambil menunggu 16.3 stabil). 16.3 kini rilis dan membawa seluruh perbaikan keamanan kumulatif dari 16.2.11/16.2.12 sekaligus, jadi upgrade ini otomatis membawa app ke titik terkini tanpa perlu dua langkah terpisah.
+
+Perubahan utama di 16.3 murni performa infrastruktur, tanpa mengubah kode aplikasi sama sekali: Turbopack memakai memori jauh lebih hemat saat development (disk caching + memory eviction, otomatis aktif), dan build cache kini juga berlaku untuk build produksi (sebelumnya hanya development) — berpotensi mempercepat build CI/Vercel ke depannya. Fitur baru Instant Navigations bersifat opt-in dan tidak aktif tanpa konfigurasi eksplisit, jadi tidak berdampak pada perilaku app saat ini.
+
+Diperiksa ulang seluruh syarat yang sebelumnya membuat app ini aman dari security release Juli — tidak ada `middleware.ts`, tidak ada `i18n.locales`, tidak ada Server Actions (`'use server'`), tidak ada `runtime: 'edge'` di manapun di codebase — semuanya masih berlaku sama untuk 16.3, dan tidak ditemukan advisory keamanan baru yang spesifik menyasar 16.3 di luar yang sudah tercakup 16.2.12. `eslint-config-next` turut disinkronkan ke 16.3.0 agar tidak tertinggal dari versi core.
+
+**Catatan verifikasi build:** `next build` tidak bisa dijalankan sampai selesai di lingkungan kerja sesi ini karena keterbatasan akses jaringan ke `fonts.googleapis.com` (dipakai `next/font/google` di `app/layout.tsx` untuk font Inter & JetBrains Mono) — bukan soal kode. TypeScript, ESLint, dan seluruh test suite tetap dijalankan penuh dan lulus bersih; disarankan menjalankan `npm run build` sekali di lingkungan dengan akses internet normal (mis. lokal atau CI Vercel) sebelum deploy, sebagai langkah verifikasi akhir yang belum sempat dilakukan di sesi ini.
+
+## File yang berubah (v11.5.15)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/entry/EntryView.tsx` | Ruang kosong penyeimbang di bawah daftar kartu kini dinamis mengikuti tinggi asli bottom sheet (via ResizeObserver), bukan angka tetap 300px; kotak pencarian kini tetap tampil selama mode batch aktif |
+| `package.json` | `next` → `^16.3.0`, `eslint-config-next` → `^16.3.0` |
+| `lib/constants.ts` | Versi → v11.5.15 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **200/200 unit test lulus** (tidak ada test baru — kedua bug adalah murni masalah tata letak/rendering UI, di luar cakupan unit test yang ada, yang berfokus ke `lib/`, `hooks/`, `store/`). `next build` belum terverifikasi penuh di sesi ini — lihat catatan di atas.
+
+---
+
+> Dua temuan: satu sisa teks yang lolos dari sisiran sebelumnya (menu Operasional), dan satu masukan soal kejelasan nama section — Import Data yang baru dipasang minggu lalu ternyata tidak terlihat dari luar sebelum section-nya dibuka, karena masih bernama "Export Data" saja.
+
+## Sisa teks yang belum ikut bahasa: toggle bulan di menu Operasional
+
+Dropdown pilihan bulan di menu Operasional selalu menampilkan nama bulan Bahasa Indonesia, meski label ringkasan di sebelahnya sudah benar mengikuti pengaturan bahasa. Pola yang sama juga ditemukan di satu tempat lain yang sebelumnya lolos — angka "MULAI" di kartu riwayat member (yang labelnya sudah diperbaiki sebelumnya, tapi isinya sendiri belum). Sudah ditelusuri ke seluruh bagian aplikasi yang punya potensi masalah serupa; keduanya adalah satu-satunya sisa yang ditemukan.
+
+## Export Data → Export & Import Data
+
+Sesuai masukan: sebelum section ini dibuka, judulnya cuma "Export Data" — Import ada di dalamnya, tapi tidak ada petunjuk apa pun dari luar. Judul section sekarang mencakup keduanya secara eksplisit, tanpa dipisah jadi section tersendiri (backup dan restore tetap satu kesatuan konsep, berdampingan seperti sebelumnya). Ikon section juga disesuaikan — sebelumnya panah unduh (mengarah satu arah, ke luar), sekarang panah dua arah yang mewakili keduanya sekaligus.
+
+## File yang berubah (v11.5.14)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/operasional/OperasionalView.tsx` | Dropdown bulan disambungkan ke sistem terjemahan |
+| `components/modals/RiwayatModal.tsx` | Nilai "MULAI" di kartu statistik disambungkan ke sistem terjemahan |
+| `components/features/settings/SettingsView.tsx` | Ikon section Export & Import diperbarui |
+| `components/features/settings/SettingsTarifSection.tsx` | Ikon card Export & Import diperbarui (ikon tombol JSON Backup di dalamnya tidak berubah) |
+| `lib/locales/id.ts`, `en.ts` | Nilai `settings.export` diperbarui dari "Export Data" menjadi "Export & Import Data" (satu key ini menentukan judul di kedua tempat sekaligus) |
+| `lib/constants.ts` | Versi → v11.5.14 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **200/200 unit test lulus** (tidak ada test baru — perubahan ini murni bug fix teks dan penyesuaian nama/ikon, sudah tercakup pemeriksaan konsistensi terjemahan yang ada).
+
+---
+
+> Empat temuan sekaligus: tiga sisa teks Bahasa Indonesia yang lolos dari sisiran sebelumnya, dan satu permintaan fitur baru — Import data, sebagai jaring pengaman preventif untuk skenario kesalahan login atau data terhapus. Import ternyata sudah pernah ditulis sebelumnya (logic intinya lengkap), tapi tidak pernah benar-benar bisa diakses dari mana pun di aplikasi — sekarang sudah tersambung, dengan beberapa perbaikan keamanan tambahan mengingat sifatnya yang menimpa seluruh data.
+
+## Tiga sisa teks yang belum ikut bahasa
+
+- **Dashboard**: tombol "Input Bayar [bulan]" di kartu tunggakan bawah — sudah tersambung.
+- **Pengaturan → WA Summary & Export Data**: toggle "Bulanan/Tahunan" pada bagian "Share PDF/Excel" (dipakai bersama oleh kedua menu, makanya muncul di keduanya) — sudah tersambung. Sekalian ditemukan dan diperbaiki bug terpisah: dropdown bulan di komponen berbagi WhatsApp sempat selalu memakai Bahasa Indonesia meski sudah ada variabel bahasa yang benar tersedia.
+- **Riwayat per member** (modal yang sama, muncul baik dari menu Member maupun Entry — dikonfirmasi keduanya memang satu komponen bersama): label "TOTAL", "BAYAR", "MULAI" di kartu statistik, singkatan "bln", dan status "Free" — semuanya sudah tersambung.
+
+Saat menelusuri perbaikan di atas, ditemukan juga satu bug yang jangkauannya lebih luas: tombol "Batal" di **seluruh** dialog konfirmasi aplikasi (dipakai puluhan kali — hapus member, ganti akun, nonaktifkan biometrik, dan sekarang juga konfirmasi import) ternyata selalu Bahasa Indonesia, tidak peduli pengaturan bahasa. Sudah diperbaiki di sumbernya, jadi otomatis berlaku ke semua tempat yang memakainya.
+
+## Fitur Import: dari kode yang sudah ada tapi tidak bisa diakses, sekarang aktif dengan pengaman tambahan
+
+Investigasi awal menunjukkan logic inti untuk membaca dan memproses file backup JSON sudah lengkap sebelumnya — masalahnya murni tidak ada satu pun tombol di aplikasi yang memanggilnya. Sebelum menyambungkannya, ditemukan dan diperbaiki dua celah yang penting mengingat fitur ini secara eksplisit dimaksudkan sebagai jaring pengaman untuk skenario kehilangan data — jadi harus benar-benar bisa diandalkan, bukan berisiko menambah masalah baru:
+
+- **Proses simpan ke server sebelumnya dilakukan bertahap** (ganti data utama dulu, baru payment menyusul dalam beberapa batch terpisah). Kalau prosesnya terhenti di tengah jalan — koneksi terputus, aplikasi tertutup — hasilnya bisa jadi data tercampur: sebagian sudah baru, sebagian masih lama. Sekarang seluruh proses jadi satu langkah tunggal yang menjamin selesai penuh atau tidak berubah sama sekali, tidak ada kondisi setengah jalan.
+- **Belum ada konfirmasi sebelum data ditimpa.** Karena import mengganti *seluruh* data yang sedang berjalan, dan ini persis operasi yang paling berisiko kalau sampai salah pilih file, sekarang ditambahkan langkah konfirmasi wajib sebelum apa pun benar-benar berubah — lengkap dengan ringkasan singkat isi file yang akan diimpor (jumlah member KRS, SLK, dan data pembayaran), supaya ada kesempatan terakhir untuk memastikan file yang dipilih memang benar sebelum melanjutkan.
+
+Tombol Import sekarang ada di menu **Pengaturan → Export Data**, tepat di bawah opsi export yang sudah ada — sesuai permintaan, format dan lokasinya berdekatan dengan Export supaya mudah ditemukan sebagai satu pasangan (backup keluar, restore masuk).
+
+## File yang berubah (v11.5.13)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/dashboard/DashboardView.tsx` | Teks "Input Bayar" disambungkan ke sistem terjemahan |
+| `components/features/settings/SettingsTarifSection.tsx` | Toggle Bulanan/Tahunan (dipakai bersama WA Summary & Export) disambungkan; tombol Import Data ditambahkan di bagian Export |
+| `components/modals/RiwayatModal.tsx` | Label TOTAL/BAYAR/MULAI, singkatan "bln", dan status "Free" disambungkan ke sistem terjemahan |
+| `components/ui/Confirm.tsx` | Tombol "Batal" pada seluruh dialog konfirmasi aplikasi disambungkan ke sistem terjemahan |
+| `components/modals/ImportModal.tsx` | Ditulis ulang: langkah konfirmasi dengan ringkasan data ditambahkan sebelum data ditimpa; logic validasi diekstrak agar bisa diuji terpisah |
+| `lib/db.ts` | `importToDB` ditulis ulang jadi satu langkah tunggal (bukan bertahap) untuk mencegah kondisi data setengah-jalan; fungsi baru `normalizeImportedData()` untuk validasi data yang bisa diuji terpisah |
+| `lib/locales/id.ts`, `en.ts` | Key baru untuk seluruh temuan di atas |
+| `lib/__tests__/db.test.ts` | 9 unit test baru untuk `normalizeImportedData`, mencakup data valid, tidak valid, sebagian rusak, dan skala realistis |
+| `lib/constants.ts` | Versi → v11.5.13 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **200/200 unit test lulus** (191 sebelumnya + 9 test baru).
+
+---
+
+> Pertanyaan sederhana ("sudah dicek teks collapse/expand di Pengaturan?") ternyata membuka temuan yang jauh lebih luas dari dugaan awal. Jawaban jujurnya: belum, sesi sebelumnya cuma fokus ke tiga laporan eksplisit (Log, Grafik, Akun) tanpa menyisir Pengaturan sendiri. Setelah diperiksa menyeluruh: 12 judul section di menu Pengaturan memang belum tersambung bahasa, dua bagian di dalamnya (Sidik Jari & Face ID, Ubah Email) ternyata belum pernah tersambung sama sekali sejak awal, dan audit yang lebih luas ke seluruh aplikasi menemukan pola yang sama di beberapa tempat lain — termasuk temuan yang tidak terduga: tiga bagian kode (Share, Export lewat modal lama, Import lewat modal lama) yang ternyata sama sekali tidak pernah aktif dipakai di aplikasi manapun, dan dua di antaranya (Import, Share) sepertinya benar-benar tidak punya tombol pemicu di manapun — bukan cuma soal bahasa, tapi kemungkinan fitur yang hilang.
+
+## Pengaturan: 12 judul section collapse/expand belum tersambung bahasa
+
+Dikonfirmasi lewat tangkapan layar sebelumnya: "PIN Keamanan", "Sidik Jari & Face ID", "Email & Reset Password", "Manajemen Zona", "Konversi IP", "Export Data", "Ringkasan WhatsApp", "Quick Pay", "Tema Tampilan", "Bahasa", "Tanggal Bayar Otomatis", "Info Aplikasi" — semua judul yang tampil di baris collapse/expand, plus badge status di sampingnya (Aktif/Nonaktif, Terang/Gelap/Emas, English/Indonesia, Otomatis/Manual), tetap Bahasa Indonesia berapa pun pengaturan bahasa aplikasi. Sebagian judul ini kebetulan sudah punya terjemahan siap pakai di tempat lain (halaman ini sudah pernah tersambung bahasa untuk sebagian, tapi berhenti di tengah jalan) — sisanya dibuatkan terjemahan baru, dengan teks Indonesia dijaga sama persis seperti yang sudah tampil sekarang, supaya tidak ada yang berubah selain versi Inggrisnya yang sekarang benar-benar muncul.
+
+## Dua bagian isi Pengaturan yang ternyata belum pernah tersambung bahasa sama sekali
+
+Saat menelusuri kenapa judul section tidak tersambung, ditemukan dua bagian **isi** section (yang muncul setelah di-expand) yang levelnya lebih parah — bukan cuma judul header, tapi **seluruh isinya** (deskripsi, tombol, pesan sukses/gagal, konfirmasi) tetap Bahasa Indonesia total:
+
+- **Sidik Jari & Face ID**: status aktif/nonaktif, penjelasan fitur, peringatan "aktifkan PIN dulu", tombol aktifkan/uji/nonaktifkan, catatan privasi — semuanya belum tersambung.
+- **Ubah Email Akun**: label email saat ini, pesan verifikasi terkirim, catatan proses Firebase, tombol kirim, bagian reset password — semuanya juga belum tersambung.
+
+Sudah diperbaiki sepenuhnya untuk keduanya.
+
+## Audit menyeluruh ke seluruh aplikasi: ditemukan pola yang sama di beberapa tempat lain
+
+Karena dua temuan di atas menunjukkan pola yang bisa saja berulang di tempat lain, dilakukan pemeriksaan sistematis ke setiap bagian aplikasi yang berpotensi punya masalah serupa. Hasilnya, beberapa bagian kecil lain juga ditemukan belum tersambung bahasa — pesan status di tombol akun sidebar ("Kelola akun"), dan (dalam proses perbaikan) modal untuk berbagi hasil rekap via WhatsApp serta modal export/import data.
+
+**Temuan tak terduga saat proses ini**: tiga file yang disebut terakhir (modal berbagi WhatsApp, modal export versi lama, modal import) ternyata **sama sekali tidak pernah dipanggil dari mana pun** di aplikasi — sudah ditulis lengkap, tapi tidak ada satu pun tombol atau menu yang memicunya. Ditelusuri lebih jauh:
+
+- **Export data** — masih berfungsi normal, hanya lewat jalur berbeda (menu Pengaturan → Export Data, yang sudah benar sejak awal). Modal versi lama ini kemungkinan sisa sebelum fitur export dipindah ke sana.
+- **Import data** — tidak ditemukan jalur lain yang memanggilnya sama sekali. Kemungkinan fitur ini sudah tidak bisa diakses dari UI manapun.
+- **Berbagi via WhatsApp** — sama, tidak ditemukan jalur lain. Kemungkinan juga sudah tidak bisa diakses dari UI manapun.
+
+Ini di luar scope pertanyaan awal (soal teks, bukan soal fitur hilang), jadi belum ditindaklanjuti — perbaikan bahasa di ketiga file itu tetap diselesaikan (tidak merugikan meski saat ini tidak terpakai), tapi soal apakah Import dan Share memang sengaja dihilangkan atau tidak sengaja terlepas saat pembaruan sebelumnya, itu perlu jadi keputusan tersendiri. Kalau kedua fitur itu memang masih dibutuhkan, perlu dicari tahu di mana seharusnya tombol pemicunya dulu dipasang.
+
+Ditemukan juga empat file lain dengan pola serupa (fungsinya sudah dipindah ke tempat lain secara langsung, filenya tersisa tidak terpakai): daftar member di menu Entry, tombol bayar cepat di menu Entry, kartu tunggakan, dan tab zona di header. Keempatnya tidak disentuh sama sekali karena memang tidak aktif — disebutkan di sini murni sebagai catatan housekeeping, bukan sesuatu yang perlu segera ditindaklanjuti.
+
+## File yang berubah (v11.5.12)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/settings/SettingsView.tsx` | 12 judul section + 6 badge status disambungkan ke sistem terjemahan |
+| `components/features/settings/SettingsBiometricSection.tsx` | Seluruh isi (sebelumnya 100% hardcoded) disambungkan ke sistem terjemahan |
+| `components/features/settings/SettingsEmailSection.tsx` | Seluruh isi (sebelumnya 100% hardcoded) disambungkan ke sistem terjemahan |
+| `components/layout/Sidebar.UserSection.tsx` | Dua teks disambungkan ke sistem terjemahan |
+| `components/modals/ShareModal.tsx` | Seluruh isi disambungkan ke sistem terjemahan; sekalian diperbaiki bug terpisah — dropdown bulan selalu pakai Bahasa Indonesia meski sudah ada variabel yang benar tersedia. **Catatan: file ini saat ini tidak terpanggil dari mana pun di aplikasi** |
+| `components/modals/ExportModal.tsx` | Seluruh isi disambungkan ke sistem terjemahan. **Catatan: file ini saat ini tidak terpanggil dari mana pun; fitur export sesungguhnya berjalan lewat menu Pengaturan yang terpisah** |
+| `components/modals/ImportModal.tsx` | Seluruh isi disambungkan ke sistem terjemahan. **Catatan: file ini saat ini tidak terpanggil dari mana pun di aplikasi** |
+| `lib/locales/id.ts`, `en.ts` | Key baru untuk seluruh temuan di atas |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **191/191 unit test lulus** (tidak ada test baru — perubahan ini murni teks UI, sudah tercakup oleh pemeriksaan konsistensi terjemahan yang sudah ada).
+
+---
+
+> Tiga temuan dari pengujian menyeluruh: pencarian di menu Log yang kurang presisi (cari "uci" tapi muncul member yang tidak relevan sama sekali), teks Bahasa Indonesia sekilas muncul di menu Grafik saat memakai Bahasa Inggris, dan seluruh menu Akun di sidebar yang ternyata belum pernah diterjemahkan sama sekali sejak awal dibuat.
+
+## Log: pencarian nama tidak presisi, hasil tidak relevan
+
+Dikonfirmasi: cari "uci" di Log menampilkan WILDAN, VIO, VINA, SIFA — tidak satupun nama itu benar-benar mengandung kata "uci". Penyebabnya: mesin pencarian yang dipakai di Log dirancang untuk mencari huruf-huruf yang tersebar (tidak harus berdekatan) di dalam teks — cara ini bagus untuk mencari nama pendek (ketik "wldn" tetap ketemu "WILDAN"), tapi jadi longgar berlebihan untuk kalimat panjang seperti catatan aktivitas ("[PAY] Quick Pay Rekap KRS - WILDAN") — kata "Quick" yang muncul di **setiap** baris log kebetulan sudah mengandung huruf u, c, i secara berurutan, sehingga hampir semua baris log ikut muncul untuk pencarian pendek apapun, terlepas relevan atau tidak.
+
+**Perbaikan:** pencarian di Log sekarang memakai pencocokan yang presisi — kata yang diketik harus benar-benar muncul utuh sebagai bagian dari kalimat, bukan sekadar huruf-hurufnya tersebar. Pencarian nama pendek di menu lain (Entry, Rekap, pencarian global) tidak diubah — cara lama memang tepat untuk kasus itu. Pesan "tidak ada hasil" saat pencarian tidak menemukan apapun juga diperbaiki agar ikut berganti bahasa sesuai pengaturan (sebelumnya selalu Bahasa Indonesia).
+
+## Grafik: teks Bahasa Indonesia sekilas muncul saat memakai Bahasa Inggris
+
+**Penyebab:** saat aplikasi pertama kali dimuat, bagian yang menyiapkan tampilan awal (di server, sebelum sepenuhnya berjalan di perangkat) belum bisa membaca pengaturan bahasa yang tersimpan di perangkat — jadi sesaat memakai bahasa default (Indonesia) sampai perangkat selesai mengambil alih dan membaca pengaturan yang sebenarnya. Ini sebenarnya berlaku untuk seluruh aplikasi secara merata, tapi baru benar-benar **terlihat** di Grafik karena proses menggambar grafik itu sendiri butuh waktu sedikit lebih lama dibanding menampilkan teks biasa — jeda itu jadi cukup lama untuk sempat terlihat mata sebelum bahasa yang benar mengambil alih.
+
+**Perbaikan:** Grafik sekarang menunggu sampai benar-benar siap membaca pengaturan bahasa yang sesungguhnya sebelum menampilkan apapun yang mengandung teks — selama menunggu (sepersekian detik), yang tampil adalah kerangka kosong tanpa teks sama sekali, sehingga tidak ada apapun yang bisa "salah bahasa" untuk sempat terlihat.
+
+**Temuan tambahan yang belum ditangani (perlu keputusan prioritas):** pola penyebab yang sama berlaku juga di 15 bagian lain aplikasi yang turut membaca pengaturan bahasa dengan cara serupa — RiwayatModal, ShareModal, FreeMemberModal, Log, Tunggakan, Operasional, Rekap (tampilan utama & modal), tiga bagian Pengaturan (Aplikasi, Tarif, tampilan utama), Entry, kartu member di Entry, Dashboard, dan Header. Belum tentu semuanya benar-benar terlihat bermasalah seperti Grafik — kemungkinan besar sebagian besar re-render-nya cukup cepat sehingga tidak sempat terlihat mata — tapi berpotensi sama secara teknis. Sengaja belum disentuh karena scope-nya jauh lebih besar dari laporan awal (spesifik Grafik) dan sebaiknya jadi keputusan terpisah: mana yang perlu diprioritaskan, atau apakah lebih baik ditangani sekaligus di satu pembaruan besar untuk konsistensi penuh.
+
+## Akun (sidebar): belum pernah diterjemahkan sama sekali
+
+Dikonfirmasi lewat tangkapan layar: judul "Akun", label "LOGIN SEBAGAI", badge "EMAIL"/"GOOGLE", tombol "Hubungkan Akun Google", pesan status terhubung, tombol "Ganti Akun" dan "Keluar" — semuanya tetap Bahasa Indonesia meski pengaturan aplikasi sudah Bahasa Inggris. Bukan sesuatu yang baru rusak — bagian ini memang belum pernah dihubungkan ke sistem terjemahan sejak awal dibuat, berbeda dari hampir semua bagian lain aplikasi yang sudah konsisten mendukung dua bahasa.
+
+**Perbaikan:** seluruh teks di menu Akun sekarang mengikuti pengaturan bahasa aplikasi, konsisten dengan bagian lain.
+
+## File yang berubah (v11.5.11)
+
+| File | Perubahan |
+|------|-----------|
+| `lib/member.ts` | Fungsi baru `textMatch()` (pencocokan presisi) — pengganti pencarian di Log; `fuzzyMatch()` diberi komentar penjelasan kapan dipakai vs tidak, agar kesalahan yang sama tidak terulang di tempat lain |
+| `lib/helpers.ts` | Ekspor `textMatch` |
+| `components/features/log/LogView.tsx` | Pencarian beralih ke `textMatch`; pesan "tidak ada hasil" diterjemahkan (sebelumnya hardcoded Indonesia) |
+| `hooks/useMounted.ts` *(baru)* | Hook deteksi "sudah siap di perangkat" — dasar dari perbaikan Grafik |
+| `components/features/grafik/GrafikView.tsx` | Menunggu `useMounted()` sebelum menampilkan konten berteks; kerangka kosong (tanpa teks) selama menunggu; teks "belum ada data" yang sebelumnya hardcoded Indonesia diterjemahkan |
+| `components/modals/AccountModal.tsx` | Seluruh teks (14 string) dihubungkan ke sistem terjemahan, sebelumnya sepenuhnya hardcoded Indonesia |
+| `lib/locales/id.ts`, `en.ts` | Key baru: `log.noResultsDesc`, `grafik.noDataTitle`, `grafik.noDataDesc`, 13 key `account.*` |
+| `lib/__tests__/helpers.test.ts` | 7 unit test baru untuk `textMatch`, termasuk reproduksi persis bug "uci" yang dilaporkan sebagai bukti perbaikan |
+| `lib/constants.ts` | Versi → v11.5.11 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **191/191 unit test lulus** (184 sebelumnya + 7 test baru).
+
+---
+
+> Satu temuan lagi dari pengujian v11.5.9: field NOMINAL dan tombol hapus di dalam kartu yang terbuka sudah benar ikut berubah saat dropdown BULAN diganti — tapi badge status (ikon centang/silang) dan warna garis di sisi kiri kartu tetap diam mengikuti toggle atas, tidak ikut bulan yang sedang dipilih di dalam kartu. Mekanisme yang benar sudah dijelaskan dengan jelas: kartu tertutup mengikuti toggle atas; begitu kartu dibuka, seluruh isinya — termasuk header/badge-nya sendiri — menyesuaikan ke bulan yang dipilih di dalam kartu itu; begitu ditutup lagi, otomatis kembali ke toggle atas untuk pembukaan berikutnya.
+
+## Entry: badge status & warna garis kartu tidak ikut bulan yang dipilih saat kartu terbuka
+
+Dikonfirmasi lewat 4 screenshot berurutan: toggle atas tetap di bulan Juli sepanjang pengujian, sementara dropdown BULAN di dalam kartu ABIL yang terbuka dipindah Jan→Mei→Mei→Mar. Nominal dan tombol hapus terlihat benar mengikuti setiap perpindahan itu — tapi badge silang merah di pojok kanan atas kartu tetap diam, padahal semestinya berubah (misal jadi centang hijau saat bulan yang dipilih ternyata sudah lunas).
+
+**Penyebab:** badge status dan warna garis kiri kartu memang sejak awal dirancang membaca status untuk bulan toggle atas — masuk akal untuk kartu yang tertutup (ringkasan cepat "member ini lunas atau belum untuk bulan yang sedang dilihat"). Tapi begitu kartu dibuka, bagian ini tidak ikut menyesuaikan ke bulan yang sedang dipilih di dalam kartu, padahal field-field lain di kartu yang sama (nominal, tombol hapus) sudah menyesuaikan sejak perbaikan sebelumnya — jadi ada bagian kartu yang "ketinggalan" mengikuti, membuat tampilan terasa tidak sinkron dengan isinya sendiri.
+
+**Perbaikan:** badge, warna garis kiri, dan angka ringkas di header kartu sekarang otomatis menyesuaikan sumbernya tergantung status kartu — mengikuti toggle atas saat kartu tertutup, dan mengikuti bulan yang sedang dipilih di dalam kartu begitu kartu dibuka. Ini persis mekanisme yang diminta: tertutup ikut acuan atas, terbuka menyesuaikan sendiri, ditutup lagi otomatis kembali ke acuan atas untuk pembukaan berikutnya (bagian "kembali ke acuan atas saat ditutup" ini sudah ditangani oleh perbaikan sebelumnya).
+
+## File yang berubah (v11.5.10)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MemberCard.tsx` | Badge status, warna garis kiri kartu, dan nominal ringkas di header sekarang menyesuaikan sumbernya (toggle atas vs bulan yang dipilih di kartu) tergantung status buka/tutup kartu |
+| `lib/payment.ts` | Fungsi baru `resolveDisplayStatus()` — logic penentuan sumber tampilan, diekstrak agar bisa diuji terpisah |
+| `lib/helpers.ts` | Ekspor `resolveDisplayStatus` |
+| `lib/__tests__/helpers.test.ts` | 7 unit test baru untuk `resolveDisplayStatus`, termasuk simulasi penuh siklus dari laporan (toggle diam, dropdown internal berpindah 3 bulan, lalu kartu ditutup) |
+| `lib/constants.ts` | Versi → v11.5.10 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **184/184 unit test lulus** (177 sebelumnya + 7 test baru).
+
+---
+
+> Dua hal dari pengujian v11.5.8: fix dropdown BULAN kemarin ternyata **tidak menyentuh akar masalah sesungguhnya** — root cause baru ditemukan dan diperbaiki di update ini. Untuk Rekap, laporannya "sudah membaik, kalau bisa dioptimalkan lagi" — sudah ditelusuri opsi lanjutan yang paling masuk akal, tapi hasilnya justru terbukti tidak valid secara spesifikasi untuk elemen tabel, jadi tidak ada perubahan baru di Rekap pada update ini (penjelasan lengkap di bawah, bukan sekadar dilewati).
+
+## Entry: root cause sesungguhnya dari dropdown BULAN yang tidak ikut berubah
+
+Fix v11.5.8 (`key` pada `<select>`) terbukti **tidak cukup** — dikonfirmasi lewat 6 screenshot berurutan, dropdown BULAN tetap diam di "Jul" meski toggle atas berpindah Agu→Jun→Jul→Mei→Jul→Jan. Setelah ditelusuri ulang dari awal, ditemukan dua masalah yang sebelumnya salah didiagnosis:
+
+**Masalah 1 (akar sesungguhnya):** kartu member yang sekali dibuka akan **mengunci permanen** bulan/tahunnya di penyimpanan internal — bahkan setelah kartu **ditutup**. Efeknya: kartu ABIL yang pertama kali dibuka saat toggle di bulan Juli akan **selalu** kembali ke Juli setiap dibuka lagi, berapa kalipun toggle di atas diganti, sampai override manual dilakukan lewat dropdown itu sendiri. Mekanisme "sekali dibuka terkunci" ini sebenarnya sengaja dibuat sebelumnya (supaya kartu yang sedang diisi tidak tiba-tiba geser bulan kalau toggle diubah di tengah proses) — tapi ternyata berlaku terlalu luas: seharusnya hanya berlaku **selama kartu masih terbuka**, bukan selamanya.
+
+**Perbaikan:** saat kartu ditutup, penguncian bulan/tahunnya otomatis dilepas — **kecuali** kalau di dalam sesi kartu itu user memang sengaja mengubah dropdown BULAN secara manual (untuk kasus "sesekali expand 1 kartu untuk cek/koreksi cepat" dengan bulan yang berbeda dari toggle, sesuai cara pakai yang disampaikan) — itu tetap dilindungi dan tidak ikut terhapus. Jadi: kartu yang hanya dibuka lewat navigasi biasa akan selalu mengikuti toggle terkini setiap dibuka ulang; kartu yang bulannya sengaja diubah manual tetap mengingat pilihan itu sampai user sendiri yang mengubahnya lagi.
+
+**Masalah 2 (kontributor tambahan, kemungkinan besar yang paling terasa):** field **NOMINAL** — bagian paling sering diperhatikan — ternyata dari awal memang tidak didesain untuk ikut ter-refresh sama sekali saat bulan/tahun kartu berubah dari luar. Field ini sengaja dibuat begitu untuk alasan lain (supaya tidak mengganggu saat sedang mengetik angka), tapi efek sampingnya: field itu selalu menampilkan nilai dari bulan pertama kali kartu dibuka, tidak peduli toggle sudah berubah berapa kali. Field TGL BAYAR punya pola yang sama persis. Keduanya sekarang ikut ter-refresh dengan benar saat bulan/tahun kartu berubah, tanpa mengorbankan kenyamanan mengetik yang jadi alasan desain awalnya.
+
+## Rekap: ditelusuri opsi optimasi lanjutan, hasilnya tidak diterapkan (dengan alasan)
+
+Dua arah lanjutan dipertimbangkan setelah fix v11.5.8:
+
+1. **Mengurangi animasi transisi warna per sel.** Sel tabel biasa punya transisi halus untuk efek hover dan highlight pembayaran baru. Secara teori mengurangi ini bisa meringankan beban render untuk ribuan sel sekaligus — tapi transisi ini perlu tetap ada di kondisi dasar sel agar animasinya terasa mulus di kedua arah (masuk maupun keluar highlight); memindahkannya akan membuat animasi terasa patah sebelah arah. Trade-off ini dianggap tidak sepadan untuk manfaat yang belum tentu terukur signifikan.
+
+2. **Menunda render sel yang sedang di luar layar (opsi CSS modern yang lebih agresif dari yang sudah diterapkan).** Sempat terlihat menjanjikan, tapi setelah ditelusuri ke spesifikasi resminya, cara kerja opsi ini **secara eksplisit dikecualikan** oleh standar CSS untuk elemen sel tabel — artinya penerapannya kemungkinan besar tidak akan berfungsi sebagaimana mestinya, atau berperilaku tidak terduga. Opsi yang sudah diterapkan di v11.5.8 (yang sudah terasa membantu) tetap yang paling tepat untuk elemen sel tabel menurut spesifikasi yang sama.
+
+**Kesimpulan jujur:** tidak ada langkah CSS tambahan yang bisa dipastikan aman dan berdampak nyata untuk dicoba saat ini tanpa risiko sia-sia atau efek samping. Kalau blank sesaat saat scroll masih terasa mengganggu meski sudah jauh berkurang, opsi yang tersisa adalah perubahan arsitektur lebih besar (render hanya baris yang benar-benar terlihat, bukan seluruhnya sekaligus) — ini di luar scope perbaikan kecil dan perlu didiskusikan terpisah kalau memang diperlukan.
+
+## File yang berubah (v11.5.9)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MemberCard.tsx` | Penguncian bulan/tahun kartu dilepas saat kartu ditutup (kecuali ada override manual); field NOMINAL & TGL BAYAR diberi `key` agar ikut ter-refresh saat bulan/tahun kartu berubah dari luar |
+| `store/slices/viewSlice.ts` | Fungsi baru `clearEntryCardFor(name)` — melepas penguncian satu member saja tanpa mempengaruhi member lain |
+| `store/__tests__/viewSlice.test.ts` | 4 unit test baru untuk `clearEntryCardFor`, termasuk reproduksi persis siklus tutup-buka-ganti toggle-buka lagi yang dilaporkan |
+| `lib/constants.ts` | Versi → v11.5.9 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **177/177 unit test lulus** (173 sebelumnya + 4 test baru).
+
+---
+
+> Dua temuan kecil dari pengujian langsung setelah v11.5.7: dropdown BULAN di kartu Entry yang sedang terbuka tidak ikut ter-refresh visualnya saat toggle period diubah dari luar (meski nilai di baliknya sudah benar — dibuktikan lewat screenshot berurutan yang menunjukkan nominal ikut berubah tapi dropdown-nya diam), dan sisa "blank sesaat lalu cepat pulih" di baris data Rekap saat scroll sangat cepat — kali ini dilaporkan spesifik terbatas di baris body biasa, bukan lagi kolom sticky kiri (yang sudah tuntas di v11.5.7) dan bukan di header (yang memang sudah baik).
+
+## Entry: dropdown BULAN di kartu tidak ter-refresh visualnya
+
+Dikonfirmasi lewat 3 screenshot berurutan: toggle period atas berpindah Jun→Jul→Jan 2026, dan setiap kali nominal di kartu ikut berubah dengan benar (badge status, angka pembayaran) — tapi field dropdown **BULAN** di dalam kartu yang sama tetap menampilkan "Jun" di ketiganya. Karena nominal (teks murni) dan dropdown sama-sama membaca nilai `cardYear`/`cardMonth` yang identik di render yang sama, ini membuktikan nilainya sendiri sudah benar — murni soal lapisan visual `<select>` yang tidak ikut refresh.
+
+**Root cause:** React 19 punya edge case yang sudah dilaporkan (termasuk bug report terbuka untuk Radix UI khusus React 19) di mana elemen `<select>` controlled yang `value`-nya berubah dari **sumber luar** — bukan dari interaksi langsung user dengan dropdown itu sendiri, di sini dipicu oleh toggle period di komponen lain — tidak selalu memicu repaint visual, meski `value` yang dikirim React ke DOM sudah benar.
+
+**Fix:** dropdown tahun diberi `key={cardYear}`, dropdown bulan diberi `key={`${cardYear}-${cardMonth}`}` (digabung, supaya tetap ter-remount baik saat tahun maupun bulan yang berubah). Memberi `key` memaksa React membuat node `<select>` yang benar-benar baru saat nilainya berubah dari luar, alih-alih mengandalkan update-in-place yang ternyata tidak reliable untuk kasus ini di React 19.
+
+## Rekap: sisa blank sesaat di baris data saat scroll sangat cepat
+
+Berbeda dari bug v11.5.7 (kolom sticky kiri macet sampai ada scroll tambahan) — laporan kali ini spesifik: header kolom selalu baik, tapi **baris data di bawahnya** (nomor, nama, nominal per bulan) sempat blank sesaat lalu pulih cepat sendiri saat scroll sangat cepat.
+
+**Root cause:** tabel Rekap merender **seluruh** member yang lolos filter sekaligus tanpa virtualisasi/windowing — untuk zona dengan >100 member × 12 kolom bulan, ini lebih dari 1.300 elemen sel dalam satu waktu. Header tidak terpengaruh karena sticky dan statis (tidak pernah perlu di-render ulang selama scroll, karena posisinya tidak pernah berubah relatif terhadap viewport) — sedangkan baris data benar-benar bergerak melewati viewport saat scroll, dan pada fling-scroll cepat, browser bisa tertinggal me-render ulang (rasterize) sel yang baru masuk area terlihat, menampilkan blank sesaat sampai catch up.
+
+**Fix:** `contain: style` → `contain: content` pada sel tabel biasa (non-sticky) — memberi izin eksplisit ke browser untuk mengoptimalkan proses render sel yang sedang di luar area terlihat, mengurangi beban rasterisasi mendadak saat scroll cepat. Menurut spesifikasi resmi, jenis optimisasi ini hanya berlaku pada sel tabel itu sendiri (bukan baris) — jadi diterapkan tepat di elemen yang seharusnya. Kolom sticky kiri tidak tersentuh sama sekali karena punya pengaturan sendiri yang lebih spesifik dan selalu diprioritaskan.
+
+**Catatan jujur:** ini mitigasi yang mengurangi frekuensi dan durasi kemunculannya, bukan penghapusan total — akar masalah paling dalam (jumlah baris yang sangat banyak dirender sekaligus) butuh perubahan arsitektur lebih besar (virtual scrolling: hanya me-render baris yang benar-benar terlihat) yang tidak dikerjakan di update ini karena scope-nya jauh lebih besar dan berisiko. Kalau setelah update ini masih terasa mengganggu, itu sinyal untuk mempertimbangkan perubahan tersebut secara terpisah.
+
+## File yang berubah (v11.5.8)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MemberCard.tsx` | Dropdown BULAN (tahun & bulan) diberi `key` agar ter-refresh visual saat toggle period berubah dari luar |
+| `styles/components.entry.css` | `.rtable td` (sel biasa, bukan sticky): `contain: style` → `contain: content` — mitigasi blank sesaat saat scroll cepat |
+| `lib/constants.ts` | Versi → v11.5.8 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **173/173 unit test lulus** (tidak ada penambahan test baru — kedua fix ini murni CSS/rendering behavior yang tidak bisa diverifikasi bermakna lewat unit test di lingkungan tanpa browser sungguhan; validasi utamanya adalah pengujian langsung oleh Hakiki di device).
+
+---
+
+> Empat laporan bug ditangani sekaligus: render Rekap yang blank/glitch acak saat scroll, toggle bulan di Entry yang tidak sinkron dengan kartu member, delay saat menyimpan nominal, dan (ditemukan saat investigasi delay, bukan dilaporkan) bug data-loss nyata pada mekanisme rollback yang dipakai di 9 file berbeda. Root cause Rekap khususnya penting: fix lama di v7.1 mendiagnosis arah yang salah (dianggap soal GPU compositor layer) — bug tetap ada setelahnya, hanya lebih jarang muncul. Root cause sesungguhnya baru ditemukan sesi ini.
+
+## Rekap: Blank/glitch render acak saat scroll
+
+**Kenapa fix v7.1 tidak menuntaskan masalah.** v7.1 menyimpulkan penyebabnya "terlalu banyak GPU compositor layer" dan menghapus semua `transform`/`will-change`/`-webkit-overflow-scrolling`, diganti `contain: style layout` + `isolation: isolate`. Itu mengurangi force-GPU-layer, tapi ternyata bukan akar masalah — bug tetap terjadi, hanya lebih jarang, persis seperti yang dilaporkan ("terjadi begitu sering dan random posisinya").
+
+**Root cause sesungguhnya:** `.rekap-wrap { overflow-x: auto; overflow-y: visible; }`. Menurut spesifikasi CSS Overflow (computed value rule), begitu **satu** axis overflow diset ke nilai selain `visible` (di sini `overflow-x: auto`), axis lainnya yang `visible` **otomatis dikomputasi ulang oleh browser menjadi `auto` juga** — bukan tetap `visible` seperti yang ditulis. Jadi `.rekap-wrap` diam-diam menjadi scroll container untuk **kedua** axis, meski scrollbar vertikal tidak pernah terlihat (tinggi tabel selalu pas dengan kontennya, jadi terlihat baik-baik saja).
+
+Akibatnya: kolom sticky kiri (`td.stk`, `position: sticky; left: 0`) berada di dalam nested scroll container (vertikal ganda: `#content` **dan** `.rekap-wrap`). Sinkronisasi horizontal antara header dan body tabel dilakukan manual lewat JavaScript, bukan native browser — sehingga saat scroll vertikal cepat di `#content`, Chromium kadang tidak mentrigger repaint compositor layer untuk kolom sticky itu, sampai ada event scroll lain (geser horizontal, atau scroll balik arah) yang memaksa recompute. Ini menjelaskan tepat apa yang dilaporkan: "kadang harus scroll keatas atau kebawah dulu agar tampilan bisa terender dengan benar", dan posisinya random karena tergantung baris mana yang sedang di-render ulang browser saat momen itu terjadi.
+
+**Perbaikan:** `overflow-y: clip` (bukan `visible`). Beda dari `visible`, nilai `clip` tidak pernah mengalami override otomatis di atas — ia eksplisit tidak pernah membuat scrollport, sehingga `.rekap-wrap` benar-benar murni scroll container satu axis (horizontal saja), sesuai niat aslinya. Didukung penuh di Chrome for Android. Sebagai langkah kehati-hatian tambahan, `contain: style layout` di kolom sticky juga dikurangi jadi `contain: style` saja (mengurangi containment yang tidak perlu pada elemen `position: sticky`).
+
+Saat investigasi bug ini juga ditemukan anti-pattern React kecil yang jadi kontributor tambahan: kolom yang baru saja dibayar sempat memakai `key` yang berubah-ubah pada elemen `<td>` untuk memicu ulang animasi "flash hijau" — ini memaksa React membongkar-pasang ulang seluruh sel (termasuk semua tombol/klik di dalamnya) setiap kali animasi itu terpicu. Sudah dipindah ke elemen overlay terpisah supaya animasi tetap jalan tanpa mengganggu sel aslinya.
+
+## Rekap: teks kurang jelas (nomor urut, header kolom, label total) + posisi ikon gratis
+
+Diperiksa dengan pengukuran kontras warna resmi (WCAG): kolom nomor urut (`#`) memakai warna dengan kontras hanya **1,55:1** terhadap latar belakang — jauh di bawah standar minimum keterbacaan (4,5:1). Header kolom bulan dan label "TOTAL" di baris bawah juga di bawah standar (2,45:1). Ketiganya dinaikkan ke warna dengan kontras 8–10:1 (lolos standar di ketiga tema — gelap, terang, emas), tanpa mengubah hierarki visual (nomor & header tetap terlihat lebih redup dibanding nama & angka utama, cuma tidak sampai nyaris tak terbaca).
+
+Ikon "gratis" (hadiah) yang sebelumnya rata kiri sekarang eksplisit dibuat rata kanan, konsisten dengan posisi nominal pembayaran di kolom yang sama setiap bulannya.
+
+## Entry: toggle bulan di atas tidak sinkron dengan bulan di kartu member
+
+**Penyebab:** kartu member yang belum pernah dibuka sebelumnya selalu memakai bulan **kalender hari ini yang sesungguhnya** sebagai default — bukan bulan yang dipilih di toggle atas. Jadi toggle ke April, lalu buka kartu member baru, kartu itu menampilkan bulan sistem saat ini (dalam kasus yang dilaporkan: Juli), mengabaikan toggle April sepenuhnya. Ini sisa dari perbaikan lama yang punya niat baik (mencegah kartu yang sedang terbuka ikut bergeser mendadak kalau toggle diubah di tengah proses isi form) tapi salah pilih sumber nilai default-nya.
+
+**Perbaikan:** default sekarang mengikuti toggle bulan Entry yang aktif. Mekanisme "sekali dibuka, terkunci ke bulan saat itu" tetap dipertahankan penuh — kartu yang sudah pernah dibuka tidak ikut bergeser kalau toggle diubah setelahnya (supaya tidak mengganggu yang sedang diisi), dan kalau ada kartu member lain yang bulannya sudah diubah manual lewat dropdown di dalam kartu itu sendiri, itu juga tidak tersentuh oleh perubahan ini.
+
+## Data hilang diam-diam saat gagal simpan (bug tersembunyi, ditemukan saat investigasi delay)
+
+Ini bug yang tidak dilaporkan tapi ditemukan saat menelusuri penyebab delay — dan berpotensi lebih serius dari semua bug lain di update ini karena bisa membuat **data pembayaran yang sudah berhasil tersimpan ikut terhapus tanpa peringatan**.
+
+**Bagaimana bug ini bisa terjadi:** di 9 tempat berbeda di app ini, pola penyimpanan selalu: simpan perubahan ke tampilan dulu (supaya terasa instan), baru kirim ke server di belakang layar. Kalau pengiriman ke server gagal (misalnya koneksi terputus sebentar), tampilan dikembalikan ke kondisi "sebelum" — tapi caranya adalah mengganti **seluruh** data ke sebuah salinan lama, bukan cuma membatalkan bagian yang gagal saja. Kalau di rentang waktu itu (pengiriman yang gagal bisa memakan beberapa detik, dan tombol "Batalkan" pada notifikasi bertahan 4 detik) ada **pembayaran member lain** yang berhasil tersimpan, penggantian ke salinan lama itu ikut menghapus pembayaran member lain itu juga — padahal sudah berhasil tersimpan sendiri.
+
+**Perbaikan:** mekanisme pembatalan sekarang selalu membaca kondisi data yang paling terkini dulu, baru membatalkan **secara spesifik** hanya bagian yang benar-benar gagal — pembayaran member lain yang kebetulan berhasil di rentang waktu yang sama tidak lagi ikut terhapus. Diterapkan konsisten di kesepuluh tempat yang tadinya rentan, dengan pengujian otomatis yang juga divalidasi langsung terhadap salinan data asli dari Firebase Hakiki (5.815 entri pembayaran) untuk memastikan tidak ada satupun entri yang tertukar atau hilang.
+
+## Delay saat mengetik/menyimpan nominal
+
+**Penyebab yang terukur, bukan cuma terasa lambat:** setiap kali menyimpan satu angka pembayaran, aplikasi mengirim **seluruh** data ke server — termasuk daftar semua member di kedua zona, info IP/tarif tiap member, riwayat aktivitas, dan sebagainya — padahal yang benar-benar berubah cuma satu angka. Diukur langsung dari salinan data Firebase milik Hakiki: ukuran pengiriman penuh mencapai **201 KB**, di mana riwayat pembayaran itu sendiri menyumbang **77% dari total** (5.815 entri, riwayat sejak 2023). Di koneksi yang sedang lambat (terlihat dari kecepatan upload di layar saat laporan ini dibuat), pengiriman sebesar itu untuk perubahan satu angka menjelaskan jeda yang dirasakan sebelum notifikasi hasil muncul.
+
+**Perbaikan:** jalur penyimpanan untuk pembayaran murni (isi nominal di Entry, isi/hapus nominal di Rekap) sekarang hanya mengirim satu entri pembayaran yang berubah beserta catatan aktivitasnya — bukan seluruh data. Diukur pada salinan data Firebase yang sama: ukuran pengiriman turun dari 186 KB menjadi **25 KB**, penghematan 87%. Bagian app yang menyentuh data lebih kompleks (tambah/ubah/hapus member, pengaturan zona, dll) tidak diubah — itu memang perlu mengirim data lebih lengkap.
+
+## File yang berubah (v11.5.7)
+
+| File | Perubahan |
+|------|-----------|
+| `styles/components.entry.css` | `.rekap-wrap`: `overflow-y: visible` → `clip` (root cause blank-render); `td.stk`: `contain: style layout` → `contain: style`; kontras header kolom `--txt4` → `--txt2` |
+| `components/features/rekap/RekapView.tsx` | Kontras nomor urut & label total → `--txt2`; ikon gratis rata kanan eksplisit; `key` `<td>` distabilkan, animasi flash dipindah ke overlay terpisah; rollback via `selectiveRollback` |
+| `components/features/members/MemberCard.tsx` | `resolveEntryCardPeriod()` untuk fix sinkronisasi toggle↔kartu; `persistPaymentOnly()` (penyimpanan granular) untuk `saveEntryPay`/`clearPay`; rollback via `selectiveRollback`; fix closure pada toast "Batalkan" |
+| `components/features/rekap/RekapModal.tsx` | `persistPaymentOnly()` untuk `manualPay`/`clearPay`; rollback via `selectiveRollback`; fix closure pada toast "Batalkan" |
+| `components/features/entry/EntryView.tsx` | Rollback batch pay via `selectiveRollback` |
+| `components/layout/Header.tsx` | Rollback toggle kunci via `selectiveRollback` |
+| `components/features/members/MembersView.tsx` | Rollback tambah/edit/hapus/pulihkan member via `selectiveRollback` |
+| `components/features/operasional/OperasionalView.tsx` | Rollback data operasional via `selectiveRollback` |
+| `components/modals/FreeMemberModal.tsx` | Rollback status member gratis via `selectiveRollback` |
+| `components/features/settings/SettingsIPSection.tsx` | Rollback perubahan IP via `selectiveRollback` |
+| `components/features/settings/SettingsZoneSection.tsx` | Rollback pengaturan zona via `selectiveRollback` |
+| `lib/rollback.ts` *(baru)* | `selectiveRollback()` — rollback per-entri yang aman terhadap perubahan bersamaan, dipakai di 10 file di atas |
+| `lib/db.ts` | `persistPaymentGranular()` & `buildGranularPaymentPatch()` *(baru)* — penyimpanan pembayaran hemat-bandwidth |
+| `lib/payment.ts` | `resolveEntryCardPeriod()` *(baru)* — logic murni sinkronisasi toggle↔kartu, diekstrak agar bisa diuji |
+| `lib/helpers.ts` | Ekspor `resolveEntryCardPeriod` |
+| `lib/__tests__/rollback.test.ts` *(baru)* | 9 unit test untuk `selectiveRollback`, termasuk skenario data bersamaan yang jadi motivasi utama fix |
+| `lib/__tests__/db.test.ts` *(baru)* | 13 unit test untuk `buildGranularPaymentPatch`, termasuk pola nama member dari data produksi nyata |
+| `lib/__tests__/helpers.test.ts` | 7 unit test baru untuk `resolveEntryCardPeriod` |
+| `lib/constants.ts` | Versi → v11.5.7 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint` 0 error/warning di seluruh project · **173/173 unit test lulus** (144 sebelumnya + 29 test baru). Rollback dan penyimpanan granular juga divalidasi terpisah terhadap salinan data Firebase asli Hakiki (bukan cuma data uji buatan) untuk memastikan hasilnya benar pada skala data sesungguhnya — file salinan data itu sendiri tidak disertakan dalam kode karena berisi data pribadi.
+
+---
+
 # WiFi Pay Next — Update v11.5.6
 
 > **ROOT CAUSE SEBENARNYA — sudah dikonfirmasi langsung oleh Hakiki: edit "HAJI ZAINI" → "H-ZAINI" (pakai strip, bukan titik) BERHASIL tersimpan.** Bug "edit member selalu gagal" dari v11.5.3–v11.5.5 ternyata bukan soal race condition atau koneksi sama sekali — **Firebase Realtime Database menolak SELURUH operasi simpan jika ada satu saja nama field objek yang mengandung karakter `.` `#` `$` `[` `]` `/`**. Nama "H.ZAINI" mengandung titik, dipakai sebagai bagian nama field di `memberInfo`, sehingga Firebase menolak total. Root cause v11.5.3–v11.5.5 (toast tidak sinkron dengan status simpan, race condition double-tap, state tidak rollback saat gagal) **tetap valid dan tetap berguna** — tapi semuanya cuma menangani *akibat*, bukan penyebab aslinya. v11.5.6 menutup penyebab aslinya.
@@ -165,7 +626,7 @@ Akibatnya: saat Firebase gagal (offline, koneksi lambat, dll), pengguna melihat 
 | 1 | Background solid sel nilai pembayaran | `.cv`/`.cz` sebelumnya transparan (`rgba(...,0.10)`), `.cn` tanpa background sama sekali. Background transparan pada tabel dengan kolom sticky adalah penyebab dikenal untuk artefak render saat scroll cepat (lihat histori proyek). Diganti `color-mix()` solid — fitur CSS standar, pola yang sudah dipakai aman di tempat lain di app ini. |
 | 2 | Scroll sync header tanpa delay | Header tabel Rekap sebelumnya mengikuti scroll body lewat `requestAnimationFrame`, yang menambah 1 frame delay tanpa manfaat performa (event scroll browser sudah dibatasi ke refresh rate). Diganti assignment langsung — header sinkron presisi dengan body, tanpa lag yang terlihat saat scroll horizontal cepat. |
 
-**Dengan sengaja TIDAK dilakukan:** GPU layer promotion (`transform: translateZ`/`will-change`) — histori proyek (CHANGES.md) mencatat eksplisit bahwa pendekatan ini pernah jadi PENYEBAB bug lain (blank hitam saat scroll), bukan solusi. Pendekatan itu dihindari sepenuhnya di update ini.
+**Dengan sengaja TIDAK dilakukan:** GPU layer promotion (`transform: translateZ`/`will-change`) — histori proyek mencatat eksplisit bahwa pendekatan ini pernah jadi PENYEBAB bug lain (blank hitam saat scroll), bukan solusi (lihat juga bagian root cause blank/glitch render di update v11.5.7 di atas). Pendekatan itu dihindari sepenuhnya di update ini.
 
 ## v11.5.2 — Fitur Baru
 
@@ -465,7 +926,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.5.2 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.5.19 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

@@ -6,7 +6,8 @@ import { MONTHS_EN, MONTHS } from '@/lib/constants';
 import { getPay, isFree, rp, getKey } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
-import { persistPayment } from '@/lib/db';
+import { persistPayment, persistPaymentGranular } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
@@ -49,6 +50,10 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   // sudah memanggil setAppData(newData) SEBELUM memanggil persist() secara fire-and-forget;
   // kalau prevData dibaca dari closure appData di dalam persist(), nilainya bisa sudah
   // ke-update duluan oleh re-render React, sehingga rollback jadi tidak efektif.
+  // FIX v11.5.7: rollback ITU SENDIRI kini via selectiveRollback (lib/rollback.ts) — bukan
+  // replace total ke prevData. Bahkan dengan prevData yang akurat (fix di atas), replace
+  // total tetap bisa menghapus perubahan operasi LAIN yang berhasil concurrent selagi
+  // network request ini masih berjalan. Lihat penjelasan lengkap di persist() MemberCard.tsx.
   async function persist(newData: typeof appData, action: string, detail: string, prevData: typeof appData = appData): Promise<boolean> {
     setAppData(newData);
     if (!uid) return true;
@@ -63,7 +68,52 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData);
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
+      return false;
+    }
+  }
+
+  // ── v11.5.7: persist granular KHUSUS untuk perubahan payments murni (manualPay,
+  // clearPay) — mengirim HANYA satu key payment + activityLog + lock state, bukan
+  // seluruh AppData (~200KB+ untuk data multi-tahun seperti milik Hakiki, di mana
+  // `payments` sendiri terukur ~77% dari total payload — lihat lib/db.ts
+  // persistPaymentGranular() untuk penjelasan lengkap). Selalu membaca appData
+  // TERBARU via getState() secara internal, bukan closure — supaya benar juga
+  // dipanggil dari callback tertunda seperti undo toast.
+  async function persistPaymentOnly(
+    paymentKey: string,
+    paymentValue: number | null,
+    action: string,
+    detail: string,
+  ): Promise<boolean> {
+    const current   = useAppStore.getState().appData;
+    const prevValue = current.payments[paymentKey] ?? null;
+    const newData = { ...current, payments: { ...current.payments } };
+    if (paymentValue === null) delete newData.payments[paymentKey];
+    else newData.payments[paymentKey] = paymentValue;
+    setAppData(newData);
+    if (!uid) return true;
+    setSyncStatus('loading');
+    try {
+      await persistPaymentGranular(
+        uid, paymentKey, paymentValue, current.activityLog || [],
+        { action, detail }, userEmail || '',
+        () => ({
+          globalLocked: useAppStore.getState().globalLocked,
+          lockedEntries: useAppStore.getState().lockedEntries,
+        }),
+      );
+      setSyncStatus('ok');
+      return true;
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase (granular) — action: ${action}`, err);
+      setSyncStatus('err');
+      const latest = useAppStore.getState().appData;
+      const rolledBack = { ...latest, payments: { ...latest.payments } };
+      if (prevValue === null) delete rolledBack.payments[paymentKey];
+      else rolledBack.payments[paymentKey] = prevValue;
+      setAppData(rolledBack);
       return false;
     }
   }
@@ -86,8 +136,12 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     // FIX 8+9: Optimistic — update state + toast LANGSUNG, Firebase async
     setAppData(newData);
     onClose({ name, month });
+    // FIX v11.5.7: baca state TERBARU via getState() saat callback benar-benar jalan (bisa
+    // sampai 4 detik kemudian — lihat penjelasan lengkap di MemberCard.tsx doQuickPay), bukan
+    // dari closure `appData` yang beku pada saat quickPay ini dipanggil.
     showToastUndo(`${name} → ${rp(amt)}`, async () => {
-      const revert = { ...appData, payments: { ...appData.payments } };
+      const latest = useAppStore.getState().appData;
+      const revert = { ...latest, payments: { ...latest.payments } };
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
       await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
@@ -106,11 +160,9 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     // eslint-disable-next-line react-hooks/immutability
     inputDirty.current = false;
     if (locked) { showToast(t('rekap.dateLocked'), 'err'); return; }
-    const k       = getKey(activeZone, name, selYear, month);
-    const newData = { ...appData, payments: { ...appData.payments } };
+    const k = getKey(activeZone, name, selYear, month);
     if (val === '') {
-      delete newData.payments[k];
-      const ok = await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
+      const ok = await persistPaymentOnly(k, null, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
       if (ok) {
         showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
         onClose();
@@ -120,8 +172,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     } else {
       const amt = +val;
       if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
-      newData.payments[k] = amt;
-      const ok = await persist(newData, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
+      const ok = await persistPaymentOnly(k, amt, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
       if (ok) {
         showToast(`${name} ${MONTH_NAMES[month]} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
         onClose({ name, month });
@@ -141,10 +192,8 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       `${t('rekap.deletePayment')} ${name}?`,
       t('membercard.deleteYes'),
       async () => {
-        const k       = getKey(activeZone, name, selYear, month);
-        const newData = { ...appData, payments: { ...appData.payments } };
-        delete newData.payments[k];
-        const ok = await persist(newData, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
+        const k = getKey(activeZone, name, selYear, month);
+        const ok = await persistPaymentOnly(k, null, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
         if (ok) {
           showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
           onClose();

@@ -45,6 +45,9 @@ const en: Record<string, string> = {
   'members.unlock'   : 'OPEN MEMBERS',
   'common.noData'    : 'No data',
   'common.noResult'  : 'No results',
+  'common.active'    : 'Active',
+  'common.inactive'  : 'Inactive',
+  'common.cancel'    : 'Cancel',
   'common.total'     : 'Total',
   'common.month'     : 'Month',
   'common.year'      : 'Year',
@@ -114,11 +117,26 @@ const en: Record<string, string> = {
   'settings.theme.lightDesc' : 'Bright display, great for daytime use',
   'settings.theme.darkDesc'  : 'Dark display, easy on the eyes',
   'settings.theme.goldDesc'  : 'Elegant display with premium gold accents',
-  'settings.export'          : 'Export Data',
+  'settings.export'          : 'Export & Import Data',
   'settings.autoDate'        : 'Auto Date',
   'settings.quickPay'        : 'Quick Pay Amount',
   'settings.appInfo'         : 'App Info',
   'settings.version'         : 'Version',
+
+  // v11.5.12: CollapsibleSection titles/badges in SettingsView.tsx — previously
+  // hardcoded Indonesian, never wired into the translation system at all (unlike the
+  // sub-content text inside each section, which was already connected long ago).
+  'settings.pinSectionTitle'       : 'PIN Security',
+  'settings.biometricSectionTitle' : 'Fingerprint & Face ID',
+  'settings.emailSectionTitle'     : 'Email & Reset Password',
+  'settings.ipSectionTitle'        : 'IP Conversion',
+  'settings.waSummaryTitle'        : 'WhatsApp Summary',
+  'settings.quickPaySectionTitle'  : 'Quick Pay',
+  'settings.autoDateSectionTitle'  : 'Auto Payment Date',
+  'settings.autoDateBadgeAuto'     : 'Automatic',
+  'settings.autoDateBadgeManual'   : 'Manual',
+  'settings.languageBadgeEn'       : 'English',
+  'settings.languageBadgeId'       : 'Indonesian',
 
   // Sync
   'sync.saved'               : 'Saved',
@@ -170,6 +188,7 @@ const en: Record<string, string> = {
   'dashboard.backupNow'  : 'Backup Now',
   'dashboard.waSummary'  : 'WA Summary',
   'dashboard.sendWA'     : 'Send Summary',
+  'dashboard.inputPay'   : 'Input Payment',
   'dashboard.periodNote' : 'Period follows selector above',
 
   // Common tambahan
@@ -202,6 +221,7 @@ const en: Record<string, string> = {
   'log.allMonths'         : 'All Months',
   'log.autoDelete'        : 'LOG · Auto-deleted after 30 days',
   'log.emptyDesc'         : 'No activity recorded yet',
+  'log.noResultsDesc'     : 'Try adjusting your search keyword or filters',
 
   // Entry tambahan
   'entry.locked'           : 'Data locked! Unlock first',
@@ -346,6 +366,8 @@ const en: Record<string, string> = {
   // Settings JSON Backup
   'settings.jsonBackup'          : 'JSON Backup',
   'settings.jsonBackupDesc'      : 'Direct download',
+  'settings.importData'          : 'Import Data',
+  'settings.importDataDesc'      : 'From JSON file',
   'settings.jsonBackupDone'      : 'JSON backup downloaded',
 
   // Settings Share
@@ -476,6 +498,8 @@ const en: Record<string, string> = {
   'grafik.period2': 'Period 2',
   'grafik.diff': 'period difference',
   'grafik.proj': 'proj.',
+  'grafik.noDataTitle': 'No Chart Data Yet',
+  'grafik.noDataDesc': 'Add members and payment data to see statistics charts.',
   'rekap.batchHint': 'tap cell to select/deselect',
   'rekap.searchPlaceholder': 'Search member...',
 
@@ -489,6 +513,10 @@ const en: Record<string, string> = {
   'riwayat.noHistory': 'No payment history for',
   'riwayat.prevYear': 'Previous year',
   'riwayat.nextYear': 'Next year',
+  'riwayat.statTotal': 'TOTAL',
+  'riwayat.statBayar': 'PAID',
+  'riwayat.statMulai': 'START',
+  'riwayat.monthAbbr': 'mo',
   'log.action.deletePay': 'Delete payment',
   'log.action.quickPay': 'Quick Pay',
   'log.action.pay': 'Pay',
@@ -516,6 +544,108 @@ const en: Record<string, string> = {
   'freemodal.until': 'Until',
   'freemodal.save': 'Save Free Member',
   'freemodal.remove': 'Return to Paid',
+
+  // v11.5.11: AccountModal — previously never internationalized at all
+  'account.title': 'Account',
+  'account.close': 'Close',
+  'account.loggedInAs': 'LOGGED IN AS',
+  'account.badgeEmail': '✉ EMAIL',
+  'account.badgeGoogle': 'G GOOGLE',
+  'account.linkGoogle': 'Link Google Account',
+  'account.linking': 'Linking...',
+  'account.googleLinked': '✓ Google is linked — you can log in via Google or Email',
+  'account.switchAccount': '↔ Switch Account',
+  'account.switchConfirmYes': 'Switch Account',
+  'account.switchConfirmQuestion': 'Switch account? You will be logged out of this account.',
+  'account.logout': 'Log Out',
+  'account.googleLinkedToast': 'Google linked successfully ✓',
+
+  // v11.5.12: SettingsBiometricSection — previously never internationalized at all
+  'biometric.enablePinFirst':     'Enable PIN first before using biometrics',
+  'biometric.enabled':            'Biometrics enabled successfully',
+  'biometric.registerFailed':     'Failed to register biometrics',
+  'biometric.notSupportedOrCancel': 'Biometrics not supported or cancelled',
+  'biometric.disableConfirm':     'Disable biometrics?',
+  'biometric.disableYes':         'Disable',
+  'biometric.disabled':           'Biometrics disabled',
+  'biometric.verifySuccess':      'Verification successful ✓',
+  'biometric.verifyFailed':       'Verification failed',
+  'biometric.cancelled':          'Biometrics cancelled',
+  'biometric.title':              'Fingerprint & Face ID',
+  'biometric.subtitle':           'Unlock the app with biometrics without a PIN',
+  'biometric.checkingDevice':     'Checking device...',
+  'biometric.notSupported':       'This device does not support fingerprint / Face ID, or permission has not been granted.',
+  'biometric.enablePinWarning':   '⚠️ Enable PIN first to use biometrics.',
+  'biometric.enableBtn':          'Enable Biometrics',
+  'biometric.testBtn':            'Test Biometrics',
+  'biometric.reregisterBtn':      'Re-register',
+  'biometric.disableBtn':         'Disable Biometrics',
+  'biometric.privacyNote':        'Biometric data is not sent to the server — verification happens directly on your device via the standard browser API (WebAuthn).',
+
+  // v11.5.12: SettingsEmailSection — previously never internationalized at all
+  'emailSection.enterNew':        'Enter a new email',
+  'emailSection.sameAsCurrent':   'Email is the same as current',
+  'emailSection.invalidFormat':   'Invalid email format',
+  'emailSection.verifySent':      'Verification email sent — check inbox ',
+  'emailSection.title':           'Change Account Email',
+  'emailSection.currentLabel':    'Current:',
+  'emailSection.verifySentDesc':  'Verification email sent. Check your inbox and click the link to confirm the change.',
+  'emailSection.newEmailLabel':   'NEW EMAIL',
+  'emailSection.firebaseNote':    'Firebase will send a verification email to the new address. The old email stays active until you click the confirmation link in your inbox.',
+  'emailSection.sending':         'Sending...',
+  'emailSection.sendVerifyBtn':   'Send Verification Email',
+  'emailSection.forgotPassword':  'Forgot password? Send a reset link to your active email.',
+  'emailSection.resetSentDesc':   '✓ Reset link sent to',
+  'emailSection.sendResetBtn':    '🔑 Send Password Reset Link',
+
+  // v11.5.12: ShareModal — previously never internationalized at all
+  'share.creating':          'Creating file...',
+  'share.ready':             'File ready, opening WhatsApp!',
+  'share.failed':            'Failed to generate file',
+  'share.title':             'Share Report',
+  'share.closeAria':         'Close share modal',
+  'share.typeLabel':         'REPORT TYPE',
+  'share.monthly':           'Monthly',
+  'share.yearly':            'Yearly',
+  'share.monthLabel':        'MONTH',
+  'share.yearLabel':         'YEAR',
+  'share.zoneLabel':         'ZONE',
+  'share.zoneCombined':      'KRS + SLK (Combined)',
+  'share.formatLabel':       'FORMAT',
+  'share.creatingBtn':       'Creating...',
+  'share.generateBtn':       'Generate & Share via WhatsApp',
+
+  // v11.5.12: ExportModal — previously never internationalized at all
+  'exportModal.jsonSuccess':      'JSON backup downloaded successfully',
+  'exportModal.excelSuccess':     'successful!',
+  'exportModal.shareSuccess':     'Backup shared successfully',
+  'exportModal.shareCancelled':   'Share cancelled or not supported',
+  'exportModal.title':            'Export Data',
+  'exportModal.closeAria':        'Close export modal',
+  'exportModal.formatLabel':      'FORMAT',
+  'exportModal.jsonBackup':       'JSON (Backup)',
+  'exportModal.yearLabel':        'YEAR',
+  'exportModal.zoneLabel':        'ZONE',
+  'exportModal.shareInfoBold':     'Share',
+  'exportModal.shareInfoRest':     'to send via Gmail, WhatsApp, Google Drive, etc — the file becomes an attachment directly.',
+  'exportModal.download':         'Download',
+  'exportModal.sharing':          'Sharing...',
+  'exportModal.share':            'Share',
+
+  // v11.5.12: ImportModal — previously never internationalized at all
+  'importModal.invalidFile':    'Invalid file!',
+  'importModal.successPrefix':  'Import successful!',
+  'importModal.cloudSyncDone':  'Cloud sync complete!',
+  'importModal.syncFailed':     'Sync failed:',
+  'importModal.readFailed':     'Failed to read file:',
+  'importModal.confirmTitle':   'Import this data?',
+  'importModal.confirmDesc':    'ALL current data (members, payments, info) will be COMPLETELY REPLACED with this file\'s contents. This action cannot be undone. Make sure this is the right file before continuing.',
+  'importModal.confirmYes':     'Yes, Replace Data',
+  'importModal.summaryPayments': 'payment records',
+
+  // v11.5.12: Remaining small findings from the comprehensive audit
+  'sidebar.accountAria':   'Open account settings',
+  'sidebar.manageAccount': 'Manage account',
 
 };
 

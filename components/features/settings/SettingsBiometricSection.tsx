@@ -14,10 +14,12 @@ import {
   hasBiometricCred,
 } from '@/lib/biometric';
 import { Fingerprint, ScanFace, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { useT } from '@/hooks/useT';
 import type React from 'react';
 
 export default function SettingsBiometricSection() {
   const { settings, updateSettings, setPinUnlocked } = useAppStore();
+  const t = useT();
 
   const [supported,   setSupported]   = useState<boolean | null>(null); // null = loading
   const [credExists,  setCredExists]   = useState(false);
@@ -35,7 +37,7 @@ export default function SettingsBiometricSection() {
 
   async function handleEnable() {
     if (!pinActive) {
-      showToast('Aktifkan PIN dulu sebelum menggunakan biometrik', 'err');
+      showToast(t('biometric.enablePinFirst'), 'err');
       return;
     }
     setBusy(true);
@@ -44,23 +46,23 @@ export default function SettingsBiometricSection() {
       if (ok) {
         updateSettings({ biometricEnabled: true });
         setCredExists(true);
-        showToast('Biometrik berhasil diaktifkan');
+        showToast(t('biometric.enabled'));
       } else {
-        showToast('Gagal mendaftarkan biometrik', 'err');
+        showToast(t('biometric.registerFailed'), 'err');
       }
     } catch {
-      showToast('Biometrik tidak didukung atau dibatalkan', 'err');
+      showToast(t('biometric.notSupportedOrCancel'), 'err');
     } finally {
       setBusy(false);
     }
   }
 
   function handleDisable() {
-    showConfirm('🔒', 'Nonaktifkan biometrik?', 'Nonaktifkan', () => {
+    showConfirm('🔒', t('biometric.disableConfirm'), t('biometric.disableYes'), () => {
       updateSettings({ biometricEnabled: false });
       clearBiometricCred();
       setCredExists(false);
-      showToast('Biometrik dinonaktifkan');
+      showToast(t('biometric.disabled'));
     });
   }
 
@@ -70,12 +72,12 @@ export default function SettingsBiometricSection() {
       const ok = await verifyBiometric();
       if (ok) {
         setPinUnlocked(true);
-        showToast('Verifikasi berhasil ✓');
+        showToast(t('biometric.verifySuccess'));
       } else {
-        showToast('Verifikasi gagal', 'err');
+        showToast(t('biometric.verifyFailed'), 'err');
       }
     } catch {
-      showToast('Biometrik dibatalkan', 'err');
+      showToast(t('biometric.cancelled'), 'err');
     } finally {
       setBusy(false);
     }
@@ -106,10 +108,10 @@ export default function SettingsBiometricSection() {
         </div>
         <div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
-            Sidik Jari &amp; Face ID
+            {t('biometric.title')}
           </div>
           <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
-            Buka kunci app dengan biometrik tanpa PIN
+            {t('biometric.subtitle')}
           </div>
         </div>
         <div style={{ marginLeft:'auto' }}>
@@ -119,7 +121,7 @@ export default function SettingsBiometricSection() {
             display:'flex', alignItems:'center', gap:4,
           }}>
             {settings.biometricEnabled ? <Check size={12} /> : null}
-            {settings.biometricEnabled ? 'Aktif' : 'Nonaktif'}
+            {settings.biometricEnabled ? t('common.active') : t('common.inactive')}
           </span>
         </div>
       </div>
@@ -127,7 +129,7 @@ export default function SettingsBiometricSection() {
       {/* Loading state */}
       {supported === null && (
         <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--txt4)', fontSize:12, padding:'8px 0' }}>
-          <Loader2 size={14} className="spin" /> Memeriksa perangkat...
+          <Loader2 size={14} className="spin" /> {t('biometric.checkingDevice')}
         </div>
       )}
 
@@ -140,7 +142,7 @@ export default function SettingsBiometricSection() {
           fontSize:11, color:'var(--c-belum)',
         }}>
           <AlertCircle size={14} />
-          Perangkat ini tidak mendukung sidik jari / Face ID, atau izin belum diberikan.
+          {t('biometric.notSupported')}
         </div>
       )}
 
@@ -153,7 +155,7 @@ export default function SettingsBiometricSection() {
               borderRadius:'var(--r-sm)', padding:'9px 12px',
               fontSize:11, color:'var(--zc)', marginBottom:10,
             }}>
-              ⚠️ Aktifkan PIN terlebih dahulu untuk menggunakan biometrik.
+              {t('biometric.enablePinWarning')}
             </div>
           )}
 
@@ -164,28 +166,28 @@ export default function SettingsBiometricSection() {
               disabled={!pinActive || busy}
             >
               {busy ? <Loader2 size={14} className="spin" /> : <Fingerprint size={14} />}
-              Aktifkan Biometrik
+              {t('biometric.enableBtn')}
             </button>
           ) : (
             <>
               <button style={btnStyle(false, true)} onClick={handleTest} disabled={busy}>
                 {busy ? <Loader2 size={14} className="spin" /> : <ScanFace size={14} />}
-                Uji Biometrik
+                {t('biometric.testBtn')}
               </button>
               {!credExists && (
                 <button style={btnStyle(false, false)} onClick={handleEnable} disabled={busy}>
                   <Fingerprint size={14} />
-                  Daftarkan Ulang
+                  {t('biometric.reregisterBtn')}
                 </button>
               )}
               <button style={btnStyle(true)} onClick={handleDisable} disabled={busy}>
-                Nonaktifkan Biometrik
+                {t('biometric.disableBtn')}
               </button>
             </>
           )}
 
           <div style={{ fontSize:10, color:'var(--txt5)', marginTop:10, lineHeight:1.6 }}>
-            Data biometrik <strong>tidak dikirim ke server</strong> — verifikasi terjadi langsung di perangkat Anda via API browser standar (WebAuthn).
+            {t('biometric.privacyNote')}
           </div>
         </>
       )}

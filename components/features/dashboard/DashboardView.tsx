@@ -319,7 +319,7 @@ export default function DashboardView() {
             }}
           >
             <ArrowRight size={13} />
-            Input Bayar {bulanLbl}
+            {t('dashboard.inputPay')} {bulanLbl}
           </button>
         )}
       </div>

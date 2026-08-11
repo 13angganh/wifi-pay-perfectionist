@@ -55,9 +55,26 @@ export default function PinLock() {
       } else {
         setShake(true);
         setError('PIN salah, coba lagi');
+        // v11.5.18 fix: sebelumnya reset ke 4 elemen (sisa dari sebelum PIN
+        // di-upgrade 4→6 digit) padahal state digits & UI-nya (6 dot, 6
+        // hidden input) sudah 6-digit di semua tempat lain. Efeknya: setelah
+        // PIN pertama salah, digits berubah panjang dari 6 → 4 di tengah
+        // sesi — dot indikator & hidden input yg di-render dari digits.map()
+        // ikut menyusut jadi 4, sementara refs[] (dipakai utk fokus & Backspace)
+        // tetap 6 dan tidak sinkron lagi dgn panjang digits. Persis gejala yg
+        // dilaporkan: kadang 6 digit kadang 4 digit muncul saat login.
+        //
+        // v11.5.19 fix: setError('') ditambahkan di sini. Sebelumnya pesan
+        // "PIN salah, coba lagi" tidak pernah dibersihkan oleh timer reset
+        // ini — ia baru hilang saat user mengetik digit baru (setError('')
+        // di baris 49), sehingga pesan itu nyangkut di layar meski dot
+        // indikator sudah kosong lagi dan siap menerima input baru. Kondisi
+        // "dot kosong tapi pesan error masih ada" ini membingungkan/terlihat
+        // macet, jadi error dibersihkan di titik yang sama dgn reset digits.
         setTimeout(() => {
           setShake(false);
-          setDigits(['','','','']);
+          setDigits(['','','','','','']);
+          setError('');
           refs[0].current?.focus();
         }, 600);
       }

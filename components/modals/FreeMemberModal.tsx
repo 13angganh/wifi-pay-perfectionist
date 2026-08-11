@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { saveDB } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
@@ -50,6 +51,8 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, zone, name, appData.freeMembers]);
 
+  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — lihat penjelasan
+  // lengkap di persist() MemberCard.tsx.
   async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
@@ -59,7 +62,8 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
     catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData);
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
       return false;
     }
   }

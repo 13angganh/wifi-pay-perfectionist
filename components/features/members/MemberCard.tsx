@@ -7,8 +7,9 @@ import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { getPay, isFree, rp } from '@/lib/helpers';
-import { saveDB } from '@/lib/db';
+import { getPay, isFree, rp, resolveEntryCardPeriod, resolveDisplayStatus } from '@/lib/helpers';
+import { saveDB, persistPaymentGranular } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
@@ -56,7 +57,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     appData, setAppData, uid, userEmail,
     activeZone, selYear, selMonth,
     expandedCard, setExpandedCard,
-    entryCardYear, entryCardMonth, setEntryCard,
+    entryCardYear, entryCardMonth, setEntryCard, clearEntryCardFor,
     globalLocked, lockedEntries,
     setSyncStatus,
     setRiwayatZone, setRiwayatName, setRiwayatYear,
@@ -80,17 +81,28 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const isCollapsing   = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress    = useRef(false);
+  // v11.5.9: true jika user SENGAJA mengubah dropdown BULAN di kartu ini selama sesi
+  // expand saat ini (bukan dari toggle period luar). Dipakai untuk membedakan override
+  // manual (harus tetap dilindungi meski kartu ditutup) dari snapshot otomatis (aman
+  // dihapus saat kartu ditutup, supaya pembukaan berikutnya ikut toggle terkini lagi).
+  const monthManuallyChanged = useRef(false);
 
   const t           = useT();
   const lang        = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
-  // FIX 6: default ke bulan/tahun SAAT INI saat kartu pertama dibuka
-  // bukan selMonth/selYear yang mungkin sudah berubah dari klik sebelumnya
-  const _nowY = new Date().getFullYear();
-  const _nowM = new Date().getMonth();
-  const cardYear  = entryCardYear[name]  ?? _nowY;
-  const cardMonth = entryCardMonth[name] ?? _nowM;
+  // FIX v11.5.7 (mengganti "FIX 6" lama): default ke selYear/selMonth (toggle period
+  // Entry di atas) — BUKAN new Date() (kalender hari ini). Sebelumnya kartu yang belum
+  // pernah dibuka selalu jatuh ke bulan kalender sungguhan, mengabaikan toggle atas
+  // sepenuhnya — sehingga toggle ke April lalu membuka kartu baru menampilkan Juli
+  // (bulan sistem hari ini), bukan April (bulan yang dipilih user di toggle). Mekanisme
+  // "sekali dibuka, terkunci" dari FIX 6 asli tetap dipertahankan utuh: effect di bawah
+  // hanya men-snapshot NILAI SAAT INI dari selYear/selMonth ke entryCardYear/Month pada
+  // saat kartu pertama kali expand — setelah tersimpan, nilai itu tidak lagi mengikuti
+  // perubahan toggle berikutnya (mencegah kartu yang sedang diisi user tergeser mendadak),
+  // dan override manual member lain (via dropdown BULAN per-kartu) tidak tersentuh.
+  // Logic resolusi diekstrak ke resolveEntryCardPeriod (lib/payment.ts) agar bisa di-unit-test.
+  const { year: cardYear, month: cardMonth } = resolveEntryCardPeriod(name, entryCardYear, entryCardMonth, selYear, selMonth);
   const info      = appData.memberInfo?.[activeZone + '__' + name] || {};
   const val       = getPay(appData, activeZone, name, selYear, selMonth);
   const entryVal  = getPay(appData, activeZone, name, cardYear, cardMonth);
@@ -99,22 +111,52 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const isLocked  = globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   const isExp     = expandedCard === name;
 
-  const statusBorder = freeCur
-    ? 'var(--c-free)'
-    : (val !== null ? 'var(--c-lunas)' : 'var(--c-belum)');
+  // v11.5.10: kartu TERTUTUP → header (border, badge, nominal ringkas) selalu ikuti
+  // toggle period atas (val/freeCur, selYear/selMonth) — status ringkas untuk bulan yang
+  // sedang dilihat user secara umum. Kartu TERBUKA → header harus konsisten dengan ISI
+  // form di dalamnya (BULAN/NOMINAL/TGL BAYAR, yang sudah ikut cardYear/cardMonth sejak
+  // v11.5.9) — kalau tidak, border/badge bisa menampilkan status bulan lain sementara
+  // form di bawahnya menampilkan bulan yang berbeda, membingungkan. Mekanisme: begitu
+  // kartu ditutup, acuan otomatis kembali ke toggle atas (clearEntryCardFor di effect
+  // atas sudah menangani ini); begitu kartu dibuka, header switch mengikuti cardYear/
+  // cardMonth kartu itu sendiri — termasuk saat user mengubah dropdown BULAN di dalamnya.
+  // Logic diekstrak ke resolveDisplayStatus (lib/payment.ts) agar bisa di-unit-test.
+  const { val: displayVal, free: displayFree, statusBorder: displayStatusBorder } =
+    resolveDisplayStatus(isExp, val, freeCur, entryVal, freeEntry);
 
   const cardRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const wasExpanded = useRef(false);
+
   useEffect(() => {
-    if (!isExp) { inputDirty.current = false; isCollapsing.current = false; return; }
-    // FIX 6: saat kartu dibuka, inisialisasi ke bulan saat ini jika belum pernah diset
-    if (!entryCardYear[name] && !entryCardMonth[name]) {
-      const nowY = new Date().getFullYear();
-      const nowM = new Date().getMonth();
-      setEntryCard(name, nowY, nowM);
+    if (!isExp) {
+      inputDirty.current = false;
+      isCollapsing.current = false;
+      // v11.5.9: transisi true→false terdeteksi (bukan sekadar "isExp saat ini false" —
+      // wasExpanded mencegah ini terpicu berulang kali selagi kartu memang tetap tertutup
+      // dan effect ini re-run karena dependency lain berubah, mis. selYear/selMonth).
+      // Hapus snapshot HANYA jika user tidak pernah sengaja mengubah dropdown BULAN
+      // selama sesi expand yang baru saja berakhir — override manual tetap dilindungi
+      // penuh, snapshot otomatis (dari toggle) dibersihkan agar pembukaan berikutnya
+      // fresh mengikuti toggle terkini, bukan terkunci ke bulan pertama kartu ini dibuka.
+      if (wasExpanded.current && !monthManuallyChanged.current) {
+        clearEntryCardFor(name);
+      }
+      wasExpanded.current = false;
+      return;
     }
-  }, [isExp, name, entryCardYear, entryCardMonth, setEntryCard]);
+    wasExpanded.current = true;
+    // v11.5.9: reset di awal SETIAP sesi expand baru, bukan hanya sekali — supaya sesi
+    // berikutnya (setelah snapshot lama dibersihkan) mulai dari kondisi "belum diubah
+    // manual" yang bersih, bukan mewarisi flag true dari sesi expand sebelumnya.
+    monthManuallyChanged.current = false;
+    // FIX v11.5.7: saat kartu dibuka, inisialisasi ke selYear/selMonth (toggle period
+    // Entry saat ini) jika belum pernah diset — bukan new Date() (kalender hari ini).
+    if (!entryCardYear[name] && !entryCardMonth[name]) {
+      setEntryCard(name, selYear, selMonth);
+    }
+  }, [isExp, name, entryCardYear, entryCardMonth, setEntryCard, selYear, selMonth, clearEntryCardFor]);
 
   useEffect(() => {
     if (!isExp) return;
@@ -150,7 +192,79 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData); // rollback: batalkan optimistic update agar retry konsisten
+      // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts), bukan replace
+      // total ke prevData. Antara setAppData(newData) di atas dan kegagalan network ini
+      // terdeteksi, operasi LAIN (mis. quick-pay di kartu member lain) bisa saja sudah
+      // setAppData() dengan datanya sendiri di atas newData ini. Replace total ke prevData
+      // (snapshot dari SEBELUM operasi ini) akan menghapus perubahan itu juga — data-loss
+      // nyata, bukan cuma soal timing. selectiveRollback membaca state TERBARU dan mengembalikan
+      // HANYA entry spesifik yang benar-benar diubah oleh newData ini (per-key, bukan per-field
+      // — dua member berbeda yang sama-sama menyentuh `payments` tidak akan saling menimpa).
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
+      haptic.error();
+      return false;
+    } finally {
+      setIsSaving(false);
+      isSavingRef.current = false;
+    }
+  }
+
+  // ── v11.5.7: persist granular KHUSUS untuk perubahan payments murni (saveEntryPay,
+  // clearPay) — mengirim HANYA satu key payment + activityLog + lock state, bukan
+  // seluruh AppData. Ini fix untuk bug "delay saat mengetik/menyimpan nominal" yang
+  // dilaporkan — lihat penjelasan lengkap dan perhitungan payload di lib/db.ts
+  // persistPaymentGranular(). persist() generik di atas TETAP dipakai untuk perubahan
+  // yang menyentuh field lain (mis. saveDate → memberInfo), karena field itu memang
+  // perlu dikirim utuh.
+  async function persistPaymentOnly(
+    paymentKey: string,
+    paymentValue: number | null,
+    action: string,
+    detail: string,
+  ): Promise<boolean> {
+    if (isSavingRef.current) return false;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    // FIX v11.5.7: baca appData TERBARU via getState(), bukan closure `appData` component —
+    // fungsi ini dipanggil juga dari callback yang bisa tertunda sampai 4 detik (toast undo),
+    // jadi closure `appData` yang beku akan sama bermasalahnya dengan bug yang diperbaiki di
+    // doQuickPay/saveEntryPay lainnya. Membaca via getState() di sini berarti SEMUA pemanggil
+    // — termasuk yang tertunda — otomatis benar tanpa perlu masing-masing mengurus staleness.
+    const current   = useAppStore.getState().appData;
+    const prevValue = current.payments[paymentKey] ?? null; // untuk rollback selektif
+    const newData = { ...current, payments: { ...current.payments } };
+    if (paymentValue === null) delete newData.payments[paymentKey];
+    else newData.payments[paymentKey] = paymentValue;
+    setAppData(newData);
+    if (!uid) { setIsSaving(false); isSavingRef.current = false; return true; }
+    setSyncStatus('loading');
+    try {
+      await persistPaymentGranular(
+        uid, paymentKey, paymentValue, current.activityLog || [],
+        { action, detail }, userEmail || '',
+        () => ({
+          globalLocked: useAppStore.getState().globalLocked,
+          lockedEntries: useAppStore.getState().lockedEntries,
+        }),
+      );
+      setSyncStatus('ok');
+      setShowSuccess(true);
+      setSuccessKey(k => k + 1);
+      setTimeout(() => setShowSuccess(false), 700);
+      haptic.success();
+      return true;
+    } catch (err) {
+      logger.error(`Gagal simpan ke Firebase (granular) — action: ${action}`, err);
+      setSyncStatus('err');
+      // Rollback selektif per-key, konsisten dengan pendekatan selectiveRollback: baca
+      // state TERBARU, kembalikan HANYA key payment ini ke nilai sebelumnya — perubahan
+      // concurrent pada key lain (termasuk key payment member lain) tidak tersentuh.
+      const latest = useAppStore.getState().appData;
+      const rolledBack = { ...latest, payments: { ...latest.payments } };
+      if (prevValue === null) delete rolledBack.payments[paymentKey];
+      else rolledBack.payments[paymentKey] = prevValue;
+      setAppData(rolledBack);
       haptic.error();
       return false;
     } finally {
@@ -166,12 +280,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
     const k       = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
     const prevVal = entryVal; // simpan untuk undo
-    const newData = { ...appData, payments: { ...appData.payments } };
 
     if (rawVal === '' || rawVal === null) {
-      delete newData.payments[k];
-      const ok = await persist(
-        newData,
+      const ok = await persistPaymentOnly(
+        k, null,
         `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`,
         `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`,
       );
@@ -179,20 +291,20 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     } else {
       const amt = +rawVal;
       if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
-      newData.payments[k] = amt;
-      const ok = await persist(
-        newData,
+      const ok = await persistPaymentOnly(
+        k, amt,
         `[PAY] ${tLog('log.action.pay')} ${activeZone} - ${name}`,
         `${MONTH_NAMES[cardMonth]} ${cardYear}: ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`,
       );
       if (ok) {
         // UX: undo selama 4 detik
         const undoMsg = `${name} → ${amt === 0 ? 'Akumulasi' : rp(amt)}`;
+        // FIX v11.5.7: persistPaymentOnly membaca appData terbaru secara internal saat
+        // dipanggil (bukan dari closure di sini), jadi undo callback ini otomatis aman
+        // terhadap staleness tanpa perlu getState() manual — lihat penjelasan lengkap di
+        // doQuickPay untuk kenapa closure staleness ini penting.
         showToastUndo(undoMsg, async () => {
-          const revert = { ...appData, payments: { ...appData.payments } };
-          if (prevVal === null) delete revert.payments[k];
-          else revert.payments[k] = prevVal;
-          await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+          await persistPaymentOnly(k, prevVal, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
           showToast(`${name} dibatalkan`, 'info');
         });
       }
@@ -203,7 +315,6 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   function doQuickPay(amt: number) {
     const k         = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
     const prevVal   = entryVal; // simpan untuk undo
-    const snapshot  = appData; // FIX v11.5.5: simpan SEBELUM optimistic update, untuk rollback
     const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
     if (settings?.autoDate) {
       const today   = new Date().toISOString().slice(0, 10);
@@ -220,16 +331,27 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     inputDirty.current = false;
     haptic.success();
     // Toast + undo langsung muncul tanpa menunggu Firebase
+    // FIX v11.5.7: toast undo bertahan 4 detik (TOAST_UNDO_DURATION) dan Firebase write di
+    // bawah berjalan async — dalam window itu member LAIN bisa saja di-quick-pay juga, yang
+    // meng-update appData global. Closure di sini TIDAK BOLEH menangkap `appData`/`newData`
+    // sebagai snapshot beku, karena "Batalkan" yang dieksekusi belakangan akan menimpa balik
+    // seluruh state ke snapshot lama itu — menghapus payment member lain yang berhasil
+    // tersimpan di antaranya (data-loss nyata, bukan cuma soal delay). Baca ulang state
+    // TERBARU via getState() tepat saat callback ini benar-benar jalan, dan terapkan HANYA
+    // perubahan spesifik milik payment ini di atas apapun yang current saat itu.
     showToastUndo(`${name} → ${rp(amt)}`, async () => {
-      const revert = { ...appData, payments: { ...appData.payments } };
+      const latest = useAppStore.getState().appData;
+      const revert = { ...latest, payments: { ...latest.payments } };
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
       await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
       showToast(`${name} dibatalkan`, 'info');
     });
     // Firebase write di background
-    // FIX: jika gagal, beri toast eksplisit + rollback state ke snapshot sebelum optimistic
-    // update, supaya percobaan berikutnya tidak bertumpu pada data yang belum tersimpan.
+    // FIX: jika gagal, beri toast eksplisit + hapus HANYA payment ini dari state TERBARU
+    // (bukan replace ke snapshot lama sebelum optimistic update — alasan sama seperti undo
+    // di atas), supaya percobaan berikutnya tidak bertumpu pada data yang belum tersimpan,
+    // tanpa menghapus perubahan member lain yang mungkin berhasil tersimpan di antaranya.
     if (uid) {
       setSyncStatus('loading');
       saveDB(uid, newData,
@@ -240,7 +362,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
        .catch((err) => {
          logger.error(`Gagal simpan quickPay ke Firebase — ${name}`, err);
          setSyncStatus('err');
-         setAppData(snapshot);
+         const latest = useAppStore.getState().appData;
+         const rolledBack = { ...latest, payments: { ...latest.payments } };
+         if (prevVal === null) delete rolledBack.payments[k];
+         else rolledBack.payments[k] = prevVal;
+         setAppData(rolledBack);
          showToast(t('common.saveFailed'), 'err');
        });
     }
@@ -274,10 +400,8 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       t('membercard.deleteYes'),
       async () => {
         const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
-        const newData = { ...appData, payments: { ...appData.payments } };
-        delete newData.payments[k];
-        const ok = await persist(
-          newData,
+        const ok = await persistPaymentOnly(
+          k, null,
           `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`,
           `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`,
         );
@@ -340,11 +464,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
   // Badge status
   let tagEl: React.ReactNode;
-  if (freeCur)
+  if (displayFree)
     tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
-  else if (val !== null && val > 0)
+  else if (displayVal !== null && displayVal > 0)
     tagEl = <span className="mc-tag tpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><CheckCircle2 size={9} /></span>;
-  else if (val === 0)
+  else if (displayVal === 0)
     tagEl = <span className="mc-tag" style={{ background:'rgba(34,197,94,0.08)', color:'var(--c-lunas)', border:'1px solid rgba(34,197,94,0.2)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Check size={9} /> 0</span>;
   else
     tagEl = <span className="mc-tag tunpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><XCircle size={9} /></span>;
@@ -362,7 +486,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         id={`card-${name.replace(/\s/g, '_')}`}
         className={`mcard ${isExp ? 'expanded' : ''} ${isLongPressing ? 'long-pressing' : ''} ${showSuccess ? 'payment-success' : ''}`}
         style={{
-          borderLeft:  `3px solid ${showSuccess ? 'var(--c-lunas)' : batchSelected ? 'var(--zc)' : statusBorder}`,
+          borderLeft:  `3px solid ${showSuccess ? 'var(--c-lunas)' : batchSelected ? 'var(--zc)' : displayStatusBorder}`,
           borderRadius: 'var(--r-md)',
           background:   showSuccess
             ? 'rgba(34,197,94,0.06)'
@@ -408,10 +532,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
             <span style={{ display:'flex', alignItems:'center', color:'var(--txt4)', marginLeft:'auto' }}>
               <Loader2 size={12} className="spin" />
             </span>
-          ) : val !== null && (
-            val === 0
+          ) : displayVal !== null && (
+            displayVal === 0
               ? <span style={{ fontSize:10, color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>
-              : <span style={{ fontSize:11, color:'var(--c-lunas)' }}>{val.toLocaleString('id-ID')}</span>
+              : <span style={{ fontSize:11, color:'var(--c-lunas)' }}>{displayVal.toLocaleString('id-ID')}</span>
           )}
           {!isSaving && tagEl}
           {!batchMode && (
@@ -427,12 +551,42 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
             {/* Bulan selector */}
             <div className="mc-row" style={{ marginBottom:6 }}>
               <span className="mc-label">{t('common.month').toUpperCase()}</span>
-              <select className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardYear}
-                onChange={e => setEntryCard(name, +e.target.value, cardMonth)}>
+              {/* FIX v11.5.8: key={cardYear} — React 19 punya known edge case di mana
+                  <select> controlled yang value-nya berubah dari SUMBER LUAR (di sini:
+                  toggle period Entry di atas, bukan interaksi langsung user dengan
+                  dropdown ini) tidak selalu repaint tampilan visualnya. Memberi key
+                  membuat React mount ulang node <select> yang benar-benar baru saat
+                  cardYear berubah, alih-alih mengandalkan update-in-place.
+                  KOREKSI v11.5.9 (saat itu masih benar, sudah tidak akurat lagi sejak
+                  v11.5.10 — lihat di bawah): entryVal TIDAK selalu akurat sebagai bukti
+                  (ia feed ke defaultValue uncontrolled di field NOMINAL yang tidak pernah
+                  refresh tanpa key), dan waktu itu badge status header kartu masih SELALU
+                  baca val/freeCur (selYear/selMonth) tanpa syarat, tidak peduli isExp.
+                  Root cause SEBENARNYA dari bug "toggle diganti berkali-kali, dropdown
+                  BULAN tidak pernah ikut berubah" ada di useEffect di atas: snapshot
+                  entryCardYear/Month[name] tersimpan PERMANEN sejak kartu ini pertama
+                  kali dibuka — bahkan setelah ditutup — sehingga pembukaan berikutnya
+                  selalu membaca snapshot lama itu, bukan toggle terkini. Fix sesungguhnya
+                  ada di clearEntryCardFor saat kartu ditutup (lihat useEffect), key di
+                  sini tetap dipertahankan sebagai proteksi tambahan yang sah untuk kasus
+                  repaint React 19.
+                  UPDATE v11.5.10: badge/border/nominal-ringkas di header kartu (lihat
+                  displayVal/displayFree di atas deklarasi cardRef) SEKARANG memang
+                  switch ke entryVal/freeEntry saat kartu terbuka (isExp true) — supaya
+                  konsisten dengan isi form BULAN/NOMINAL di bawahnya, bukan menampilkan
+                  status bulan lain yang membingungkan saat toggle atas beda dari bulan
+                  yang sedang dipilih di dalam kartu. Untuk kartu tertutup, tetap murni
+                  val/freeCur (toggle atas) seperti semula. */}
+              <select key={cardYear} className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardYear}
+                onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, +e.target.value, cardMonth); }}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
               </select>
-              <select className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardMonth}
-                onChange={e => setEntryCard(name, cardYear, +e.target.value)}>
+              {/* key={cardMonth}-nya sendiri tidak cukup untuk memicu remount saat
+                  perubahan bersumber dari cardYear (tahun berubah, bulan bisa jadi
+                  sama persis) — key digabung agar dropdown bulan juga ikut mount ulang
+                  setiap kali BAIK tahun MAUPUN bulan berubah dari toggle luar. */}
+              <select key={`${cardYear}-${cardMonth}`} className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardMonth}
+                onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, cardYear, +e.target.value); }}>
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
               </select>
             </div>
@@ -447,10 +601,26 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
               </div>
             ) : (
               <>
-                {/* Input nominal — UX: inputMode decimal untuk keyboard angka di mobile */}
+                {/* Input nominal — UX: inputMode decimal untuk keyboard angka di mobile.
+                    v11.5.9 FIX: key={`${cardYear}-${cardMonth}`} ditambahkan. Sebelumnya
+                    input ini defaultValue TANPA key — begitu di-mount sekali, defaultValue
+                    TIDAK PERNAH terbaca ulang meski entryVal (yang mengikuti cardYear/
+                    cardMonth) berubah dari luar (kartu ditutup-buka setelah toggle
+                    period diganti). Ini kemungkinan besar penyebab utama "seolah tidak
+                    ada perubahan apa-apa" — field NOMINAL adalah yang paling diperhatikan
+                    user, dan selalu diam di nilai kartu pertama kali dibuka. defaultValue
+                    (bukan value/controlled) SENGAJA dipertahankan — kalau diganti
+                    controlled penuh, setiap re-render akan mereset input dan mengganggu
+                    user yang sedang mengetik. key yang terikat cardYear/cardMonth memberi
+                    manfaat KEDUANYA: selama sesi mengetik (cardYear/cardMonth tidak
+                    berubah), key stabil → tidak ada remount → uncontrolled tetap bebas
+                    campur tangan React. Begitu cardYear/cardMonth berubah dari luar, key
+                    berubah → React mount node BARU → defaultValue dibaca ulang dari
+                    entryVal terkini. */}
                 <div className="mc-row">
                   <span className="mc-label">{t('common.amount').toUpperCase()}</span>
                   <input
+                    key={`${cardYear}-${cardMonth}`}
                     ref={inputRef}
                     className="mc-input"
                     type="number"
@@ -483,7 +653,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                   <span className="mc-label" style={{ display:'flex', alignItems:'center', gap:4 }}>
                     <Clock size={10} />{t('membercard.payDate').toUpperCase()}
                   </span>
+                  {/* v11.5.9: key sama seperti input NOMINAL — defaultValue di sini juga
+                      tidak pernah terbaca ulang tanpa key saat cardYear/cardMonth berubah
+                      dari luar (bug identik dengan field NOMINAL). */}
                   <input
+                    key={`${cardYear}-${cardMonth}`}
                     className="mc-date"
                     type="date"
                     defaultValue={(info[`date_${cardYear}_${cardMonth}`] as string) || ''}

@@ -6,11 +6,13 @@ import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { generatePDF, generateExcel } from '@/lib/export';
 import { showToast } from '@/components/ui/Toast';
+import { useT } from '@/hooks/useT';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function ShareModal({ open, onClose }: Props) {
+  const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const { appData, activeZone, selYear, selMonth, shareType, setShareType, shareFmt, setShareFmt } = useAppStore();
@@ -22,7 +24,7 @@ export default function ShareModal({ open, onClose }: Props) {
 
   async function doShare() {
     setBusy(true);
-    showToast('Membuat file...', 'info');
+    showToast(t('share.creating'), 'info');
     try {
       const mon = shareType === 'monthly' ? month : null;
       let blob: Blob, filename: string;
@@ -37,10 +39,10 @@ export default function ShareModal({ open, onClose }: Props) {
         const txt = encodeURIComponent(`Rekap WiFi Pay ${zone} ${shareType==='monthly'?MONTH_NAMES[month]+' ':''}${year}\nFile: ${filename}`);
         window.open(`https://wa.me/?text=${txt}`, '_blank');
       }, 1000);
-      showToast('File siap, WhatsApp dibuka!');
+      showToast(t('share.ready'));
       onClose();
     } catch {
-      showToast('Gagal generate file','err');
+      showToast(t('share.failed'),'err');
     } finally { setBusy(false); }
   }
 
@@ -51,15 +53,15 @@ export default function ShareModal({ open, onClose }: Props) {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
       <motion.div className="modal" onClick={e => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}>
-        <div className="modal-title">Share Rekap <button className="modal-close" aria-label="Tutup modal share" onClick={onClose}><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+        <div className="modal-title">{t('share.title')} <button className="modal-close" aria-label={t('share.closeAria')} onClick={onClose}><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
 
         {/* Tipe */}
         <div className="modal-row">
-          <div className="modal-label">TIPE REKAP</div>
+          <div className="modal-label">{t('share.typeLabel')}</div>
           <div style={{ display:'flex', gap:8 }}>
-            {(['monthly','yearly'] as const).map(t => (
-              <button key={t} className={`fmt-btn ${shareType===t?'on':''}`} onClick={() => setShareType(t)}>
-                {t==='monthly'?'Bulanan':'Tahunan'}
+            {(['monthly','yearly'] as const).map(ty => (
+              <button key={ty} className={`fmt-btn ${shareType===ty?'on':''}`} onClick={() => setShareType(ty)}>
+                {ty==='monthly'?t('share.monthly'):t('share.yearly')}
               </button>
             ))}
           </div>
@@ -68,31 +70,31 @@ export default function ShareModal({ open, onClose }: Props) {
         {/* Bulan (hanya jika monthly) */}
         {shareType === 'monthly' && (
           <div className="modal-row">
-            <div className="modal-label">BULAN</div>
+            <div className="modal-label">{t('share.monthLabel')}</div>
             <select className="modal-select" value={month} onChange={e => setMonth(+e.target.value)}>
-              {MONTHS.map((m,i) => <option key={i} value={i}>{m}</option>)}
+              {MONTH_NAMES.map((m,i) => <option key={i} value={i}>{m}</option>)}
             </select>
           </div>
         )}
 
         <div className="modal-row">
-          <div className="modal-label">TAHUN</div>
+          <div className="modal-label">{t('share.yearLabel')}</div>
           <select className="modal-select" value={year} onChange={e => setYear(+e.target.value)}>
             {getYears().map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
 
         <div className="modal-row">
-          <div className="modal-label">ZONA</div>
+          <div className="modal-label">{t('share.zoneLabel')}</div>
           <select className="modal-select" value={zone} onChange={e => setZone(e.target.value)}>
             <option value="KRS">KRS</option>
             <option value="SLK">SLK</option>
-            <option value="ALL">KRS + SLK (Gabungan)</option>
+            <option value="ALL">{t('share.zoneCombined')}</option>
           </select>
         </div>
 
         <div className="modal-row">
-          <div className="modal-label">FORMAT</div>
+          <div className="modal-label">{t('share.formatLabel')}</div>
           <div style={{ display:'flex', gap:8 }}>
             {(['pdf','excel'] as const).map(f => (
               <button key={f} className={`fmt-btn ${shareFmt===f?'on':''}`} onClick={() => setShareFmt(f)}>
@@ -103,7 +105,7 @@ export default function ShareModal({ open, onClose }: Props) {
         </div>
 
         <button className="modal-action" onClick={doShare} disabled={busy}>
-          {busy ? 'Membuat...' : 'Generate & Share via WhatsApp'}
+          {busy ? t('share.creatingBtn') : t('share.generateBtn')}
         </button>
       </motion.div>
     </motion.div>

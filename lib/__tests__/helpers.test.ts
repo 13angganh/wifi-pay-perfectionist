@@ -4,10 +4,10 @@
 // Task 4.03 — unit tests konstanta: getYears, MONTHS
 import { describe, it, expect } from 'vitest';
 import type { AppData } from '@/types';
-import { getKey, getPay, isFree, isLunas, getEffectivePay, getArrears, getPrevMonth, calcPctDelta } from '@/lib/payment';
+import { getKey, getPay, isFree, isLunas, getEffectivePay, getArrears, getPrevMonth, calcPctDelta, resolveEntryCardPeriod, resolveDisplayStatus } from '@/lib/payment';
 import { rp, rpShort, formatDate } from '@/lib/format';
 import { fbKey, hasInvalidFirebaseKeyChars } from '@/lib/firebase-key';
-import { fuzzyMatch, convertMemberIPs } from '@/lib/member';
+import { fuzzyMatch, textMatch, convertMemberIPs } from '@/lib/member';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 
 // ── Fixture factory ──────────────────────────────────────────────────────────
@@ -321,6 +321,54 @@ describe('fuzzyMatch', () => {
   it('angka dalam nama dapat dicari', () => {
     expect(fuzzyMatch('BUDI123', '123')).toBe(true);
   });
+
+  // ── Dokumentasi kenapa fuzzyMatch TIDAK cocok untuk kalimat panjang (v11.5.11) ──
+  // Bukan bug di fuzzyMatch itu sendiri — subsequence match memang bekerja sesuai
+  // definisinya. Masalahnya di PENGGUNAAN: kalimat panjang dengan kata berulang
+  // ("Quick Pay" di setiap entry log) membuat subsequence pendek nyaris selalu match.
+  it('DOKUMENTASI BUG: subsequence pendek match ke KALIMAT PANJANG karena noise kata umum — inilah kenapa Log harus pakai textMatch, bukan fuzzyMatch ini', () => {
+    // "uci" ditemukan sebagai u,c,i berurutan di dalam "Quick" — bukan karena nama
+    // WILDAN relevan dengan "uci" sama sekali.
+    expect(fuzzyMatch('[PAY] Quick Pay Rekap KRS - WILDAN', 'uci')).toBe(true);
+    expect(fuzzyMatch('[PAY] Quick Pay Rekap KRS - VIO', 'uci')).toBe(true);
+    expect(fuzzyMatch('[PAY] Quick Pay Rekap KRS - VINA', 'uci')).toBe(true);
+    expect(fuzzyMatch('[PAY] Quick Pay Rekap KRS - SIFA', 'uci')).toBe(true);
+  });
+});
+
+// ── textMatch (v11.5.11 — fix bug pencarian Log false-positive) ──────────────
+// Substring match presisi, pengganti fuzzyMatch khusus untuk konteks kalimat panjang
+// (log activity, detail transaksi) di mana subsequence match kehilangan presisi.
+
+describe('textMatch', () => {
+  it('query kosong selalu match', () => {
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - WILDAN', '')).toBe(true);
+  });
+  it('exact substring match (case-insensitive)', () => {
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - WILDAN', 'wildan')).toBe(true);
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - WILDAN', 'WILDAN')).toBe(true);
+  });
+  it('FIX BUG UTAMA: "uci" TIDAK match ke kalimat manapun yang tidak benar-benar mengandung substring "uci"', () => {
+    // Ini persis skenario yang dilaporkan: cari "uci" di Log seharusnya TIDAK menampilkan
+    // WILDAN/VIO/VINA/SIFA, karena tidak satupun dari kalimat itu benar-benar mengandung
+    // substring "uci" — beda dari fuzzyMatch yang salah menganggap semuanya match (lihat
+    // test dokumentasi di describe('fuzzyMatch') di atas).
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - WILDAN', 'uci')).toBe(false);
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - VIO', 'uci')).toBe(false);
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - VINA', 'uci')).toBe(false);
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - SIFA', 'uci')).toBe(false);
+  });
+  it('match jika substring memang benar-benar ada dalam kalimat', () => {
+    expect(textMatch('[PAY] Quick Pay Rekap KRS - UCITA', 'uci')).toBe(true);
+  });
+  it('tidak match jika urutan huruf query tidak berdekatan sebagai substring (beda dari fuzzyMatch)', () => {
+    // fuzzyMatch('BUDI', 'bd') = true (subsequence b...d), textMatch harus false
+    // (bukan substring berurutan-berdekatan).
+    expect(textMatch('BUDI', 'bd')).toBe(false);
+  });
+  it('match di tengah kalimat (detail transaksi)', () => {
+    expect(textMatch('Apr 2026: Rp 100.000', '100.000')).toBe(true);
+  });
 });
 
 // ── convertMemberIPs (v11.5) ────────────────────────────────────────────────
@@ -506,5 +554,130 @@ describe('calcPctDelta', () => {
   });
   it('hasil dibulatkan ke integer terdekat', () => {
     expect(calcPctDelta(7, 3)).toBe(133); // (7-3)/3 = 133.33...% → 133
+  });
+});
+
+// ── resolveEntryCardPeriod (v11.5.7 — fix sinkronisasi toggle Entry ↔ kartu member) ──
+
+describe('resolveEntryCardPeriod', () => {
+  it('kartu belum pernah dibuka (map kosong) → fallback ke selYear/selMonth (toggle), BUKAN tanggal kalender', () => {
+    // Ini skenario bug yang dilaporkan: toggle atas dipilih ke April 2026, kartu member
+    // yang belum pernah disentuh harus mengikuti April — bukan bulan sistem hari ini.
+    expect(resolveEntryCardPeriod('DIYAN', {}, {}, 2026, 3)).toEqual({ year: 2026, month: 3 }); // April = index 3
+  });
+
+  it('toggle berganti beberapa kali sebelum kartu dibuka → selalu ikut toggle TERBARU', () => {
+    expect(resolveEntryCardPeriod('DIYAN', {}, {}, 2026, 0)).toEqual({ year: 2026, month: 0 }); // Jan
+    expect(resolveEntryCardPeriod('DIYAN', {}, {}, 2026, 4)).toEqual({ year: 2026, month: 4 }); // Mei
+  });
+
+  it('kartu sudah pernah dibuka (sudah tersimpan) → TETAP terkunci, tidak ikut toggle berikutnya', () => {
+    // Simulasi: kartu DIYAN dibuka saat toggle=April (snapshot tersimpan), lalu toggle
+    // berubah ke Mei SEMENTARA kartu masih terbuka — DIYAN harus tetap menampilkan April.
+    const savedYear  = { DIYAN: 2026 };
+    const savedMonth = { DIYAN: 3 }; // April, tersimpan dari saat kartu dibuka
+    expect(resolveEntryCardPeriod('DIYAN', savedYear, savedMonth, 2026, 4)).toEqual({ year: 2026, month: 3 });
+  });
+
+  it('override manual (dropdown BULAN per-kartu) tetap dihormati meski toggle berbeda', () => {
+    const savedYear  = { DIYAN: 2025 };
+    const savedMonth = { DIYAN: 11 }; // user sengaja pilih Desember 2025 di kartu ini
+    expect(resolveEntryCardPeriod('DIYAN', savedYear, savedMonth, 2026, 3)).toEqual({ year: 2025, month: 11 });
+  });
+
+  it('nilai tersimpan milik member LAIN tidak bocor ke fallback member ini (merge-safety)', () => {
+    // Konsisten dengan viewSlice setViewWithPeriod: override satu member tidak boleh
+    // mempengaruhi resolusi default member lain yang belum pernah disentuh.
+    const savedYear  = { BUDI: 2025 };
+    const savedMonth = { BUDI: 5 };
+    expect(resolveEntryCardPeriod('ANI', savedYear, savedMonth, 2026, 3)).toEqual({ year: 2026, month: 3 });
+  });
+
+  it('year tersimpan tapi month belum (state parsial) → year pakai tersimpan, month fallback ke toggle', () => {
+    // Edge case: kedua map di-update terpisah (setEntryCard selalu set keduanya bersamaan
+    // di kode nyata, tapi resolver harus tetap benar per-field jika suatu saat divergen).
+    const savedYear  = { DIYAN: 2025 };
+    const savedMonth = {};
+    expect(resolveEntryCardPeriod('DIYAN', savedYear, savedMonth, 2026, 3)).toEqual({ year: 2025, month: 3 });
+  });
+
+  it('month index 0 (Januari) tersimpan tidak salah dianggap "belum ada" oleh ?? (falsy-zero trap)', () => {
+    // 0 adalah nilai valid (Januari) dan HARUS dibedakan dari "belum pernah diset". Operator
+    // ?? (nullish coalescing) menangani ini dengan benar — beda dari || yang akan salah
+    // treat 0 sebagai falsy dan jatuh ke fallback. Test ini mengunci perilaku itu.
+    const savedYear  = { DIYAN: 2026 };
+    const savedMonth = { DIYAN: 0 };
+    expect(resolveEntryCardPeriod('DIYAN', savedYear, savedMonth, 2026, 7)).toEqual({ year: 2026, month: 0 });
+  });
+});
+
+// ── resolveDisplayStatus (v11.5.10 — fix header kartu Entry ikut isi form saat expand) ──
+
+describe('resolveDisplayStatus', () => {
+  it('kartu TERTUTUP → selalu pakai nilai toggle (val/free), berapapun nilai card-nya', () => {
+    // isExpanded=false: card* diabaikan sepenuhnya, meski nilainya berbeda drastis dari toggle.
+    const result = resolveDisplayStatus(false, 200, false, 999, true);
+    expect(result.val).toBe(200);
+    expect(result.free).toBe(false);
+    expect(result.statusBorder).toBe('var(--c-lunas)');
+  });
+
+  it('kartu TERBUKA → pakai nilai card (bulan yang sedang dipilih di dalam kartu), BUKAN toggle', () => {
+    // Ini skenario persis yang dilaporkan: toggle atas tetap di satu bulan (mis. Jul),
+    // tapi user mengubah dropdown BULAN di dalam kartu ke bulan lain — badge/border
+    // harus ikut bulan yang dipilih DI DALAM kartu, bukan toggle di atas.
+    const result = resolveDisplayStatus(true, null, false, 100, false);
+    expect(result.val).toBe(100);
+    expect(result.free).toBe(false);
+    expect(result.statusBorder).toBe('var(--c-lunas)');
+  });
+
+  it('kartu terbuka, card belum bayar (null) → status "belum", walau toggle menunjukkan lunas', () => {
+    const result = resolveDisplayStatus(true, 200, false, null, false);
+    expect(result.val).toBeNull();
+    expect(result.statusBorder).toBe('var(--c-belum)');
+  });
+
+  it('kartu terbuka, card = 0 (akumulasi) → status "lunas" (0 tetap dianggap terisi, bukan belum bayar)', () => {
+    const result = resolveDisplayStatus(true, null, false, 0, false);
+    expect(result.val).toBe(0);
+    expect(result.statusBorder).toBe('var(--c-lunas)');
+  });
+
+  it('kartu terbuka, card free member aktif → badge/border ikut status free DARI CARD, walau toggle bukan free', () => {
+    const result = resolveDisplayStatus(true, 100, false, null, true);
+    expect(result.free).toBe(true);
+    expect(result.statusBorder).toBe('var(--c-free)');
+  });
+
+  it('kartu tertutup, toggle free member aktif → badge/border ikut status free DARI TOGGLE, card diabaikan', () => {
+    const result = resolveDisplayStatus(false, null, true, 100, false);
+    expect(result.free).toBe(true);
+    expect(result.statusBorder).toBe('var(--c-free)');
+  });
+
+  it('simulasi siklus penuh dari laporan: satu kartu, toggle diam di Jul, dropdown internal pindah 3 bulan berturut', () => {
+    // Reproduksi 4 screenshot: toggle atas TETAP di Jul (val=null, belum bayar Jul) di
+    // keempat momen. User pindah dropdown BULAN di dalam kartu: Jan(100)→Mei(0)→Mar(100).
+    const toggleVal = null; // Jul belum bayar (Belum 77)
+    const toggleFree = false;
+
+    const jan = resolveDisplayStatus(true, toggleVal, toggleFree, 100, false);
+    expect(jan.val).toBe(100);
+    expect(jan.statusBorder).toBe('var(--c-lunas)'); // harus HIJAU (lunas), BUKAN merah
+
+    const mei = resolveDisplayStatus(true, toggleVal, toggleFree, 0, false);
+    expect(mei.val).toBe(0);
+    expect(mei.statusBorder).toBe('var(--c-lunas)'); // 0 = akumulasi, tetap hijau
+
+    const mar = resolveDisplayStatus(true, toggleVal, toggleFree, 100, false);
+    expect(mar.val).toBe(100);
+    expect(mar.statusBorder).toBe('var(--c-lunas)');
+
+    // Kartu ditutup kembali — sekarang HARUS kembali merah karena toggle (Jul) belum bayar,
+    // terlepas dari bulan apa yang terakhir dipilih di dalam kartu sebelum ditutup.
+    const closed = resolveDisplayStatus(false, toggleVal, toggleFree, 100, false);
+    expect(closed.val).toBeNull();
+    expect(closed.statusBorder).toBe('var(--c-belum)');
   });
 });

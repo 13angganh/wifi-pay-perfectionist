@@ -16,7 +16,9 @@ import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, getZoneTotal, isLunas, isFree, rp } from '@/lib/helpers';
 import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 import { useT } from '@/hooks/useT';
+import { useMounted } from '@/hooks/useMounted';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { chartTheme, ZC_KRS, ZC_SLK, ZC_TOT, zoneColor } from '@/lib/design-tokens';
 
 // Register semua Chart.js components yang dipakai
@@ -43,11 +45,59 @@ export default function GrafikView() {
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
+
+  // v11.5.11: fix "teks sekilas Bahasa Indonesia" saat pakai English. Root cause: HTML
+  // hasil server-render SELALU memakai settings.language='id' (loadSettings() di
+  // settingsSlice.ts mengembalikan DEFAULT_SETTINGS saat window undefined di server —
+  // localStorage tidak bisa diakses server-side), dan baru mengambil bahasa yang
+  // sesungguhnya dari localStorage setelah client selesai mount. Ini SECARA TEKNIS
+  // mempengaruhi seluruh app secara merata (tidak ada satupun view yang punya proteksi
+  // hydration ini), tapi Grafik-lah yang benar-benar TERLIHAT karena inisialisasi
+  // Chart.js/canvas makan waktu terukur lebih lama dari re-render teks biasa — window
+  // waktu "id" versi server itu jadi cukup lama untuk sempat terlihat mata sebelum
+  // bahasa yang benar dari client mengambil alih.
+  // Fix: tunda render konten yang bergantung `lang`/MONTH_NAMES sampai component benar-
+  // benar mounted di client — sebelum itu, tampilkan skeleton murni visual TANPA TEKS
+  // sama sekali (Skeleton dari components/ui/Skeleton.tsx, aria-hidden), sehingga tidak
+  // ada apapun yang bisa "salah bahasa" untuk terlihat, di bahasa manapun.
+  // useMounted() (hooks/useMounted.ts) pakai useSyncExternalStore, BUKAN pola lama
+  // useState+useEffect — pola lama memicu react-hooks/set-state-in-effect (linter resmi
+  // React 19 menandainya sebagai anti-pattern: setState sinkron di dalam effect body
+  // memaksa render tambahan yang tidak perlu).
+  const mounted = useMounted();
+
   const [donutMonth, setDonutMonth] = useState(new Date().getMonth());
   const [p1Year,  setP1Year]  = useState(new Date().getFullYear());
   const [p1Month, setP1Month] = useState(new Date().getMonth() === 0 ? 11 : new Date().getMonth() - 1);
   const [p2Year,  setP2Year]  = useState(new Date().getFullYear() - 1);
   const [p2Month, setP2Month] = useState(new Date().getMonth() === 0 ? 11 : new Date().getMonth() - 1);
+
+  // v11.5.11: skeleton murni visual (tanpa teks sama sekali) selama window pre-mount —
+  // lihat penjelasan lengkap di komentar mounted guard di atas. Bentuknya meniru layout
+  // asli (selector tahun, 2 stat card, beberapa chart box) supaya tidak ada layout shift
+  // mencolok begitu konten sesungguhnya muncul. Early return di sini juga sekaligus
+  // menghindari komputasi mData/yData/dst yang sia-sia selama window singkat ini.
+  if (!mounted) {
+    return (
+      <div>
+        <div className="ctrl-row" style={{ justifyContent:'space-between', alignItems:'center' }}>
+          <Skeleton width="90px" height="32px" />
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+          <Skeleton height="76px" />
+          <Skeleton height="76px" />
+        </div>
+        <div className="chart-box">
+          <Skeleton width="140px" height="14px" style={{ marginBottom:12 }} />
+          <Skeleton height="180px" />
+        </div>
+        <div className="chart-box">
+          <Skeleton width="120px" height="14px" style={{ marginBottom:12 }} />
+          <Skeleton height="180px" />
+        </div>
+      </div>
+    );
+  }
 
   const az      = activeZone as string;
   const mems    = az === 'KRS' ? appData.krsMembers : az === 'SLK' ? appData.slkMembers : [...appData.krsMembers, ...appData.slkMembers];
@@ -258,8 +308,8 @@ export default function GrafikView() {
       {!hasData && (
         <EmptyState
           icon={BarChart2}
-          title="Belum Ada Data Grafik"
-          description="Tambahkan member dan data pembayaran untuk melihat grafik statistik."
+          title={t('grafik.noDataTitle')}
+          description={t('grafik.noDataDesc')}
           size="md"
         />
       )}

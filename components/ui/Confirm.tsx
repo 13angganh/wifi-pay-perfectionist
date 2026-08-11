@@ -6,6 +6,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
+import { useT } from '@/hooks/useT';
 
 // ── Helper imperatif — bisa dipanggil dari mana saja tanpa React context ──
 // Mengambil state langsung dari Zustand store (aman, tidak pakai module variable)
@@ -35,6 +36,7 @@ export function showConfirm(
 export default function Confirm() {
   const { confirmDialog, closeConfirmDialog } = useAppStore();
   const { open, icon, title, description, highlight, highlightColor, yesLabel, cb } = confirmDialog;
+  const t = useT();
 
   if (!open) return null;
 
@@ -86,7 +88,7 @@ export default function Confirm() {
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button className="confirm-no"  onClick={closeConfirmDialog}>Batal</button>
+          <button className="confirm-no"  onClick={closeConfirmDialog}>{t('common.cancel')}</button>
           <button className="confirm-yes" onClick={handleConfirm}>{yesLabel}</button>
         </div>
       </div>

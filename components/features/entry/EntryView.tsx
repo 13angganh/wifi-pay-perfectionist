@@ -1,12 +1,13 @@
 // components/features/entry/EntryView.tsx — Fase 4: Skeleton + EmptyState
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { persistPayment } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import MemberCard from '../members/MemberCard';
@@ -63,6 +64,37 @@ export default function EntryView() {
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setEntryScrollTop((e.target as HTMLDivElement).scrollTop);
   }, [setEntryScrollTop]);
+
+  // BUG FIX: bottom sheet preview batch (position:fixed, bottom:0) punya tinggi DINAMIS —
+  // tumbuh mengikuti jumlah member terpilih (tiap baris preview ~40px) sampai mentok
+  // maxHeight:180 pada area scroll-nya, ditambah header/total/tombol yang tetap. Spacer lama
+  // di akhir list ("height:300" statis) hanya kebetulan cukup untuk jumlah kecil — begitu
+  // preview tumbuh melewati 300px (makin banyak member dipilih), sheet mulai menutupi kartu
+  // paling bawah SECARA FISIK (bukan cuma visual): sheet fixed tetap menerima pointer event
+  // di area itu meski kartu di baliknya masih tampak sebagian, sehingga tap di kartu itu tidak
+  // pernah sampai ke card-nya. Inilah sebab laporan "ZAHDAN tak bisa diklik saat data 4+" —
+  // checkbox-nya persis jatuh di bawah tepi sheet yang sudah membesar. Perbaikan: ukur tinggi
+  // ASLI sheet setiap kali berubah (ResizeObserver, bukan dihitung manual dari jumlah item —
+  // menghindari duplikasi konstanta layout/typo px yang gampang basi) dan pakai itu sebagai
+  // tinggi spacer, sehingga daftar SELALU bisa di-scroll sepenuhnya melewati sheet apa pun
+  // jumlah member yang dipilih.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState(0);
+
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) { setSheetHeight(0); return; }
+    // Guard: ResizeObserver tidak native tersedia di semua environment (mis. jsdom lama
+    // tanpa polyfill). Fallback ke fallback statis (300) di JSX spacer sudah menangani ini
+    // dengan aman — di sini cukup skip observasi tanpa throw, bukan mengubah fallback itu.
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height;
+      if (h !== undefined) setSheetHeight(h);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [batchMode, batchSelected.length]); // re-attach saat sheet muncul/hilang atau isi berubah
 
   // UX: restore scroll position saat kembali ke menu Entry
   useEffect(() => {
@@ -135,7 +167,13 @@ export default function EntryView() {
       } catch (err) {
         logger.error('Gagal simpan batch pay Entry ke Firebase', err);
         setSyncStatus('err'); ok = false;
-        setAppData(prevData); // rollback: batalkan optimistic update
+        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — lihat
+        // penjelasan lengkap di persist() MemberCard.tsx. Window race di sini bisa lebih
+        // lebar (batch melibatkan banyak member, network request lebih lama), jadi risikonya
+        // lebih nyata. selectiveRollback beroperasi per-KEY payment, bukan per-field, sehingga
+        // payment member lain (di luar batch ini) yang berhasil tersimpan concurrent aman.
+        const latest = useAppStore.getState().appData;
+        setAppData(selectiveRollback(latest, prevData, newData));
       }
     }
     if (ok) {
@@ -278,29 +316,35 @@ export default function EntryView() {
         </div>
       )}
 
-      {/* Search */}
-      {!batchMode && (
-        <>
-          <div className="search-wrap" style={{ position:'relative' }}>
-            <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--txt4)', pointerEvents:'none' }} />
-            <input
-              className="search-box"
-              placeholder={`${t('entry.searchPlaceholder')} ${activeZone}...`}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ paddingLeft:32 }}
-            />
-            {search && (
-              <button className="search-clear" onClick={() => setSearch('')} aria-label="Hapus pencarian">
-                <X size={12} />
-              </button>
-            )}
-          </div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:8 }}>
-            {filtered.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {activeZone}
-          </div>
-        </>
-      )}
+      {/* Search — BUG FIX: sebelumnya dibungkus {!batchMode && (...)} sehingga search box
+          (dan tombol hapus pencarian) hilang total begitu batch mode aktif. Search state
+          TIDAK direset oleh startBatch()/setBatchMode, jadi filtered tetap terkunci ke query
+          lama tanpa cara mengubahnya — inilah sebab "masuk batch mode dari hasil pencarian
+          ZAM, lalu tak bisa lagi menambah member lain": daftar yang tampil selamanya cuma
+          hasil filter "Zam" karena user tidak punya akses untuk mengosongkan/mengubah query
+          itu. Search kini SELALU dirender terlepas dari batchMode, supaya user bisa mencari
+          member lain untuk digabung ke batch (atau menghapus query untuk melihat semua
+          member lagi) kapan pun, termasuk saat masuk batch mode lewat hasil pencarian. */}
+      <>
+        <div className="search-wrap" style={{ position:'relative' }}>
+          <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--txt4)', pointerEvents:'none' }} />
+          <input
+            className="search-box"
+            placeholder={`${t('entry.searchPlaceholder')} ${activeZone}...`}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ paddingLeft:32 }}
+          />
+          {search && (
+            <button className="search-clear" onClick={() => setSearch('')} aria-label="Hapus pencarian">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:8 }}>
+          {filtered.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {activeZone}
+        </div>
+      </>
 
       {/* Member cards */}
       <div id="entry-cards" className="fade-in">
@@ -333,7 +377,7 @@ export default function EntryView() {
 
       {/* Batch bottom sheet */}
       {batchMode && batchSelected.length > 0 && (
-        <div style={{
+        <div ref={sheetRef} style={{
           position:'fixed', bottom:0, left:0, right:0, zIndex:200,
           background:'rgba(24,28,39,0.95)',
           backdropFilter:'blur(16px)',
@@ -394,7 +438,13 @@ export default function EntryView() {
         </div>
       )}
 
-      {batchMode && batchSelected.length > 0 && <div style={{ height:300 }} />}
+      {/* Spacer dinamis — tinggi mengikuti pengukuran ResizeObserver di sheetRef (lihat
+          catatan di atas). +24px margin napas supaya kartu terakhir tidak mepet persis
+          di tepi sheet saat di-scroll penuh ke atas. Fallback 300 hanya untuk frame
+          render pertama sebelum ResizeObserver sempat mengukur (sheetHeight masih 0). */}
+      {batchMode && batchSelected.length > 0 && (
+        <div style={{ height: sheetHeight > 0 ? sheetHeight + 24 : 300 }} />
+      )}
     </div>
   );
 }

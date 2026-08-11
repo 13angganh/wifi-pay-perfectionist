@@ -23,6 +23,20 @@ export function getMembersForZone(zone: string, appData: AppData): string[] {
 
 // ── Fuzzy match (subsequence matching) ──
 // Contoh: query "ag" → match "Angga", "Agus"
+// PENTING — kapan pakai fuzzyMatch vs textMatch (di bawah):
+// fuzzyMatch cocok untuk mencari di STRING PENDEK yang isinya murni satu hal yang
+// dicari (nama member, misal "Angga", "SIFA") — di situ subsequence match membantu
+// (user ketik "wldn" tetap ketemu "WILDAN"), dan hasilnya jarang salah karena tidak
+// ada kata "noise" tambahan untuk kebetulan menyerap huruf-huruf query.
+// TAPI JANGAN pakai fuzzyMatch untuk mencari di KALIMAT PANJANG yang isinya campuran
+// beberapa kata (log activity: "[PAY] Quick Pay Rekap KRS - WILDAN") — subsequence
+// match pada kalimat panjang kehilangan presisi drastis, karena kata umum yang
+// berulang di SETIAP entry (di sini: "Quick Pay") sendirian sudah cukup mengandung
+// huruf apa saja secara berurutan untuk query pendek manapun, membuat hasil match ke
+// hampir semua entry terlepas nama sebenarnya. v11.5.11: bug nyata ditemukan — cari
+// "uci" di Log activity match ke WILDAN/VIO/VINA/SIFA (semua mengandung u,i,c dari
+// kata "Quick" sendiri), padahal tidak ada satupun nama itu yang relevan dengan "uci".
+// Untuk kasus kalimat panjang, pakai textMatch (substring match presisi) di bawah.
 export function fuzzyMatch(str: string, query: string): boolean {
   if (!query) return true;
   const s = str.toLowerCase();
@@ -34,6 +48,15 @@ export function fuzzyMatch(str: string, query: string): boolean {
     si++;
   }
   return true;
+}
+
+// ── v11.5.11: Text match (substring, case-insensitive) — presisi untuk kalimat panjang.
+// Berbeda dari fuzzyMatch (subsequence, longgar), ini murni "apakah query muncul persis
+// berurutan sebagai substring" — cocok untuk mencari di log activity, detail transaksi,
+// atau string panjang campuran lainnya, di mana presisi lebih penting dari toleransi typo. ──
+export function textMatch(str: string, query: string): boolean {
+  if (!query) return true;
+  return str.toLowerCase().includes(query.toLowerCase());
 }
 
 // ── v11.5: Konversi IP member secara generik (find & replace substring) ──

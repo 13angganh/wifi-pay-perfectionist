@@ -7,9 +7,11 @@ import { useAppStore } from '@/store/useAppStore';
 import { doUpdateEmail, doResetPassword } from '@/hooks/useAuth';
 import { showToast } from '@/components/ui/Toast';
 import { Mail, CheckCircle2 } from 'lucide-react';
+import { useT } from '@/hooks/useT';
 
 export default function SettingsEmailSection() {
   const { userEmail } = useAppStore();
+  const t = useT();
   const [newEmail,  setNewEmail]  = useState('');
   const [loading,    setLoading]    = useState(false);
   const [resetSent,  setResetSent]  = useState(false);
@@ -17,9 +19,9 @@ export default function SettingsEmailSection() {
   const [sent,      setSent]      = useState(false);
 
   async function handleUpdate() {
-    if (!newEmail.trim()) { showToast('Masukkan email baru', 'err'); return; }
-    if (newEmail.trim() === userEmail) { showToast('Email sama dengan yang sekarang', 'err'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { showToast('Format email tidak valid', 'err'); return; }
+    if (!newEmail.trim()) { showToast(t('emailSection.enterNew'), 'err'); return; }
+    if (newEmail.trim() === userEmail) { showToast(t('emailSection.sameAsCurrent'), 'err'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { showToast(t('emailSection.invalidFormat'), 'err'); return; }
 
     setLoading(true);
     const res = await doUpdateEmail(newEmail.trim());
@@ -30,7 +32,7 @@ export default function SettingsEmailSection() {
     } else {
       setSent(true);
       setNewEmail('');
-      showToast('Email verifikasi terkirim — cek inbox ' + newEmail.trim());
+      showToast(t('emailSection.verifySent') + newEmail.trim());
     }
   }
 
@@ -41,10 +43,10 @@ export default function SettingsEmailSection() {
         <Mail size={16} strokeWidth={1.5} style={{ color:'var(--zc)', flexShrink:0 }} />
         <div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
-            Ubah Email Akun
+            {t('emailSection.title')}
           </div>
           <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
-            Saat ini: <span style={{ color:'var(--txt2)', fontWeight:500 }}>{userEmail}</span>
+            {t('emailSection.currentLabel')} <span style={{ color:'var(--txt2)', fontWeight:500 }}>{userEmail}</span>
           </div>
         </div>
       </div>
@@ -57,12 +59,12 @@ export default function SettingsEmailSection() {
           borderRadius:'var(--r-sm)', fontSize:12, color:'var(--c-lunas)',
         }}>
           <CheckCircle2 size={14} />
-          <span>Email verifikasi terkirim. Cek inbox dan klik link untuk konfirmasi perubahan.</span>
+          <span>{t('emailSection.verifySentDesc')}</span>
         </div>
       ) : (
         <>
           <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>
-            EMAIL BARU
+            {t('emailSection.newEmailLabel')}
           </div>
           <input
             type="email"
@@ -81,7 +83,7 @@ export default function SettingsEmailSection() {
             onBlur={e  => (e.target as HTMLInputElement).style.borderColor='var(--border)'}
           />
           <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:10, lineHeight:1.6 }}>
-            Firebase akan kirim email verifikasi ke alamat baru. Email lama tetap aktif sampai kamu klik link konfirmasi di inbox.
+            {t('emailSection.firebaseNote')}
           </div>
           <button
             onClick={handleUpdate}
@@ -95,18 +97,18 @@ export default function SettingsEmailSection() {
               transition:'all var(--t-fast)', opacity: loading ? 0.6 : 1,
             }}
           >
-            {loading ? 'Mengirim...' : 'Kirim Email Verifikasi'}
+            {loading ? t('emailSection.sending') : t('emailSection.sendVerifyBtn')}
           </button>
         </>
       )}
       {/* Reset password */}
       <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
         <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:8 }}>
-          Lupa password? Kirim link reset ke email aktif.
+          {t('emailSection.forgotPassword')}
         </div>
         {resetSent ? (
           <div style={{ fontSize:11, color:'var(--c-lunas)', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)' }}>
-            ✓ Link reset terkirim ke {userEmail}
+            {t('emailSection.resetSentDesc')} {userEmail}
           </div>
         ) : (
           <button
@@ -127,7 +129,7 @@ export default function SettingsEmailSection() {
               transition:'all var(--t-fast)', opacity: resetLoad ? 0.6 : 1,
             }}
           >
-            {resetLoad ? 'Mengirim...' : '🔑 Kirim Link Reset Password'}
+            {resetLoad ? t('emailSection.sending') : t('emailSection.sendResetBtn')}
           </button>
         )}
       </div>

@@ -8,6 +8,7 @@ import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { Search, X, Gift, CheckCheck, LayoutList } from 'lucide-react';
@@ -55,6 +56,10 @@ export default function RekapView() {
   // FIX v11.5.5: rollback state lokal + log error asli jika Firebase gagal (lihat
   // catatan detail di MembersView.tsx persist() — bug yang sama: tanpa rollback, retry
   // setelah gagal bisa mencari data di state yang sudah berubah duluan secara optimis).
+  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — bukan replace total ke
+  // prevData, yang bisa menghapus payment member lain yang berhasil tersimpan concurrent
+  // selagi network request batch ini masih berjalan. Lihat penjelasan lengkap di persist()
+  // MemberCard.tsx.
   async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
@@ -70,7 +75,8 @@ export default function RekapView() {
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      setAppData(prevData);
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
       return false;
     }
   }
@@ -375,7 +381,7 @@ export default function RekapView() {
 
                 const cls  = v! > 0 ? 'cv' : v === 0 && !free ? 'cz' : 'cn';
                 const disp = free
-                  ? <Gift size={9} style={{ opacity:0.6 }} />
+                  ? <span style={{ display:'inline-block', width:'100%', textAlign:'right' }}><Gift size={9} style={{ opacity:0.6, verticalAlign:'middle' }} /></span>
                   : v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
                   : v !== null ? (v * 1000).toLocaleString('id-ID') : '—';
 
@@ -385,9 +391,10 @@ export default function RekapView() {
 
                 return (
                   <td
-                    key={isFlashing ? `${mi}-flash-${flashCell!.successKey}` : mi}
-                    className={`${cls}${isExp ? ' rekap-exp-cell' : ''}${isFlashing ? ' rekap-cell-paid-flash' : ''}`}
+                    key={mi}
+                    className={`${cls}${isExp ? ' rekap-exp-cell' : ''}`}
                     style={{
+                      position: 'relative',
                       opacity: isDimmed ? 0.2 : 1,
                       pointerEvents: isDimmed ? 'none' : undefined,
                       outline: isSelected ? '2px solid var(--zc)' : undefined,
@@ -403,13 +410,31 @@ export default function RekapView() {
                     onClick={() => onCellClick(name, mi)}
                     title={free ? 'Free Member' : `${MONTH_NAMES[mi]} ${selYear}`}
                   >
-                    {disp}{isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
+                    <span style={{ position:'relative', zIndex:1 }}>
+                      {disp}{isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
+                    </span>
+                    {/* v11.5.7 FIX: overlay flash terpisah dari <td> utama — key di sini boleh
+                        berubah (successKey) untuk memaksa restart animasi CSS tanpa lagi
+                        mengubah key <td> induk. Sebelumnya key <td> ikut berubah setiap flash,
+                        membuat React unmount+remount seluruh sel (termasuk semua pointer/click
+                        handler-nya) selama window 750ms — kontributor nyata untuk render
+                        glitch acak yang dilaporkan, meski sempit jendelanya. inset:0 + zIndex:0
+                        membuat overlay ini menutupi persis area <td> DI BAWAH konten teks
+                        (zIndex:1 di atas), sehingga hasil visualnya identik dengan animasi
+                        background langsung di <td> — teks tetap terbaca selama flash. */}
+                    {isFlashing && (
+                      <span
+                        key={`flash-${flashCell!.successKey}`}
+                        className="rekap-cell-paid-flash"
+                        style={{ position:'absolute', inset:0, zIndex:0, pointerEvents:'none' }}
+                      />
+                    )}
                   </td>
                 );
               });
               return (
                 <tr key={name} data-name={name}>
-                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt5)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
+                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
                   <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
                   <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
@@ -419,7 +444,7 @@ export default function RekapView() {
           </tbody>
           <tfoot>
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt4)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
+              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt2)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
                 const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
                 return (

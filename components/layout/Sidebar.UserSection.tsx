@@ -5,6 +5,7 @@
 'use client';
 
 import { User } from 'lucide-react';
+import { useT } from '@/hooks/useT';
 
 interface Props {
   initials:      string;
@@ -13,11 +14,12 @@ interface Props {
 }
 
 export default function SidebarUserSection({ initials, displayName, onOpenAccount }: Props) {
+  const t = useT();
   return (
     <div className="sb-user-section">
       <button
         onClick={onOpenAccount}
-        aria-label="Buka pengaturan akun"
+        aria-label={t('sidebar.accountAria')}
         style={{
           width:'100%', display:'flex', alignItems:'center', gap:10,
           background:'none', border:'1px solid var(--border)',
@@ -46,7 +48,7 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
           }}>
             {displayName}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>Kelola akun</div>
+          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>{t('sidebar.manageAccount')}</div>
         </div>
         <User size={13} strokeWidth={1.5} style={{ color:'var(--txt4)', flexShrink:0 }} />
       </button>

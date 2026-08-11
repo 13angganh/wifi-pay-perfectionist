@@ -1,5 +1,5 @@
 // components/features/settings/SettingsTarifSection.tsx — Fase 3: dipecah dari SettingsView
-// Berisi: Export Data, Share WA, Quick Pay amounts
+// Berisi: Export & Import Data, Share WA, Quick Pay amounts
 'use client';
 
 import { useState } from 'react';
@@ -9,8 +9,9 @@ import { useT } from '@/hooks/useT';
 import { MONTHS_EN, MONTHS, getYears } from '@/lib/constants';
 import type React from 'react';
 import { doJSONBackup, doWASummary, generatePDF, generateExcel } from '@/lib/export';
+import ImportInput, { triggerImport } from '@/components/modals/ImportModal';
 import {
-  Download, FileText, Table2, Share2, MessageCircle, ChevronDown, ChevronUp, Check, Zap,
+  Download, FileText, Table2, Share2, MessageCircle, ChevronDown, ChevronUp, Check, Zap, Upload, ArrowUpDown,
 } from 'lucide-react';
 
 // ── Top-level sub-components (task 4.11: react-hooks/static-components) ──
@@ -44,6 +45,7 @@ function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, s
   showAll?: boolean;
   monthNames: string[];
 }) {
+  const t = useT();
   return (
     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
       <select style={{ ...selStyleBase, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as 'KRS'|'SLK'|'ALL')}>
@@ -52,8 +54,8 @@ function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, s
         {showAll && <option value="ALL">ALL</option>}
       </select>
       <select style={{ ...selStyleBase, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'monthly'|'yearly')}>
-        <option value="monthly">Bulanan</option>
-        <option value="yearly">Tahunan</option>
+        <option value="monthly">{t('share.monthly')}</option>
+        <option value="yearly">{t('share.yearly')}</option>
       </select>
       {type === 'monthly' && (
         <select style={{ ...selStyleBase, flex:'none', minWidth:80 }} value={month} onChange={e => setMonth(+e.target.value)}>
@@ -165,10 +167,10 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
 
   return (
     <>
-      {/* Export Data */}
+      {/* Export & Import Data */}
       {(section === 'all' || section === 'export') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
-          <div style={{ color:'var(--zc)', marginTop:2 }}><Download size={16} strokeWidth={1.5} /></div>
+          <div style={{ color:'var(--zc)', marginTop:2 }}><ArrowUpDown size={16} strokeWidth={1.5} /></div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.export')}</div>
         </div>
 
@@ -202,6 +204,25 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
             </div>
           </div>
         )}
+
+        {/* v11.5.13: Import Data — pasangan dari Export Data di atas, permintaan
+            eksplisit sebagai jaring pengaman preventif (kesalahan login, data terhapus,
+            dll). Ditempatkan di card yang sama dengan Export supaya mudah ditemukan
+            berdampingan. ImportInput di-mount di sini (bukan global di AppShell) karena
+            hanya dipicu dari satu tempat ini — file input tersembunyi itu sendiri tidak
+            menimbulkan efek visual apapun sampai triggerImport() dipanggil. */}
+        <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
+          <button
+            onClick={triggerImport}
+            style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:12, transition:'all var(--t-fast)' }}
+          >
+            <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <Upload size={13} /> {t('settings.importData')}
+            </span>
+            <span style={{ fontSize:10, color:'var(--txt4)' }}>{t('settings.importDataDesc')}</span>
+          </button>
+          <ImportInput />
+        </div>
       </div>}
 
       {/* Share & WA */}

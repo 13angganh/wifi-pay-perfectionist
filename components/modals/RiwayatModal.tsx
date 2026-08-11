@@ -40,7 +40,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
     if (free) {
       statusEl = (
         <span style={{ color:'var(--c-free)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
-          <Gift size={12} /> Free
+          <Gift size={12} /> {t('status.free')}
         </span>
       );
       lunas++;
@@ -98,7 +98,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
       if (sv !== null || sfr) {
         statLunas++;
         if (sv && sv > 0) statNominal += sv;
-        if (!statFirst) statFirst = `${MONTHS[mi]} ${yr}`;
+        if (!statFirst) statFirst = `${(lang === 'en' ? MONTHS_EN : MONTHS)[mi]} ${yr}`;
       }
     }
   }
@@ -195,15 +195,15 @@ export default function RiwayatModal({ open, onClose }: Props) {
         <div style={{ display:'flex', gap:6, marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
           <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
             <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-              <Award size={9} /> TOTAL
+              <Award size={9} /> {t('riwayat.statTotal')}
             </div>
             <div style={{ fontSize:13, fontWeight:800, color:'var(--c-lunas)', fontFamily:"var(--font-sans),sans-serif" }}>
-              {statLunas} bln
+              {statLunas} {t('riwayat.monthAbbr')}
             </div>
           </div>
           <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
             <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-              <Banknote size={9} /> BAYAR
+              <Banknote size={9} /> {t('riwayat.statBayar')}
             </div>
             <div style={{ fontSize:11, fontWeight:800, color:'var(--zc)', fontFamily:"var(--font-mono),monospace" }}>
               {rp(statNominal)}
@@ -212,7 +212,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
           {statFirst ? (
             <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
               <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-                <TrendingUp size={9} /> MULAI
+                <TrendingUp size={9} /> {t('riwayat.statMulai')}
               </div>
               <div style={{ fontSize:9, fontWeight:700, color:'var(--txt2)', fontFamily:"var(--font-sans),sans-serif", lineHeight:1.3 }}>
                 {statFirst}

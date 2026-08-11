@@ -146,3 +146,66 @@ describe('viewSlice — setViewWithPeriod (v11.5 fix)', () => {
     expect(s.entryCardYear.SARI).toBe(2023);
   });
 });
+
+// ── clearEntryCardFor (v11.5.9) ──────────────────────────────────────────────
+// Fix bug: kartu member yang ditutup lalu dibuka lagi setelah toggle period diubah
+// tetap menampilkan bulan LAMA (snapshot dari pembukaan pertama), bukan bulan toggle
+// terkini — karena entryCardYear/Month[name] tersimpan permanen dan tidak pernah
+// dibersihkan saat kartu ditutup. MemberCard.tsx memanggil clearEntryCardFor(name) saat
+// kartu ditutup (HANYA jika tidak ada override manual — dilacak via ref lokal komponen,
+// tidak bisa diuji di level store test ini, tapi efek clearEntryCardFor itu sendiri bisa).
+
+describe('viewSlice — clearEntryCardFor (v11.5.9)', () => {
+  it('menghapus entry SATU member saja, member lain tidak tersentuh', () => {
+    const store = makeStore();
+    store.getState().setEntryCard('ABIL', 2026, 5); // Jun
+    store.getState().setEntryCard('ADIT', 2026, 3); // Apr
+    store.getState().clearEntryCardFor('ABIL');
+    const s = store.getState();
+    expect('ABIL' in s.entryCardYear).toBe(false);
+    expect('ABIL' in s.entryCardMonth).toBe(false);
+    expect(s.entryCardYear.ADIT).toBe(2026);
+    expect(s.entryCardMonth.ADIT).toBe(3);
+  });
+
+  it('idempoten: memanggil pada member yang tidak punya entry tidak error dan tidak mengubah apapun', () => {
+    const store = makeStore();
+    store.getState().setEntryCard('ADIT', 2026, 3);
+    store.getState().clearEntryCardFor('TIDAK_ADA');
+    const s = store.getState();
+    expect(s.entryCardYear.ADIT).toBe(2026);
+    expect(Object.keys(s.entryCardYear)).toEqual(['ADIT']);
+  });
+
+  it('siklus buka→tutup→ganti toggle→buka lagi: kartu kembali mengikuti toggle terkini (reproduksi bug yang dilaporkan)', () => {
+    const store = makeStore();
+    // Buka kartu ABIL saat toggle = Jun 2026 (simulasi effect MemberCard saat isExp jadi true)
+    store.getState().setSelYear(2026);
+    store.getState().setSelMonth(5); // Jun
+    store.getState().setEntryCard('ABIL', store.getState().selYear, store.getState().selMonth);
+    expect(store.getState().entryCardMonth.ABIL).toBe(5);
+
+    // Tutup kartu TANPA override manual (simulasi effect MemberCard saat isExp jadi false)
+    store.getState().clearEntryCardFor('ABIL');
+    expect('ABIL' in store.getState().entryCardMonth).toBe(false);
+
+    // User ganti toggle ke Jul
+    store.getState().setSelMonth(6);
+
+    // Buka lagi kartu ABIL — snapshot baru harus ambil dari toggle TERKINI (Jul), bukan Jun lama
+    store.getState().setEntryCard('ABIL', store.getState().selYear, store.getState().selMonth);
+    expect(store.getState().entryCardMonth.ABIL).toBe(6); // Jul, BUKAN 5 (Jun) yang lama
+  });
+
+  it('override manual TIDAK dihapus oleh clearEntryCardFor jika komponen memilih tidak memanggilnya (kontrak: pemanggil yang memutuskan, bukan fungsi ini)', () => {
+    // clearEntryCardFor sendiri selalu menghapus jika dipanggil — proteksi terhadap override
+    // manual ada di LEVEL PEMANGGIL (monthManuallyChanged ref di MemberCard.tsx), bukan di
+    // fungsi store ini. Test ini mengunci kontrak itu: fungsi store selalu unconditional,
+    // keputusan "kapan memanggil" adalah tanggung jawab caller.
+    const store = makeStore();
+    store.getState().setEntryCard('ABIL', 2025, 11); // override manual ke Des 2025
+    store.getState().clearEntryCardFor('ABIL'); // caller MEMILIH memanggil ini
+    expect('ABIL' in store.getState().entryCardYear).toBe(false); // maka terhapus, sesuai kontrak
+  });
+});
+

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { saveDB } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
@@ -63,19 +64,25 @@ export default function Header({ onToggleSidebar }: Props) {
     const next = !globalLocked;
     const prevLocked = globalLocked;
     const prevData = appData;
+    const newData  = { ...appData, _globalLocked: next };
     setGlobalLocked(next);
-    setAppData({ ...appData, _globalLocked: next }); // BUG-001: sync appData agar tidak stale
+    setAppData(newData); // BUG-001: sync appData agar tidak stale
     let ok = true;
     if (uid) {
       try {
         setSyncStatus('loading');
-        await saveDB(uid, { ...appData, _globalLocked: next });
+        await saveDB(uid, newData);
         setSyncStatus('ok');
       } catch (err) {
         logger.error('Gagal simpan toggleGlobalLock ke Firebase', err);
         setSyncStatus('err'); ok = false;
         setGlobalLocked(prevLocked); // rollback
-        setAppData(prevData);
+        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — replace
+        // total ke prevData (snapshot dari sebelum await saveDB) bisa menghapus payment
+        // member lain yang berhasil tersimpan di antaranya. Baca state terbaru, kembalikan
+        // hanya field yang disentuh operasi ini (_globalLocked).
+        const latest = useAppStore.getState().appData;
+        setAppData(selectiveRollback(latest, prevData, newData));
       }
     }
     if (ok) {

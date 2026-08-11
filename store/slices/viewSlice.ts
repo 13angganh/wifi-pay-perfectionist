@@ -34,6 +34,7 @@ export interface ViewSlice {
   entryCardMonth: Record<string, number>;
   setEntryCard:   (name: string, year: number, month: number) => void;
   clearEntryCard: () => void;
+  clearEntryCardFor: (name: string) => void;
   entryScrollTop:    number;
   setEntryScrollTop: (v: number) => void;
 
@@ -157,6 +158,19 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
     entryCardMonth: { ...s.entryCardMonth, [name]: month },
   })),
   clearEntryCard:    () => set({ entryCardYear: {}, entryCardMonth: {} }),
+  // v11.5.9: hapus snapshot SATU member saja — dipanggil saat kartunya ditutup, supaya
+  // pembukaan berikutnya kembali mengikuti selYear/selMonth (toggle Entry) yang aktif
+  // SAAT ITU, bukan terkunci selamanya ke bulan pertama kali kartu ini pernah dibuka
+  // (bisa berminggu-minggu lalu). Fix bug: toggle diganti berkali-kali, tutup-buka kartu
+  // yang sama, dropdown BULAN & nominal di dalamnya tidak pernah ikut berubah karena
+  // entryCardYear/Month[name] sudah permanen tersimpan dari pembukaan pertama.
+  clearEntryCardFor: (name) => set((s) => {
+    const entryCardYear  = { ...s.entryCardYear };
+    const entryCardMonth = { ...s.entryCardMonth };
+    delete entryCardYear[name];
+    delete entryCardMonth[name];
+    return { entryCardYear, entryCardMonth };
+  }),
   entryScrollTop:    0,
   setEntryScrollTop: (v) => set({ entryScrollTop: v }),
 

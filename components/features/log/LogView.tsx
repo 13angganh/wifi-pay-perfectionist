@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type React from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { fuzzyMatch } from '@/lib/helpers';
+import { textMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { ScrollText, Search, X, RotateCcw, Banknote, Trash2, Pencil, UserPlus, Undo2, Globe, Gift, FileText, Lock, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -22,9 +22,15 @@ export default function LogView() {
   const logs = appData.activityLog || [];
 
   // v11.5 FIX: gabungkan dua search box yang sebelumnya redundan (search aksi + filter nama)
-  // — keduanya mencari di field yang sama persis (action + detail), hanya beda algoritma
-  // (includes vs fuzzyMatch). Sekarang satu search box saja, pakai fuzzyMatch yang lebih
-  // fleksibel (superset dari includes untuk kasus ini), tanpa kehilangan kapabilitas apapun.
+  // — keduanya mencari di field yang sama persis (action + detail).
+  // KOREKSI v11.5.11: komentar asli di sini mengklaim fuzzyMatch "superset dari includes...
+  // tanpa kehilangan kapabilitas apapun" — klaim itu salah. fuzzyMatch (subsequence match)
+  // pada kalimat panjang seperti action log ("[PAY] Quick Pay Rekap KRS - WILDAN") kehilangan
+  // presisi drastis: kata umum yang berulang di SETIAP entry ("Quick Pay") sendirian sudah
+  // cukup mengandung huruf berurutan untuk query pendek apapun. Bug nyata: cari "uci" match
+  // ke WILDAN/VIO/VINA/SIFA — semua kebetulan mengandung u,i,c dari kata "Quick", padahal
+  // tidak relevan sama sekali dengan "uci". Diganti textMatch (substring presisi, lihat
+  // lib/member.ts untuk penjelasan lengkap kapan pakai yang mana).
   let filtered = [...logs];
   if (logType === 'pay') {
     filtered = filtered.filter(l => l.action && (
@@ -36,7 +42,7 @@ export default function LogView() {
     ));
   }
   if (logSearch.trim()) {
-    filtered = filtered.filter(l => fuzzyMatch(l.action || '', logSearch) || fuzzyMatch(l.detail || '', logSearch));
+    filtered = filtered.filter(l => textMatch(l.action || '', logSearch) || textMatch(l.detail || '', logSearch));
   }
   if (logYear)  filtered = filtered.filter(l => new Date(l.ts).getFullYear() === +logYear);
   if (logMonth) filtered = filtered.filter(l => new Date(l.ts).getMonth() === +logMonth);
@@ -123,8 +129,8 @@ export default function LogView() {
             {filtered.length === 0 ? (
               <EmptyState
                 icon={ScrollText}
-                title={t('log.empty')}
-                description={isFiltered ? 'Coba ubah filter pencarian' : t('log.emptyDesc')}
+                title={isFiltered ? t('common.noResult') : t('log.empty')}
+                description={isFiltered ? t('log.noResultsDesc') : t('log.emptyDesc')}
                 size="md"
               />
             ) : (

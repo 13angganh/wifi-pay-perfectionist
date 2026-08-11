@@ -7,6 +7,7 @@ import { getZoneTotal, rp } from '@/lib/helpers'
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
@@ -57,6 +58,10 @@ export default function OperasionalView() {
   const totalOps    = items.reduce((s, it) => s + (+it.nominal || 0), 0);
   const netIncome   = grossIncome - totalOps;
 
+  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — bukan replace total ke
+  // prevData, yang bisa menghapus payment/data operasional bulan lain yang berhasil
+  // tersimpan concurrent selagi network request ini masih berjalan. Lihat penjelasan
+  // lengkap di persist() MemberCard.tsx.
   async function persist(newData: typeof appData): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
@@ -72,7 +77,8 @@ export default function OperasionalView() {
     } catch (err) {
       logger.error('Gagal simpan data operasional ke Firebase', err);
       setSyncStatus('err');
-      setAppData(prevData);
+      const latest = useAppStore.getState().appData;
+      setAppData(selectiveRollback(latest, prevData, newData));
       return false;
     }
   }
@@ -122,7 +128,7 @@ export default function OperasionalView() {
           {filteredYears.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
         <select className="cs" value={opsMonth} onChange={e => setOpsMonth(+e.target.value)}>
-          {MONTHS.map((m, i) => <option key={i} value={i} disabled={opsYear===minYear&&i<0}>{m}</option>)}
+          {MONTH_NAMES.map((m, i) => <option key={i} value={i} disabled={opsYear===minYear&&i<0}>{m}</option>)}
         </select>
         <span style={{ fontSize:11, color:'var(--txt3)', alignSelf:'center', fontFamily:FONT }}>{MONTH_NAMES[opsMonth]} {opsYear}</span>
       </div>

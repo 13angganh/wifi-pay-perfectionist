@@ -1,3 +1,27 @@
+# WiFi Pay Next — Update v11.5.20
+
+> Laporan dari log build Vercel: `npm install` menampilkan 10 vulnerabilities (1 low, 2 moderate, 5 high, 2 critical).
+
+## Fix: 10 npm audit vulnerabilities → 0
+
+Dijalankan `npm audit fix` (non-force) lebih dulu — menuntaskan 7 dari 10 kerentanan tanpa breaking change sama sekali (`@babel/core`, `brace-expansion`, `js-yaml`, `protobufjs`, `undici`, `vite`, `websocket-driver`). Semua ini murni devDependency transitif (dibawa `eslint-config-next`, `eslint`, `jsdom`, `vitest`/`@vitejs/plugin-react`) atau dependency produksi transitif via `firebase` — `package.json` sendiri tidak tersentuh sama sekali oleh langkah ini, dikonfirmasi lewat diff eksplisit.
+
+Sisa 3 kerentanan (1 moderate, 1 high, **1 critical**) semuanya berpusat di `jspdf`/`jspdf-autotable`/`dompurify` — dependency langsung produksi yang dipakai `generatePDF()` di `lib/export.excel.ts`, kode yang sudah disentuh 3 kali di sesi-sesi sebelumnya. Advisory `jspdf` critical-nya sendiri adalah local file inclusion/path traversal. Fix butuh major version bump (`jspdf` 2.5.2→4.2.1, `jspdf-autotable` 3.8.4→5.0.8), jadi tidak langsung dijalankan `--force` tanpa verifikasi — diriset dulu breaking-changes resminya: satu-satunya breaking change nyata di rentang versi ini adalah plugin `jspdf-autotable` tidak lagi otomatis diterapkan ke instance jsPDF di lingkungan non-browser (harus pakai `autoTable(doc, {...})` gaya fungsi, bukan `doc.autoTable({...})`) — dan kode proyek ini **sudah** memakai gaya fungsi itu sejak awal, jadi breaking change itu tidak relevan di sini.
+
+Setelah `npm audit fix --force`: `tsc --noEmit` bersih (bukti kuat karena proyek full strict TypeScript — mismatch API/tipe pasti tertangkap), `eslint` bersih, 204/204 test lulus tanpa perubahan. Karena tidak ada satu pun unit test yang benar-benar memanggil `generatePDF()`, dilakukan verifikasi tambahan: generate PDF nyata dengan skenario data yang **persis sama** seperti verifikasi GRAND TOTAL (v11.5.17), dibaca ulang via `pdftotext`, dan dibandingkan langsung — struktur tabel, GRAND TOTAL per bulan, TOTAL HALAMAN per halaman, semuanya identik dengan output sebelum upgrade. Palet warna kustom (`COL.headBg`, `COL.grandFootTxt`, dst dari fix v11.5.16) juga dicocokkan langsung dari content stream biner PDF (operator `rg`/RGB fill), bukan cuma dilihat sekilas — nilainya cocok matematis dengan definisi di kode.
+
+## File yang berubah (v11.5.20)
+
+| File | Perubahan |
+|------|-----------|
+| `package.json` / `package-lock.json` | `jspdf` ^2.5.2→^4.2.1, `jspdf-autotable` ^3.8.4→^5.0.8 (langsung); 7 paket transitif lain naik via `npm audit fix` non-force |
+| `lib/export.excel.ts` | Komentar dokumentasi upgrade ditambahkan; tidak ada perubahan kode fungsional |
+| `lib/constants.ts` | Versi → v11.5.20 |
+
+**Hasil validasi:** `npm audit` → **0 vulnerabilities** (dari 10) · `tsc --noEmit` bersih · `eslint` 0 error/warning · **204/204 unit test lulus** (tidak ada test baru — perubahan pada dependency, bukan logika aplikasi) · PDF nyata pasca-upgrade dibandingkan byte-level (warna) dan isi-teks (angka) dengan hasil pra-upgrade, keduanya identik.
+
+---
+
 # WiFi Pay Next — Update v11.5.19
 
 > Tindak lanjut dari temuan terpisah di v11.5.18: pesan error PIN yang tidak hilang otomatis, sekarang diminta untuk ikut diperbaiki.
@@ -926,7 +950,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.5.19 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.5.20 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

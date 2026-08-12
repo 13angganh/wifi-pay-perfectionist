@@ -1,6 +1,15 @@
 // ══════════════════════════════════════════
 // lib/export.excel.ts — PDF & Excel exports
 // v11.3: jsPDF via npm (bukan CDN) — eliminasi race condition
+// v11.5.20: jspdf 2.5.2→4.2.1, jspdf-autotable 3.8.4→5.0.8 (npm audit fix
+// --force, menuntaskan CVE critical/high di jspdf — path traversal & HTML
+// injection). API yang dipakai file ini (autoTable(doc,{...}) gaya fungsi,
+// showFoot/willDrawCell/didDrawPage, struktur HookData) TIDAK berubah antar
+// major version ini — dikonfirmasi lewat tsc --noEmit bersih (0 error tipe)
+// DAN generate PDF nyata pasca-upgrade yang dibaca ulang via pdftotext:
+// GRAND TOTAL per bulan, TOTAL HALAMAN per halaman, dan palet warna COL
+// (headBg/grandFootTxt/dst, dicocokkan langsung dari content stream PDF
+// biner) semuanya identik dengan output sebelum upgrade.
 // ══════════════════════════════════════════
 
 import type { AppData } from '@/types';

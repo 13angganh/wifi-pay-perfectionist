@@ -37,9 +37,11 @@ export function useDashboard() {
   // Member counts
   const krsAll   = appData.krsMembers || [];
   const slkAll   = appData.slkMembers || [];
-  const krsLunas = krsAll.filter(m => isLunas(appData, 'KRS', m, dy, dm) && !isFree(appData, 'KRS', m, dy, dm)).length;
+  // v11.5.21: Opsi A — free member termasuk kategori lunas (selaras dengan DashboardView.tsx).
+  // krsBelum/slkBelum tetap exclude free — free bukan "belum bayar".
+  const krsLunas = krsAll.filter(m => isLunas(appData, 'KRS', m, dy, dm)).length;
   const krsBelum = krsAll.filter(m => getPay(appData, 'KRS', m, dy, dm) === null && !isFree(appData, 'KRS', m, dy, dm)).length;
-  const slkLunas = slkAll.filter(m => isLunas(appData, 'SLK', m, dy, dm) && !isFree(appData, 'SLK', m, dy, dm)).length;
+  const slkLunas = slkAll.filter(m => isLunas(appData, 'SLK', m, dy, dm)).length;
   const slkBelum = slkAll.filter(m => getPay(appData, 'SLK', m, dy, dm) === null && !isFree(appData, 'SLK', m, dy, dm)).length;
   const krsPct   = krsAll.length ? Math.round(krsLunas / krsAll.length * 100) : 0;
   const slkPct   = slkAll.length ? Math.round(slkLunas / slkAll.length * 100) : 0;

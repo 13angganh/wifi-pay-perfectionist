@@ -69,9 +69,14 @@ export default function DashboardView() {
   // ── Member counts ──
   const krsAll   = appData.krsMembers || [];
   const slkAll   = appData.slkMembers || [];
-  const krsLunas = krsAll.filter(m => isLunas(appData, 'KRS', m, dy, dm) && !isFree(appData, 'KRS', m, dy, dm)).length;
+  // v11.5.21: Opsi A — free member termasuk kategori lunas (isLunas() sudah true untuk free
+  // sejak awal di payment.ts; filter !isFree() di sini dulunya membuang free dari pembilang
+  // padahal tetap masuk penyebut totalAllMembers/krsAll.length, sehingga rasio lunas tak
+  // pernah 100% meski semua member bayar sudah lunas). krsBelum/slkBelum TETAP exclude free —
+  // free bukan "belum bayar".
+  const krsLunas = krsAll.filter(m => isLunas(appData, 'KRS', m, dy, dm)).length;
   const krsBelum = krsAll.filter(m => getPay(appData, 'KRS', m, dy, dm) === null && !isFree(appData, 'KRS', m, dy, dm)).length;
-  const slkLunas = slkAll.filter(m => isLunas(appData, 'SLK', m, dy, dm) && !isFree(appData, 'SLK', m, dy, dm)).length;
+  const slkLunas = slkAll.filter(m => isLunas(appData, 'SLK', m, dy, dm)).length;
   const slkBelum = slkAll.filter(m => getPay(appData, 'SLK', m, dy, dm) === null && !isFree(appData, 'SLK', m, dy, dm)).length;
   const krsPct   = krsAll.length ? Math.round(krsLunas / krsAll.length * 100) : 0;
   const slkPct   = slkAll.length ? Math.round(slkLunas / slkAll.length * 100) : 0;
@@ -91,8 +96,8 @@ export default function DashboardView() {
   const totalAllMembers = krsAll.length + slkAll.length;
   const totalLunasNow   = krsLunas + slkLunas;
   const lunasPctNow     = totalAllMembers ? Math.round((totalLunasNow / totalAllMembers) * 100) : 0;
-  const krsLunasPrev    = krsAll.filter(m => isLunas(appData, 'KRS', m, prevDy, prevDm) && !isFree(appData, 'KRS', m, prevDy, prevDm)).length;
-  const slkLunasPrev    = slkAll.filter(m => isLunas(appData, 'SLK', m, prevDy, prevDm) && !isFree(appData, 'SLK', m, prevDy, prevDm)).length;
+  const krsLunasPrev    = krsAll.filter(m => isLunas(appData, 'KRS', m, prevDy, prevDm)).length;
+  const slkLunasPrev    = slkAll.filter(m => isLunas(appData, 'SLK', m, prevDy, prevDm)).length;
   const totalLunasPrev  = krsLunasPrev + slkLunasPrev;
   const lunasPctPrev    = totalAllMembers ? Math.round((totalLunasPrev / totalAllMembers) * 100) : 0;
   const lunasPctDelta   = lunasPctNow - lunasPctPrev; // poin persentase, bukan rasio

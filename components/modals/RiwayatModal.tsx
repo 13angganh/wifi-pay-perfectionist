@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, getYears, MONTHS_EN } from '@/lib/constants';
-import { getPay, isFree, rp } from '@/lib/helpers';
+import { getPay, isFree, isLunas, rp } from '@/lib/helpers';
 import { ChevronLeft, ChevronRight, X, Gift, CheckCircle2, XCircle, Calendar, TrendingUp, Banknote, Award } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -29,6 +29,13 @@ export default function RiwayatModal({ open, onClose }: Props) {
   const maxYear  = getYears()[getYears().length - 1];
 
   let lunas = 0; let totalVal = 0;
+  for (const mi of MONTHS.keys()) {
+    if (isLunas(appData, riwayatZone, riwayatName, riwayatYear, mi)) {
+      lunas++;
+      const v = getPay(appData, riwayatZone, riwayatName, riwayatYear, mi);
+      if (v !== null && v > 0) totalVal += v;
+    }
+  }
 
   const rows = MONTHS.map((mName, mi) => {
     const displayName = (lang === 'en' ? MONTHS_EN : MONTHS)[mi] || mName;
@@ -43,21 +50,18 @@ export default function RiwayatModal({ open, onClose }: Props) {
           <Gift size={12} /> {t('status.free')}
         </span>
       );
-      lunas++;
     } else if (v !== null && v > 0) {
       statusEl = (
         <span style={{ color:'var(--c-lunas)', fontSize:11, fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
           {rp(v)}
         </span>
       );
-      lunas++; totalVal += v;
     } else if (v === 0) {
       statusEl = (
         <span style={{ color:'var(--c-lunas)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
           <CheckCircle2 size={12} /> {t('rekap.accumulation')}
         </span>
       );
-      lunas++;
     } else {
       statusEl = (
         <span style={{ color:'var(--c-belum)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>

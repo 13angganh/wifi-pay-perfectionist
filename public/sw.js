@@ -2,7 +2,7 @@
 // Strategy: network-first halaman, cache-first assets statis
 // CACHE_VERSION berubah tiap build → browser auto-detect update → install SW baru
 
-const CACHE_VERSION = 'wifipay-vmsp7vljg';
+const CACHE_VERSION = 'wifipay-vmt0u300g';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const PAGES_CACHE   = `${CACHE_VERSION}-pages`;
 

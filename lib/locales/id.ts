@@ -657,6 +657,38 @@ const id: Record<string, string> = {
   'sidebar.accountAria':   'Buka pengaturan akun',
   'sidebar.manageAccount': 'Kelola akun',
 
+  // Fitur Penagih — menu "Buat Akun Penagih" (SettingsTenantSection.tsx)
+  'settings.tenant.sectionTitle':    'Buat Akun Penagih',
+  'settings.tenant.emailLabel':      'Email Penagih',
+  'settings.tenant.emailPlaceholder': 'email@contoh.com',
+  'settings.tenant.emailInvalid':    'Email tidak valid',
+  'settings.tenant.passwordLabel':   'Password Penagih',
+  'settings.tenant.passwordPlaceholder': 'Minimal 6 karakter',
+  'settings.tenant.passwordTooShort': 'Password minimal 6 karakter',
+  'settings.tenant.selectMembers':   'Pilih Member',
+  'settings.tenant.selectAll':       'Pilih Semua',
+  'settings.tenant.deselectAll':     'Batalkan Semua',
+  'settings.tenant.noMembers':       'Belum ada member untuk dipilih',
+  'settings.tenant.noMemberSelected': 'Pilih minimal 1 member',
+  'settings.tenant.createButton':    'Buat Akun Penagih',
+  'settings.tenant.creating':        'Membuat akun...',
+  'settings.tenant.successWarning':  'Akun berhasil dibuat. Salin email & password ini sekarang — password tidak bisa dilihat lagi setelah Anda meninggalkan halaman ini.',
+  'settings.tenant.copyCreds':       'Salin Email & Password',
+  'settings.tenant.copied':          'Tersalin ke clipboard',
+  'settings.tenant.createAnother':   'Buat Akun Penagih Lain',
+  'settings.tenant.cloneFailedAccountCreated': 'Akun berhasil dibuat, tapi gagal menyalin member. Serahkan kredensial ini, lalu hubungi saya untuk menyalin member secara manual.',
+  'settings.tenant.note':            'Member yang dipilih akan disalin sebagai data awal ke akun penagih. Histori pembayaran TIDAK ikut disalin — penagih mulai mencatat dari nol. Data penagih sepenuhnya independen setelah dibuat; perubahan di akun Anda maupun akun penagih tidak saling memengaruhi.',
+  'settings.tenant.labelLabel':      'Nama Penagih (opsional)',
+  'settings.tenant.labelPlaceholder': 'Contoh: Budi - Zona Timur',
+  'settings.tenant.existingList':    'Penagih Terdaftar',
+  'settings.tenant.membersUnit':     'member',
+  'settings.tenant.deleteButton':    'Hapus dari daftar',
+  'settings.tenant.deleteConfirmTitle': 'Hapus dari daftar?',
+  'settings.tenant.deleteConfirmDesc': 'Ini HANYA menghapus catatan dari daftar Anda. Akun login penagih (email & password) TIDAK terhapus dan tetap bisa dipakai. Untuk menghapus akunnya sepenuhnya, buka Firebase Console → Authentication secara manual.',
+  'settings.tenant.deleteConfirmYes': 'Ya, Hapus dari Daftar',
+  'settings.tenant.deleted':         'Dihapus dari daftar',
+  'settings.tenant.registerFailedAccountCreated': 'Akun & member berhasil disalin, tapi gagal tercatat di daftar. Serahkan kredensial ini — penagih tetap bisa login normal.',
+
 };
 
 export default id;

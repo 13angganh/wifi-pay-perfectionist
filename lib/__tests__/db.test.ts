@@ -17,12 +17,15 @@
 // Import lib/db.ts harus dilakukan secara dynamic (di dalam beforeAll) SETELAH stub env,
 // agar urutan eksekusi benar-benar terjamin.
 import { vi, describe, it, expect, beforeAll } from 'vitest';
-import type { ActivityLog, AppData } from '@/types';
+import type { ActivityLog, AppData, FreeMember } from '@/types';
 import type { buildGranularPaymentPatch as BuildGranularPaymentPatchType } from '@/lib/db';
 import type { normalizeImportedData as NormalizeImportedDataType } from '@/lib/db';
+import type { buildClonePatch as BuildClonePatchType } from '@/lib/db';
+import type { MemberRef } from '@/lib/db';
 
 let buildGranularPaymentPatch: typeof BuildGranularPaymentPatchType;
 let normalizeImportedData: typeof NormalizeImportedDataType;
+let buildClonePatch: typeof BuildClonePatchType;
 
 beforeAll(async () => {
   vi.stubEnv('NEXT_PUBLIC_FIREBASE_API_KEY', 'test-api-key');
@@ -32,7 +35,7 @@ beforeAll(async () => {
   vi.stubEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'test.appspot.com');
   vi.stubEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '000000000000');
   vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_ID', '1:000000000000:web:0000000000000000000000');
-  ({ buildGranularPaymentPatch, normalizeImportedData } = await import('@/lib/db'));
+  ({ buildGranularPaymentPatch, normalizeImportedData, buildClonePatch } = await import('@/lib/db'));
 });
 
 const FIXED_TS = 1752600000000; // waktu tetap agar test deterministik
@@ -295,5 +298,230 @@ describe('normalizeImportedData', () => {
     expect(Object.keys(result!.payments)).toHaveLength(3);
     expect(result!.deletedMembers).toEqual({});
     expect(result!.operasional).toEqual({});
+  });
+});
+
+// ── buildClonePatch (fitur Penagih — clone member terpilih ke akun baru) ──
+//
+// Fungsi ini menentukan apa yang boleh dan tidak boleh ikut ke akun
+// penagih. Kegagalan di sini punya 2 arah risiko yang sama seriusnya:
+// (a) histori pembayaran owner bocor ke penagih (bocor privasi/kerancuan
+// data), (b) data referensi (tarif, ID pelanggan) TIDAK ikut padahal
+// seharusnya (penagih tidak bisa kerja tanpa itu). Test di bawah menguji
+// kedua arah secara eksplisit, bukan cuma "hasilnya ada isinya".
+
+function makeSourceData(overrides: Partial<AppData> = {}): AppData {
+  return {
+    krsMembers: [],
+    slkMembers: [],
+    payments: {},
+    memberInfo: {},
+    activityLog: [],
+    freeMembers: {},
+    deletedMembers: {},
+    operasional: {},
+    ...overrides,
+  };
+}
+
+describe('buildClonePatch', () => {
+  it('member zona KRS masuk ke krsMembers', () => {
+    const source = makeSourceData({ krsMembers: ['ABIL', 'ADIT', 'AJI'] });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['ABIL']);
+    expect(patch.slkMembers).toBeUndefined();
+  });
+
+  it('member zona SLK masuk ke slkMembers', () => {
+    const source = makeSourceData({ slkMembers: ['SIFA'] });
+    const selected: MemberRef[] = [{ zone: 'SLK', name: 'SIFA' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.slkMembers).toEqual(['SIFA']);
+    expect(patch.krsMembers).toBeUndefined();
+  });
+
+  it('member zona custom (bukan KRS/SLK) masuk ke zoneMembers, bukan krsMembers/slkMembers', () => {
+    const source = makeSourceData();
+    const selected: MemberRef[] = [{ zone: 'TIMUR', name: 'BUDI' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.zoneMembers).toEqual({ TIMUR: ['BUDI'] });
+    expect(patch.krsMembers).toBeUndefined();
+    expect(patch.slkMembers).toBeUndefined();
+  });
+
+  it('campuran KRS + SLK + zona custom dalam satu pemanggilan terpisah dengan benar', () => {
+    const source = makeSourceData();
+    const selected: MemberRef[] = [
+      { zone: 'KRS', name: 'ABIL' },
+      { zone: 'SLK', name: 'SIFA' },
+      { zone: 'TIMUR', name: 'BUDI' },
+      { zone: 'TIMUR', name: 'CITRA' },
+    ];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['ABIL']);
+    expect(patch.slkMembers).toEqual(['SIFA']);
+    expect(patch.zoneMembers).toEqual({ TIMUR: ['BUDI', 'CITRA'] });
+  });
+
+  // ── Kasus paling kritis: field date_* (histori bayar) TIDAK BOLEH ikut ──
+
+  it('field date_YYYY_M di memberInfo TIDAK ikut ter-clone (histori bayar milik owner)', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL'],
+      memberInfo: {
+        'KRS__ABIL': {
+          id: 'KRS55',
+          tarif: 100000,
+          date_2026_0: '2026-01-05', // histori: tanggal owner mencatat bayar Januari
+          date_2026_1: '2026-02-03',
+        },
+      },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    const info = patch.memberInfo!['KRS__ABIL'];
+    expect(info.id).toBe('KRS55');
+    expect(info.tarif).toBe(100000);
+    expect(info.date_2026_0).toBeUndefined();
+    expect(info.date_2026_1).toBeUndefined();
+    expect(Object.keys(info)).toEqual(['id', 'tarif']); // TIDAK ada field lain nyelip
+  });
+
+  it('member tanpa field referensi sama sekali (cuma punya date_*) → tidak bikin key memberInfo kosong', () => {
+    const source = makeSourceData({
+      krsMembers: ['ADIT'],
+      memberInfo: {
+        'KRS__ADIT': { date_2026_0: '2026-01-10' }, // cuma histori, tidak ada id/ip/tarif/notes
+      },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ADIT' }];
+    const patch = buildClonePatch(source, selected);
+    // Tidak ada key 'KRS__ADIT' di memberInfo sama sekali — bukan {} kosong
+    expect(patch.memberInfo?.['KRS__ADIT']).toBeUndefined();
+  });
+
+  it('notes ikut ter-clone (field referensi ke-4 selain id/ip/tarif)', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL'],
+      memberInfo: { 'KRS__ABIL': { notes: 'Pindah rumah bulan depan' } },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.memberInfo!['KRS__ABIL'].notes).toBe('Pindah rumah bulan depan');
+  });
+
+  // ── payments TIDAK PERNAH ikut, apapun kondisinya ──
+
+  it('payments TIDAK PERNAH muncul di patch — bahkan tidak ada key "payments" sama sekali', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL'],
+      payments: {
+        'KRS__ABIL__2026__0': 100000,
+        'KRS__ABIL__2026__1': 100000,
+        'KRS__ADIT__2026__0': 200000,
+      },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.payments).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(patch, 'payments')).toBe(false);
+  });
+
+  it('deletedMembers, activityLog, operasional TIDAK PERNAH muncul di patch', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL'],
+      deletedMembers: { 'KRS__LAMA': { zone: 'KRS', name: 'LAMA', deletedAt: 1, payments: {} } },
+      activityLog: [{ action: '[PAY] Bayar', ts: 1, user: 'owner@test.com' }],
+      operasional: { '2026_0': { items: [{ label: 'Modem', nominal: 100000 }] } },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.deletedMembers).toBeUndefined();
+    expect(patch.activityLog).toBeUndefined();
+    expect(patch.operasional).toBeUndefined();
+  });
+
+  // ── freeMembers IKUT utuh (dikonfirmasi user: penagih perlu tahu status gratis) ──
+
+  it('freeMembers member terpilih ikut ter-clone UTUH (bukan histori — status berlaku, dikonfirmasi user)', () => {
+    const freeStatus: FreeMember = { active: true, fromYear: 2026, fromMonth: 6, toYear: 2026, toMonth: 8 };
+    const source = makeSourceData({
+      krsMembers: ['ABIL'],
+      freeMembers: { 'KRS__ABIL': freeStatus },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.freeMembers!['KRS__ABIL']).toEqual(freeStatus);
+  });
+
+  it('freeMembers member yang TIDAK dipilih tidak ikut, meski ada di sumber', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL', 'ADIT'],
+      freeMembers: {
+        'KRS__ABIL': { active: true, fromYear: 2026, fromMonth: 0 },
+        'KRS__ADIT': { active: true, fromYear: 2026, fromMonth: 0 },
+      },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }]; // ADIT tidak dipilih
+    const patch = buildClonePatch(source, selected);
+    expect(patch.freeMembers!['KRS__ABIL']).toBeDefined();
+    expect(patch.freeMembers!['KRS__ADIT']).toBeUndefined();
+  });
+
+  // ── Kasus tepi ──
+
+  it('selected kosong → patch kosong total (tidak ada key apapun)', () => {
+    const source = makeSourceData({ krsMembers: ['ABIL'] });
+    const patch = buildClonePatch(source, []);
+    expect(Object.keys(patch)).toEqual([]);
+  });
+
+  it('nama member duplikat di selected (sama zone+name 2×) tidak menghasilkan duplikat di krsMembers', () => {
+    const source = makeSourceData({ krsMembers: ['ABIL'] });
+    const selected: MemberRef[] = [
+      { zone: 'KRS', name: 'ABIL' },
+      { zone: 'KRS', name: 'ABIL' }, // duplikat, mis. dari bug UI checkbox
+    ];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['ABIL']); // bukan ['ABIL', 'ABIL']
+  });
+
+  it('member dipilih tapi tidak ada memberInfo/freeMembers untuk dia di sumber → tidak crash, cuma tidak masuk', () => {
+    const source = makeSourceData({ krsMembers: ['ABIL'] }); // tidak ada memberInfo/freeMembers sama sekali
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['ABIL']);
+    expect(patch.memberInfo).toBeUndefined();
+    expect(patch.freeMembers).toBeUndefined();
+  });
+
+  // ── Nama dengan karakter khusus (pola data produksi nyata, konsisten dengan test payment key di atas) ──
+
+  it('nama member dengan titik (mis. H.ZAINI — data produksi nyata) diproses tanpa masalah', () => {
+    const source = makeSourceData({
+      krsMembers: ['H.ZAINI'],
+      memberInfo: { 'KRS__H.ZAINI': { id: 'KRS12', tarif: 100000, date_2026_5: '2026-06-01' } },
+    });
+    const selected: MemberRef[] = [{ zone: 'KRS', name: 'H.ZAINI' }];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['H.ZAINI']);
+    expect(patch.memberInfo!['KRS__H.ZAINI']).toEqual({ id: 'KRS12', tarif: 100000 });
+  });
+
+  it('subset kecil dari member banyak (skenario nyata: penagih pegang sebagian pelanggan) — hanya yang dipilih yang masuk', () => {
+    const source = makeSourceData({
+      krsMembers: ['ABIL', 'ADIT', 'AJI', 'AKBAR', 'ALFIN', 'AMIR', 'ANDI'],
+    });
+    // Penagih ini cuma pegang 3 dari 7 member
+    const selected: MemberRef[] = [
+      { zone: 'KRS', name: 'ADIT' },
+      { zone: 'KRS', name: 'AKBAR' },
+      { zone: 'KRS', name: 'ANDI' },
+    ];
+    const patch = buildClonePatch(source, selected);
+    expect(patch.krsMembers).toEqual(['ADIT', 'AKBAR', 'ANDI']);
+    expect(patch.krsMembers).not.toContain('ABIL');
+    expect(patch.krsMembers).not.toContain('AJI');
   });
 });

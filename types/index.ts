@@ -41,6 +41,24 @@ export interface DeletedMember {
   payments: Record<string, number>;
 }
 
+// v11.6 — Fitur Penagih: satu entry di daftar penagih milik owner.
+// PENTING: ini murni metadata/catatan di sisi owner (RTDB), TIDAK
+// terhubung otomatis ke akun Firebase Authentication penagih yang
+// sebenarnya. Kalau akun Auth-nya dihapus lewat Firebase Console, entry
+// di sini TIDAK ikut hilang — owner yang harus menghapusnya manual dari
+// daftar (lihat SettingsTenantSection.tsx). Firebase client SDK tidak
+// menyediakan cara memeriksa status akun Auth milik user lain tanpa
+// Admin SDK, jadi sinkronisasi otomatis antara Auth Console dan daftar
+// ini sengaja tidak dibangun — sudah didiskusikan & disepakati dengan
+// user sebagai keterbatasan yang diterima.
+export interface TenantInfo {
+  uid:         string;  // uid Firebase Auth penagih — sama dengan key di AppData.tenants
+  email:       string;
+  label?:      string;  // nama custom dari owner, mis. "Budi - Zona Timur"; opsional, fallback ke email kalau kosong
+  memberCount: number;  // jumlah member yang di-clone SAAT penagih ini dibuat (snapshot, tidak update otomatis kalau owner menambah member baru setelahnya)
+  createdAt:   number;  // Date.now(), konsisten dengan ActivityLog.ts
+}
+
 export interface AppData {
   krsMembers: string[];
   slkMembers: string[];
@@ -54,6 +72,10 @@ export interface AppData {
   _lockedEntries?: Record<string, boolean>;
   // v11.2: zona custom — key = zoneKey, value = array nama member
   zoneMembers?: Record<string, string[]>;
+  // v11.6: daftar penagih (tenant) yang sudah dibuat owner — key = uid
+  // Firebase Auth penagih itu. HANYA daftar/metadata di sisi owner —
+  // TIDAK terhubung otomatis ke akun Firebase Auth-nya (lihat TenantInfo).
+  tenants?: Record<string, TenantInfo>;
 }
 
 export type Zone = string; // v11.2: zona dinamis, tidak lagi terbatas KRS|SLK

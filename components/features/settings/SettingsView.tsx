@@ -1,7 +1,7 @@
 // components/features/settings/SettingsView.tsx
 'use client';
 
-import { Settings, Shield, Fingerprint, Mail, Map, ArrowUpDown, MessageCircle, Zap, Sun, Globe, Calendar, Info, Network } from 'lucide-react';
+import { Settings, Shield, Fingerprint, Mail, Map, ArrowUpDown, MessageCircle, Zap, Sun, Globe, Calendar, Info, Network, UserPlus } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useAppStore } from '@/store/useAppStore';
 import SettingsPinSection      from './SettingsPinSection';
@@ -11,6 +11,7 @@ import SettingsZoneSection      from './SettingsZoneSection';
 import SettingsTarifSection     from './SettingsTarifSection';
 import SettingsAppSection       from './SettingsAppSection';
 import SettingsIPSection        from './SettingsIPSection';
+import SettingsTenantSection    from './SettingsTenantSection';
 import CollapsibleSection       from './CollapsibleSection';
 
 export default function SettingsView() {
@@ -49,6 +50,14 @@ export default function SettingsView() {
         icon={<Mail size={16} strokeWidth={1.5} />}
       >
         <SettingsEmailSection />
+      </CollapsibleSection>
+
+      {/* Fitur Penagih — Buat Akun Penagih (independen, snapshot member sekali saat dibuat) */}
+      <CollapsibleSection
+        title={t('settings.tenant.sectionTitle')}
+        icon={<UserPlus size={16} strokeWidth={1.5} />}
+      >
+        <SettingsTenantSection />
       </CollapsibleSection>
 
       {/* Manajemen Zona */}

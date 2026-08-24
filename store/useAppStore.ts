@@ -5,9 +5,13 @@ import { createDataSlice,     type DataSlice     } from './slices/dataSlice';
 import { createViewSlice,     type ViewSlice     } from './slices/viewSlice';
 import { createUiSlice,       type UiSlice       } from './slices/uiSlice';
 import { createExportSlice,   type ExportSlice   } from './slices/exportSlice';
-import { createSettingsSlice, type SettingsSlice } from './slices/settingsSlice';
+import { createSettingsSlice, type SettingsSlice, type InternalSettingsState } from './slices/settingsSlice';
 
-export type AppStore = AuthSlice & DataSlice & ViewSlice & UiSlice & ExportSlice & SettingsSlice;
+// InternalSettingsState (`_settingsUid`) murni detail implementasi
+// settingsSlice — disertakan di sini hanya karena Zustand butuh tipe
+// combine yang mencakup seluruh field yang di-`set()` oleh slice manapun.
+// Komponen lain tidak boleh membaca/menulis `_settingsUid` secara langsung.
+export type AppStore = AuthSlice & DataSlice & ViewSlice & UiSlice & ExportSlice & SettingsSlice & InternalSettingsState;
 
 export const useAppStore = create<AppStore>((...a) => ({
   ...createAuthSlice(...a),

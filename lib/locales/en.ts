@@ -647,6 +647,38 @@ const en: Record<string, string> = {
   'sidebar.accountAria':   'Open account settings',
   'sidebar.manageAccount': 'Manage account',
 
+  // Penagih feature — "Create Collector Account" menu (SettingsTenantSection.tsx)
+  'settings.tenant.sectionTitle':    'Create Collector Account',
+  'settings.tenant.emailLabel':      'Collector Email',
+  'settings.tenant.emailPlaceholder': 'email@example.com',
+  'settings.tenant.emailInvalid':    'Invalid email',
+  'settings.tenant.passwordLabel':   'Collector Password',
+  'settings.tenant.passwordPlaceholder': 'At least 6 characters',
+  'settings.tenant.passwordTooShort': 'Password must be at least 6 characters',
+  'settings.tenant.selectMembers':   'Select Members',
+  'settings.tenant.selectAll':       'Select All',
+  'settings.tenant.deselectAll':     'Deselect All',
+  'settings.tenant.noMembers':       'No members available to select',
+  'settings.tenant.noMemberSelected': 'Select at least 1 member',
+  'settings.tenant.createButton':    'Create Collector Account',
+  'settings.tenant.creating':        'Creating account...',
+  'settings.tenant.successWarning':  'Account created successfully. Copy this email & password now — the password cannot be viewed again after you leave this page.',
+  'settings.tenant.copyCreds':       'Copy Email & Password',
+  'settings.tenant.copied':          'Copied to clipboard',
+  'settings.tenant.createAnother':   'Create Another Collector Account',
+  'settings.tenant.cloneFailedAccountCreated': 'Account created, but copying members failed. Hand over these credentials, then contact me to copy the members manually.',
+  'settings.tenant.note':            'Selected members will be copied as starting data to the collector account. Payment history is NOT copied — the collector starts recording from zero. Collector data is fully independent once created; changes on your account or the collector account never affect each other.',
+  'settings.tenant.labelLabel':      'Collector Name (optional)',
+  'settings.tenant.labelPlaceholder': 'e.g. Budi - East Zone',
+  'settings.tenant.existingList':    'Registered Collectors',
+  'settings.tenant.membersUnit':     'members',
+  'settings.tenant.deleteButton':    'Remove from list',
+  'settings.tenant.deleteConfirmTitle': 'Remove from list?',
+  'settings.tenant.deleteConfirmDesc': 'This ONLY removes the record from your list. The collector\'s login (email & password) is NOT deleted and can still be used. To fully delete the account, go to Firebase Console → Authentication manually.',
+  'settings.tenant.deleteConfirmYes': 'Yes, Remove from List',
+  'settings.tenant.deleted':         'Removed from list',
+  'settings.tenant.registerFailedAccountCreated': 'Account & members copied successfully, but failed to record in the list. Hand over these credentials — the collector can still log in normally.',
+
 };
 
 export default en;

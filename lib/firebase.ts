@@ -15,6 +15,13 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
   appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
+// Di-export (fitur Penagih) supaya createTenantAccount() di hooks/useAuth.ts
+// bisa membuat instance Firebase App KEDUA yang sementara dengan config
+// identik — tanpa duplikasi manual objek config di file lain (yang rawan
+// drift kalau env var berubah). Instance kedua ini dipakai HANYA untuk
+// createUserWithEmailAndPassword() penagih, supaya tidak mengganti sesi
+// auth utama milik owner yang sedang login.
+export { firebaseConfig };
 
 // Cegah double-init di Next.js dev hot reload
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);

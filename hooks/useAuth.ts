@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { initializeApp, deleteApp } from 'firebase/app';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -19,8 +20,9 @@ import {
   browserLocalPersistence,
   setPersistence,
   AuthErrorCodes,
+  getAuth,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, firebaseConfig } from '@/lib/firebase';
 import { friendlyAuthError } from '@/lib/helpers';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -79,21 +81,28 @@ export function getRememberedEmail(): { email: string; name: string } | null {
 
 // ── Auth listener hook ──
 export function useAuth() {
-  const { setUser, clearUser, setAuthChecked } = useAppStore();
+  const { setUser, clearUser, setAuthChecked, reloadSettingsForUid } = useAppStore();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user.uid, user.email || '', user.displayName || user.email?.split('@')[0] || '');
         setSessionCookie();
+        // Titik pertama uid diketahui — reload PIN/biometrik/preferensi
+        // operasional dari key per-uid akun ini (bahasa tetap ikut device,
+        // tidak kena reload). Lihat settingsSlice.ts untuk detail split.
+        reloadSettingsForUid(user.uid);
       } else {
         clearUser();
         clearSessionCookie();
+        // Logout: tidak ada uid aktif — settings jatuh ke default+device
+        // saja (tidak ada PIN akun manapun yang "bocor" tanpa login).
+        reloadSettingsForUid(null);
       }
       setAuthChecked(true);
     });
     return unsub;
-  }, [setUser, clearUser, setAuthChecked]);
+  }, [setUser, clearUser, setAuthChecked, reloadSettingsForUid]);
 }
 
 // ── Login email/password ──
@@ -256,4 +265,68 @@ export async function doLogout(): Promise<void> {
 // ── Switch account ──
 export async function switchAccount(): Promise<void> {
   await signOut(auth).catch(() => {});
+}
+
+// ══════════════════════════════════════════
+// Fitur Penagih — buat akun baru TANPA mengganti sesi owner
+// ══════════════════════════════════════════
+//
+// createUserWithEmailAndPassword(auth, ...) — kalau dipanggil dengan
+// instance `auth` UTAMA (yang sama dipakai owner login) — otomatis
+// mengganti sesi aktif jadi user yang baru dibuat. Ini perilaku Firebase
+// SDK yang tidak bisa di-nonaktifkan, bukan bug proyek ini (dikonfirmasi
+// dari sifat doRegister() yang sudah ada — didesain untuk kasus BEDA:
+// "seseorang mendaftar untuk dirinya sendiri", bukan "owner membuatkan
+// akun untuk orang lain sambil tetap login sebagai dirinya").
+//
+// Solusi: instance Firebase App KEDUA yang sementara (initializeApp
+// dengan nama unik, config identik — lihat firebaseConfig di
+// lib/firebase.ts) — dibuat, dipakai HANYA untuk satu panggilan
+// createUserWithEmailAndPassword, lalu dibuang total (signOut + deleteApp)
+// sebelum fungsi ini return. Instance `auth` utama (dan sesi owner di
+// dalamnya) sama sekali tidak tersentuh sepanjang proses — ini alasan
+// kenapa fungsi ini TIDAK memanggil onAuthStateChanged listener apapun,
+// TIDAK menyentuh useAppStore, dan TIDAK butuh reload halaman setelahnya.
+//
+// uid hasil createUserWithEmailAndPassword() dikembalikan LANGSUNG ke
+// caller (menu "Buat Akun Penagih") — caller-lah yang lanjut memanggil
+// cloneMembersToUser(uid, ...) dari lib/db.ts. Dipisah sengaja (fungsi ini
+// TIDAK ikut memanggil cloneMembersToUser sendiri) supaya tanggung jawab
+// tetap jelas: fungsi ini murni "buat kredensial auth", clone member
+// adalah operasi RTDB terpisah yang sudah punya fungsi sendiri.
+export async function createTenantAccount(
+  email: string,
+  pass: string,
+): Promise<{ uid?: string; error?: string }> {
+  // Date.now() SAJA tidak cukup unik — kalau fungsi ini dipanggil 2× dalam
+  // milidetik yang sama (skenario nyata: owner membuat beberapa akun
+  // penagih berturut-turut di satu sesi), dua panggilan bisa mendapat
+  // timestamp identik → initializeApp() kedua akan throw app/duplicate-app
+  // karena nama app sudah dipakai instance pertama yang belum sempat
+  // dihapus. Ditemukan lewat test "dua panggilan berturut-turut" (lihat
+  // hooks/__tests__/createTenantAccount.test.ts) — bukan diasumsikan aman.
+  // Math.random() sebagai komponen kedua menjamin keunikan praktis
+  // bahkan untuk panggilan di tick yang sama.
+  const tempAppName = `tenant-create-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const tempApp = initializeApp(firebaseConfig, tempAppName);
+  try {
+    const tempAuth = getAuth(tempApp);
+    const result = await createUserWithEmailAndPassword(tempAuth, email, pass);
+    const uid = result.user.uid;
+    // Buang sesi di instance sementara SEBELUM instance-nya sendiri
+    // dihapus — urutan ini tidak esensial secara fungsional (deleteApp
+    // akan membuang semuanya juga), tapi eksplisit lebih aman untuk
+    // dibaca ulang nanti: jelas bahwa TIDAK ADA sesi tenant yang
+    // "menggantung" di manapun setelah fungsi ini selesai.
+    await signOut(tempAuth).catch(() => {});
+    return { uid };
+  } catch (e: unknown) {
+    return { error: friendlyAuthError(getFirebaseCode(e)) };
+  } finally {
+    // finally, bukan cuma di jalur sukses — kalau
+    // createUserWithEmailAndPassword() throw (mis. email sudah
+    // terdaftar), instance sementara ini TETAP harus dibuang, jangan
+    // sampai menumpuk di memori kalau owner mencoba beberapa kali.
+    await deleteApp(tempApp).catch(() => {});
+  }
 }

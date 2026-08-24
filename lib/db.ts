@@ -4,7 +4,7 @@
 
 import { ref, set, onValue, off, DatabaseReference, update } from 'firebase/database';
 import { db } from './firebase';
-import { AppData, ActivityLog } from '@/types';
+import { AppData, ActivityLog, MemberInfo, TenantInfo } from '@/types';
 import { DEFAULT_KRS, DEFAULT_SLK } from './constants';
 import { cleanOldEditLogs } from './helpers';
 
@@ -18,6 +18,7 @@ export const DEFAULT_APP_DATA: AppData = {
   freeMembers:    {},
   deletedMembers: {},
   operasional:    {},
+  tenants:        {}, // v11.6 — fitur Penagih
 };
 
 // ── Get DB ref untuk user ──
@@ -280,4 +281,161 @@ export async function importToDB(uid: string, data: AppData): Promise<void> {
     operasional:    normalized.operasional,
   };
   await update(getUserRef(uid), patch);
+}
+
+// ══════════════════════════════════════════
+// Fitur Penagih — clone member ke akun baru
+// ══════════════════════════════════════════
+//
+// Identitas satu "member" di aplikasi ini selalu pasangan (zone, name) —
+// tidak ada ID unik terpisah (dikonfirmasi dari seluruh pemakaian di
+// components/, semua akses memberInfo/freeMembers/payments memakai
+// `${zone}__${name}` sebagai key). Fungsi di bawah menerima daftar
+// pasangan itu sebagai penentu member mana yang di-clone.
+export interface MemberRef {
+  zone: string;
+  name: string;
+}
+
+// memberInfo per member adalah objek CAMPURAN: field referensi (id, ip,
+// tarif, notes) bercampur dengan field histori `date_${year}_${month}`
+// (tanggal user itu bayar — lihat MemberInfo di types/index.ts, field
+// date_* masuk lewat index signature jadi tidak typed eksplisit, cuma
+// konvensi nama). Clone HANYA boleh membawa field referensi — histori
+// pembayaran harus mulai dari nol di akun penagih. Ditulis eksplisit
+// per-field (bukan loop generik) karena TypeScript tidak bisa membuktikan
+// kecocokan tipe saat properti opsional bertipe spesifik (id?: string,
+// tarif?: number) diakses lewat variabel key union — eksplisit juga lebih
+// jelas dibaca dan lebih aman kalau field baru ditambah ke MemberInfo di
+// masa depan (index signature tidak otomatis ikut ter-whitelist di sini).
+function extractReferenceFields(info: MemberInfo): MemberInfo {
+  const out: MemberInfo = {};
+  if (info.id !== undefined) out.id = info.id;
+  if (info.ip !== undefined) out.ip = info.ip;
+  if (info.tarif !== undefined) out.tarif = info.tarif;
+  if (info.notes !== undefined) out.notes = info.notes;
+  return out;
+}
+
+// Baca member terpilih dari akun sumber (owner), dalam bentuk siap-tulis
+// untuk akun tujuan (penagih) — TANPA melakukan write apapun. Dipisah dari
+// cloneMembersToUser() supaya caller (menu "Buat Akun Penagih") bisa
+// menampilkan preview sebelum benar-benar menulis, tanpa membaca RTDB dua
+// kali.
+//
+// Field yang IKUT dibawa: krsMembers/slkMembers/zoneMembers (nama member
+// masuk daftar zona yang sesuai), memberInfo (HANYA field referensi, lihat
+// extractReferenceFields), freeMembers (UTUH — dikonfirmasi pengguna:
+// status "sedang digratiskan" perlu diketahui penagih di lapangan supaya
+// tidak salah tagih, meski scoped-by-period; ini pengecualian yang
+// disengaja terhadap prinsip "semua histori mulai dari nol").
+// Field yang TIDAK PERNAH ikut: payments, deletedMembers, activityLog,
+// operasional — ini murni histori/log transaksional milik owner.
+export function buildClonePatch(
+  sourceData: AppData,
+  selected: MemberRef[],
+): Partial<AppData> {
+  const krsMembers: string[] = [];
+  const slkMembers: string[] = [];
+  const zoneMembers: Record<string, string[]> = {};
+  const memberInfo: Record<string, MemberInfo> = {};
+  const freeMembers: Record<string, import('@/types').FreeMember> = {};
+
+  for (const { zone, name } of selected) {
+    // Daftarkan nama ke field zona yang sesuai — KRS/SLK punya field
+    // sendiri (legacy), zona custom lain masuk zoneMembers.
+    if (zone === 'KRS') {
+      if (!krsMembers.includes(name)) krsMembers.push(name);
+    } else if (zone === 'SLK') {
+      if (!slkMembers.includes(name)) slkMembers.push(name);
+    } else {
+      if (!zoneMembers[zone]) zoneMembers[zone] = [];
+      if (!zoneMembers[zone].includes(name)) zoneMembers[zone].push(name);
+    }
+
+    const infoKey = `${zone}__${name}`;
+    const sourceInfo = sourceData.memberInfo?.[infoKey];
+    if (sourceInfo) {
+      const refOnly = extractReferenceFields(sourceInfo);
+      // Jangan tulis entri kosong — kalau member ini tidak punya field
+      // referensi sama sekali di sumber, tidak perlu bikin key kosong
+      // di tujuan.
+      if (Object.keys(refOnly).length > 0) memberInfo[infoKey] = refOnly;
+    }
+
+    const sourceFree = sourceData.freeMembers?.[infoKey];
+    if (sourceFree) freeMembers[infoKey] = sourceFree;
+  }
+
+  const patch: Partial<AppData> = {};
+  if (krsMembers.length > 0) patch.krsMembers = krsMembers;
+  if (slkMembers.length > 0) patch.slkMembers = slkMembers;
+  if (Object.keys(zoneMembers).length > 0) patch.zoneMembers = zoneMembers;
+  if (Object.keys(memberInfo).length > 0) patch.memberInfo = memberInfo;
+  if (Object.keys(freeMembers).length > 0) patch.freeMembers = freeMembers;
+  return patch;
+}
+
+// Tulis hasil buildClonePatch() ke akun tujuan (penagih). SATU multi-path
+// update() atomik — pola sama seperti importToDB() (lihat komentar di
+// atas): kalau proses terhenti di tengah (koneksi putus dsb), akun
+// penagih tidak boleh berakhir dengan separuh member saja.
+//
+// PENTING — TIDAK memakai set()/replace total ke getUserRef(destUid):
+// update() hanya menyentuh field yang ada di patch, field lain (payments,
+// activityLog, dst milik akun penagih sendiri kalau ini bukan akun baru)
+// tetap utuh. Untuk akun penagih yang BENAR-BENAR baru, field itu memang
+// belum ada, jadi hasilnya sama saja — tapi memakai update() tetap lebih
+// aman untuk skenario "clone tambahan" di masa depan (mis. owner
+// menambah member baru ke penagih yang sudah berjalan) tanpa risiko
+// menimpa data yang sudah dientry penagih.
+export async function cloneMembersToUser(
+  destUid: string,
+  sourceData: AppData,
+  selected: MemberRef[],
+): Promise<void> {
+  if (selected.length === 0) return;
+  const patch = buildClonePatch(sourceData, selected);
+  if (Object.keys(patch).length === 0) return;
+  await update(getUserRef(destUid), patch);
+}
+
+// ══════════════════════════════════════════
+// Fitur Penagih — daftar penagih di sisi owner
+// ══════════════════════════════════════════
+//
+// Daftar ini murni CATATAN/METADATA di RTDB owner sendiri
+// (users/{ownerUid}/data/tenants/{tenantUid}) — TIDAK terhubung otomatis
+// ke akun Firebase Authentication penagih yang sebenarnya. Lihat
+// komentar TenantInfo di types/index.ts untuk penjelasan lengkap kenapa
+// (keterbatasan Firebase client SDK, didiskusikan & disepakati dengan
+// user — bukan kelalaian).
+
+// Tulis SATU entry tenant baru. Dipanggil oleh caller (menu "Buat Akun
+// Penagih") SETELAH createTenantAccount() dan cloneMembersToUser() sukses
+// — fungsi ini TIDAK memanggil keduanya sendiri, murni langkah terakhir
+// "catat di daftar" dari satu alur submit yang sama. write() biasa
+// (bukan update() multi-path) sudah tepat di sini karena ini menulis SATU
+// entry baru, bukan patch ke banyak field yang berbeda seperti
+// cloneMembersToUser — tidak ada risiko state separuh-jalan untuk
+// operasi tunggal seperti ini.
+export async function registerTenant(
+  ownerUid: string,
+  tenant: TenantInfo,
+): Promise<void> {
+  await set(ref(db, `users/${ownerUid}/data/tenants/${tenant.uid}`), tenant);
+}
+
+// Hapus SATU entry dari daftar. SELALU berhasil tanpa syarat/pengecekan
+// apapun terhadap status akun Auth yang sebenarnya (tidak ada cara
+// memeriksa itu dari client — lihat komentar TenantInfo). HANYA
+// menghapus catatan ini; akun Firebase Auth penagih (kalau masih ada)
+// TIDAK PERNAH tersentuh oleh fungsi ini dalam bentuk apapun. Owner yang
+// bertanggung jawab menjaga daftar ini tetap sesuai kondisi nyata di
+// Firebase Console secara manual.
+export async function removeTenantFromList(
+  ownerUid: string,
+  tenantUid: string,
+): Promise<void> {
+  await set(ref(db, `users/${ownerUid}/data/tenants/${tenantUid}`), null);
 }

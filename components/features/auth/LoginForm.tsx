@@ -38,19 +38,19 @@ export default function LoginForm({ email, pass, error, loading, hasRemembered, 
       </div>
 
       {hasRemembered && (
-        <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--txt3)', fontSize:11, cursor:'pointer', marginBottom:12, display:'block' }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--txt3)', fontSize:'var(--fs-caption)', cursor:'pointer', marginBottom:12, display:'block' }}>
           ← {t('action.back')}
         </button>
       )}
 
-      <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
       <input
         style={inputStyle} type="email" inputMode="email" placeholder="email@gmail.com"
         value={email} onChange={e => onEmail(e.target.value)} autoComplete="email"
         onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--zc)')}
         onBlur={e  => ((e.target as HTMLInputElement).style.borderColor = 'var(--border)')}
       />
-      <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>PASSWORD</div>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>PASSWORD</div>
       <input
         style={inputStyle} type="password" placeholder="••••••••"
         value={pass} onChange={e => onPass(e.target.value)}
@@ -63,11 +63,11 @@ export default function LoginForm({ email, pass, error, loading, hasRemembered, 
         {loading ? t('common.loading') : t('login.submit')}
       </button>
 
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
+      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-label)', color:'var(--txt5)', position:'relative' }}>
         <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
         <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
       </div>
-      <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
+      <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', textAlign:'center' }}>
         {t('login.noAccount')}{' '}
         <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={onRegister}>
           {t('login.registerHere')}

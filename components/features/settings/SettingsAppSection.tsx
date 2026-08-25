@@ -83,10 +83,10 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
              : <Moon size={16} strokeWidth={1.5} />}
           </div>
           <div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
               {t('settings.theme')}
             </div>
-            <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
+            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>
               {themes.find(x => x.key === theme)?.desc}
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
                 transition:'all var(--t-fast)',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:5,
                 fontFamily:"var(--font-sans),sans-serif",
-                fontSize:11, fontWeight: theme === th.key ? 700 : 400,
+                fontSize:'var(--fs-caption)', fontWeight: theme === th.key ? 700 : 400,
               }}
             >
               {th.icon}
@@ -132,7 +132,7 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
       {(section === 'all' || section === 'language') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Globe size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.language')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.language')}</div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <ToggleChip label="Indonesia" active={settings.language !== 'en'} onClick={() => { updateSettings({ ...settings, language: 'id' }); showToast('Bahasa: Indonesia'); }} />
@@ -145,8 +145,8 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Calendar size={16} strokeWidth={1.5} /></div>
           <div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.autoDate')}</div>
-            <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.autoDate')}</div>
+            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>
               {settings.autoDate ? t('settings.autoDate.descAuto') : t('settings.autoDate.descManual')}
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
           <ToggleChip label={t('settings.autoDate.auto')}   active={settings.autoDate === true}  onClick={() => { updateSettings({ autoDate: true });  showToast(t('settings.autoDate.toastAuto'));   }} />
           <ToggleChip label={t('settings.autoDate.manual')} active={settings.autoDate !== true}  onClick={() => { updateSettings({ autoDate: false }); showToast(t('settings.autoDate.toastManual')); }} />
         </div>
-        <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.5 }}>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:8, lineHeight:1.5 }}>
           {settings.autoDate ? t('settings.autoDate.noteAuto') : t('settings.autoDate.noteManual')}
         </div>
       </div>}
@@ -169,8 +169,8 @@ export default function SettingsAppSection({ section = 'all' }: AppProps) {
           }}>
             <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
           </div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)' }}>{APP_NAME}</div>
-          <div style={{ fontSize:11, color:'var(--txt4)', lineHeight:2 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', color:'var(--txt)' }}>{APP_NAME}</div>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt4)', lineHeight:2 }}>
             <div>{t('settings.version')} {APP_VERSION_FULL}</div>
             <div>Firebase: wifi-pay-online</div>
             <div>Server: Singapore</div>

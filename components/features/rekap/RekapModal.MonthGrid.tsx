@@ -37,7 +37,7 @@ export default function RekapMonthGrid({
     <>
       {/* Header */}
       <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
-      <div style={{ fontSize:10, color:'var(--zc)', marginTop:2 }}>{activeZone} · {monthLabel} {selYear}</div>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--zc)', marginTop:2 }}>{activeZone} · {monthLabel} {selYear}</div>
 
       {/* Body */}
       <div style={{ marginTop:12 }}>
@@ -53,7 +53,7 @@ export default function RekapMonthGrid({
         ) : (
           <>
             <div style={{ display:'flex', gap:6, alignItems:'center', marginBottom:10 }}>
-              <span style={{ fontSize:10, color:'var(--txt4)', flexShrink:0, minWidth:60 }}>{t('common.amount').toUpperCase()}</span>
+              <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', flexShrink:0, minWidth:60 }}>{t('common.amount').toUpperCase()}</span>
               <input
                 className="mc-input"
                 type="number"

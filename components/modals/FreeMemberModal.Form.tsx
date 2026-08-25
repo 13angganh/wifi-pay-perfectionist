@@ -39,7 +39,7 @@ export default function FreeMemberForm(p: Props) {
     <>
       {/* Dari */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t('freemodal.startFrom').toUpperCase()}</div>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t('freemodal.startFrom').toUpperCase()}</div>
         <div style={{ display:'flex', gap:6 }}>
           <select style={cs} value={p.fromYear}  onChange={e => p.onFromYear(+e.target.value)}>
             {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -59,7 +59,7 @@ export default function FreeMemberForm(p: Props) {
       {/* Sampai */}
       {!p.noEnd && (
         <div style={{ marginBottom:12 }}>
-          <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t('freemodal.until').toUpperCase()}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t('freemodal.until').toUpperCase()}</div>
           <div style={{ display:'flex', gap:6 }}>
             <select style={cs} value={p.toYear}  onChange={e => p.onToYear(+e.target.value)}>
               {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -73,11 +73,11 @@ export default function FreeMemberForm(p: Props) {
 
       {/* Actions */}
       <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:16 }}>
-        <button onClick={p.onSave} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'var(--c-lunas)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:13 }}>
+        <button onClick={p.onSave} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'var(--c-lunas)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:'var(--fs-body)' }}>
           <Check size={14} /> {t('freemodal.save')}
         </button>
         {p.hasExisting && (
-          <button onClick={p.onRemove} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:13 }}>
+          <button onClick={p.onRemove} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:'var(--fs-body)' }}>
             <CreditCard size={14} /> {t('freemodal.remove')}
           </button>
         )}

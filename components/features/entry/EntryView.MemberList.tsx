@@ -11,7 +11,7 @@ interface Props { members: string[]; }
 export default function EntryMemberList({ members }: Props) {
 
   if (members.length === 0) return (
-    <div style={{ padding:'32px 0', textAlign:'center', color:'var(--txt4)', fontSize:13 }}>
+    <div style={{ padding:'32px 0', textAlign:'center', color:'var(--txt4)', fontSize:'var(--fs-body)' }}>
       Tidak ada member ditemukan
     </div>
   );

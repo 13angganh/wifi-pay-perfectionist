@@ -26,7 +26,7 @@ export default function FreeMemberList({ appData, zone, MONTH_NAMES, onSelect }:
 
   return (
     <div style={{ marginTop:16, borderTop:'1px solid var(--border)', paddingTop:14 }}>
-      <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>
         {t('freemodal.existing').toUpperCase()}
       </div>
       {entries.map(({ name, fm }) => (
@@ -39,7 +39,7 @@ export default function FreeMemberList({ appData, zone, MONTH_NAMES, onSelect }:
             <Gift size={12} color="var(--c-free)" />
             <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:12 }}>{name}</span>
           </div>
-          <span style={{ fontSize:10, color:'var(--txt4)' }}>
+          <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>
             {MONTH_NAMES[fm.fromMonth]} {fm.fromYear}
             {fm.toYear !== undefined ? ` → ${MONTH_NAMES[fm.toMonth!]} ${fm.toYear}` : ' → ∞'}
           </span>

@@ -46,25 +46,25 @@ export default function RiwayatModal({ open, onClose }: Props) {
     let statusEl: React.ReactNode;
     if (free) {
       statusEl = (
-        <span style={{ color:'var(--c-free)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+        <span style={{ color:'var(--c-free)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
           <Gift size={12} /> {t('status.free')}
         </span>
       );
     } else if (v !== null && v > 0) {
       statusEl = (
-        <span style={{ color:'var(--c-lunas)', fontSize:11, fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
+        <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
           {rp(v)}
         </span>
       );
     } else if (v === 0) {
       statusEl = (
-        <span style={{ color:'var(--c-lunas)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+        <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
           <CheckCircle2 size={12} /> {t('rekap.accumulation')}
         </span>
       );
     } else {
       statusEl = (
-        <span style={{ color:'var(--c-belum)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+        <span style={{ color:'var(--c-belum)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
           <XCircle size={12} /> {t('status.belum')}
         </span>
       );
@@ -82,7 +82,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
         }}>
         <div>
           <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName} {riwayatYear}</div>
-          {tgl && <div style={{ fontSize:9, color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
+          {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
         </div>
         {statusEl}
       </div>
@@ -147,10 +147,10 @@ export default function RiwayatModal({ open, onClose }: Props) {
 
         {/* Header — tidak ikut scroll */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 16px 14px', flexShrink:0 }}>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
             <Calendar size={15} strokeWidth={1.5} color="var(--zc)" />
             {riwayatName}
-            <span style={{ fontSize:11, fontWeight:400, color:'var(--txt3)' }}>({riwayatZone})</span>
+            <span style={{ fontSize:'var(--fs-caption)', fontWeight:400, color:'var(--txt3)' }}>({riwayatZone})</span>
           </div>
           <button
             onClick={onClose}
@@ -191,34 +191,34 @@ export default function RiwayatModal({ open, onClose }: Props) {
 
         {/* Summary bar — tidak ikut scroll */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
-          <span style={{ fontSize:11, color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
+          <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
           <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
         </div>
 
         {/* Statistik lintas tahun */}
         <div style={{ display:'flex', gap:6, marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
           <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
               <Award size={9} /> {t('riwayat.statTotal')}
             </div>
-            <div style={{ fontSize:13, fontWeight:800, color:'var(--c-lunas)', fontFamily:"var(--font-sans),sans-serif" }}>
+            <div style={{ fontSize:'var(--fs-body)', fontWeight:800, color:'var(--c-lunas)', fontFamily:"var(--font-sans),sans-serif" }}>
               {statLunas} {t('riwayat.monthAbbr')}
             </div>
           </div>
           <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
               <Banknote size={9} /> {t('riwayat.statBayar')}
             </div>
-            <div style={{ fontSize:11, fontWeight:800, color:'var(--zc)', fontFamily:"var(--font-mono),monospace" }}>
+            <div style={{ fontSize:'var(--fs-caption)', fontWeight:800, color:'var(--zc)', fontFamily:"var(--font-mono),monospace" }}>
               {rp(statNominal)}
             </div>
           </div>
           {statFirst ? (
             <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-              <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
                 <TrendingUp size={9} /> {t('riwayat.statMulai')}
               </div>
-              <div style={{ fontSize:9, fontWeight:700, color:'var(--txt2)', fontFamily:"var(--font-sans),sans-serif", lineHeight:1.3 }}>
+              <div style={{ fontSize:'var(--fs-micro)', fontWeight:700, color:'var(--txt2)', fontFamily:"var(--font-sans),sans-serif", lineHeight:1.3 }}>
                 {statFirst}
               </div>
             </div>

@@ -23,7 +23,7 @@ export default function ZoneList({ zones, hidden, onToggle, onDelete }: Props) {
         <div key={z.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--bg3)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <span style={{ width:10, height:10, borderRadius:'50%', background:z.color, display:'inline-block' }} />
-            <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:13 }}>{z.key}</span>
+            <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)' }}>{z.key}</span>
           </div>
           <div style={{ display:'flex', gap:6 }}>
             <button onClick={() => onToggle(z.key)} style={{ background:'none', border:'1px solid var(--border)', color:'var(--txt3)', padding:'5px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center' }}>

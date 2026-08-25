@@ -246,7 +246,7 @@ export default function MembersView() {
   const sortLabels: Record<SortMode,string> = { 'name-asc':'A-Z','name-desc':'Z-A','id-asc':'ID ↑','id-desc':'ID ↓','ip-asc':'IP ↑','ip-desc':'IP ↓' };
 
   const badgeStyle: React.CSSProperties = {
-    fontSize:9, padding:'2px 6px', borderRadius:4, flexShrink:0, fontFamily:"var(--font-mono),monospace",
+    fontSize:'var(--fs-micro)', padding:'2px 6px', borderRadius:'var(--r-xs)', flexShrink:0, fontFamily:"var(--font-mono),monospace",
   };
 
   return (
@@ -268,10 +268,10 @@ export default function MembersView() {
                            : (appData.zoneMembers?.[z] ?? []).length;
               return (
                 <button key={z} onClick={() => { setNewMemberZone(z); setSearch(''); setMemberTab('active'); }}
-                  style={{ padding:'6px 12px', borderRadius:20, border:'none', cursor:'pointer', fontSize:11, fontWeight:600,
+                  style={{ padding:'6px 12px', borderRadius:'var(--r-xl)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600,
                     background: zone===z ? zColor : 'transparent',
                     color: zone===z ? '#fff' : 'var(--txt3)', minHeight:32 }}>
-                  {z} <span style={{ opacity:.6, fontSize:10 }}>({mCount})</span>
+                  {z} <span style={{ opacity:.6, fontSize:'var(--fs-label)' }}>({mCount})</span>
                 </button>
               );
             });
@@ -279,17 +279,17 @@ export default function MembersView() {
         </div>
         <button onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
           aria-label={membersLocked ? 'Buka kunci daftar member' : 'Kunci daftar member'}
-          style={{ background:membersLocked?'rgba(239,68,68,0.06)':'rgba(34,197,94,0.06)', border:`1px solid ${membersLocked?'rgba(239,68,68,0.25)':'rgba(34,197,94,0.25)'}`, color:membersLocked?'var(--c-belum)':'var(--c-lunas)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
+          style={{ background:membersLocked?'rgba(239,68,68,0.06)':'rgba(34,197,94,0.06)', border:`1px solid ${membersLocked?'rgba(239,68,68,0.25)':'rgba(34,197,94,0.25)'}`, color:membersLocked?'var(--c-belum)':'var(--c-lunas)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
           {membersLocked ? <><Lock size={12} strokeWidth={1.5} /> {t('members.lock')}</> : <><LockOpen size={12} strokeWidth={1.5} /> {t('members.unlock')}</>}
         </button>
       </div>
 
       {/* Active / Deleted tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg2)', padding:3, borderRadius:20, border:'1px solid var(--border)' }}>
-        <button onClick={() => setMemberTab('active')} style={{ flex:1, padding:6, borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, background:memberTab==='active'?zc:'transparent', color:memberTab==='active'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg2)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
+        <button onClick={() => setMemberTab('active')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, background:memberTab==='active'?zc:'transparent', color:memberTab==='active'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
           <Users size={12} strokeWidth={1.5} /> {t('common.all')} ({mems.length})
         </button>
-        <button onClick={() => setMemberTab('deleted')} style={{ flex:1, padding:6, borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, background:memberTab==='deleted'?'var(--zc-slk)':'transparent', color:memberTab==='deleted'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+        <button onClick={() => setMemberTab('deleted')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, background:memberTab==='deleted'?'var(--zc-slk)':'transparent', color:memberTab==='deleted'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
           <Trash2 size={12} strokeWidth={1.5} /> {t('action.delete')} ({deletedList.length})
         </button>
       </div>
@@ -304,7 +304,7 @@ export default function MembersView() {
                 <div className="del-card-name" style={{ display:'flex', alignItems:'center', gap:5 }}>
                   <Trash2 size={12} strokeWidth={1.5} color="var(--c-belum)" /> {d.name}
                 </div>
-                <div style={{ fontSize:10, color:'var(--txt4)' }}>{t('action.delete')}: {new Date(d.deletedAt).toLocaleDateString()} · {Object.keys(d.payments||{}).length} data</div>
+                <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('action.delete')}: {new Date(d.deletedAt).toLocaleDateString()} · {Object.keys(d.payments||{}).length} data</div>
               </div>
               <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                 <button className="restore-btn" onClick={() => restoreMember(k)}>{t('members.restore')}</button>
@@ -323,16 +323,16 @@ export default function MembersView() {
               <div className="af-title">{t('members.addTitle')} {zone}</div>
               <div className="af-grid">
                 <div>
-                  <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('common.name').toUpperCase()}</div>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('common.name').toUpperCase()}</div>
                   <input ref={nameRef} className="af-input" placeholder={t('members.namePlaceholder')} autoComplete="off" autoFocus
                     style={{ textTransform:'uppercase' }} onKeyDown={e=>e.key==='Enter'&&addMember()} />
                 </div>
                 <div>
-                  <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.customerId').toUpperCase()}</div>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.customerId').toUpperCase()}</div>
                   <input ref={idRef} className="af-input" placeholder={t('common.optional')} autoComplete="off" />
                 </div>
                 <div style={{ gridColumn:'span 2' }}>
-                  <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
                   <input
                       className="af-input"
                       placeholder="192.168.x.x atau http://..."
@@ -342,13 +342,13 @@ export default function MembersView() {
                     />
                 </div>
                 <div>
-                  <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
                   <input ref={tarifRef} type="number" inputMode="decimal" className="af-input" placeholder="100" autoComplete="off" />
                 </div>
               </div>
               <button
                 disabled={isSaving}
-                style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:13, fontWeight:600, cursor: isSaving ? 'not-allowed' : 'pointer', minHeight:40, opacity: isSaving ? 0.6 : 1 }}
+                style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', fontWeight:600, cursor: isSaving ? 'not-allowed' : 'pointer', minHeight:40, opacity: isSaving ? 0.6 : 1 }}
                 onClick={addMember}
               >
                 + {t('members.addTo')} {zone}
@@ -360,7 +360,7 @@ export default function MembersView() {
           <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8, alignItems:'center' }}>
             {(Object.entries(sortLabels) as [SortMode,string][]).map(([k,l]) => (
             <button key={k} onClick={() => setSortMode(k)}
-                style={{ padding:'6px 12px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer', fontSize:11, minHeight:32, fontWeight:sortMode===k?700:500, background:sortMode===k?'var(--zc)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)', transition:'all var(--t-fast)' }}>{l}</button>
+                style={{ padding:'6px 12px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:32, fontWeight:sortMode===k?700:500, background:sortMode===k?'var(--zc)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)', transition:'all var(--t-fast)' }}>{l}</button>
             ))}
           </div>
 
@@ -369,7 +369,7 @@ export default function MembersView() {
             <input className="search-box" placeholder={`${t('entry.searchPlaceholder')} ${zone}...`} value={search} onChange={e=>setSearch(e.target.value)} />
             {search && <button className="search-clear" onClick={()=>setSearch('')} aria-label={t('action.search')}><X size={12} /></button>}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:8 }}>{filteredMems.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {zone}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginBottom:8 }}>{filteredMems.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {zone}</div>
 
           {/* Member rows */}
           <div id="member-rows">
@@ -384,10 +384,10 @@ export default function MembersView() {
                 const idStr     = String(info.id || '—');
 
                 return (
-                  <div key={name} style={{ background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:8, padding:'8px 12px', marginBottom:4 }}>
+                  <div key={name} style={{ background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:4 }}>
                     {/* Baris 1: nomor, ID, nama, badge */}
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: (!membersLocked || ipStr) ? 5 : 0 }}>
-                      <span style={{ fontSize:10, color:'var(--txt4)', width:18, flexShrink:0 }}>{i+1}</span>
+                      <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', width:18, flexShrink:0 }}>{i+1}</span>
                       <span style={{ ...badgeStyle, background:'var(--zcdim)', border:'1px solid var(--border)', color: info.id ? 'var(--zc)' : 'var(--txt4)' }}>{idStr}</span>
                       <span style={{ fontSize:12, flex:1, cursor:'pointer', color:'var(--txt)', fontWeight:500 }} onClick={() => openRiwayat(zone, name)}>{name}</span>
                       {isFreeNow && <span style={{ ...badgeStyle, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} strokeWidth={1.5} />Free</span>}
@@ -412,12 +412,12 @@ export default function MembersView() {
                           href={ipStr.startsWith('http') ? ipStr : 'http://'+ipStr}
                           target="_blank" rel="noreferrer"
                           onClick={e => e.stopPropagation()}
-                          style={{ fontSize:10, color:'var(--zc)', textDecoration:'none', fontFamily:"var(--font-mono),monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
+                          style={{ fontSize:'var(--fs-label)', color:'var(--zc)', textDecoration:'none', fontFamily:"var(--font-mono),monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
                         >
                           {ipStr}
                         </a>
                       ) : (
-                        <span style={{ flexShrink:0, fontSize:10, color:'var(--txt5)', fontStyle:'italic' }}>—</span>
+                        <span style={{ flexShrink:0, fontSize:'var(--fs-label)', color:'var(--txt5)', fontStyle:'italic' }}>—</span>
                       )}
                       {/* Spacer — mengisi sisa ruang, bukan area klik */}
                       <span style={{ flex:1 }} />
@@ -427,12 +427,12 @@ export default function MembersView() {
                         <div style={{ display:'flex', gap:4, flexShrink:0 }}>
                           <button onClick={() => openFree(zone, name)}
                             aria-label={`${isFreeNow ? 'Cabut status' : 'Set'} member gratis: ${name}`}
-                            style={{ background:isFreeNow?'rgba(34,197,94,0.08)':'none', border:`1px solid ${isFreeNow?'rgba(34,197,94,0.3)':'var(--border)'}`, color:isFreeNow?'var(--c-free)':'var(--txt4)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center', minHeight:28 }}>
+                            style={{ background:isFreeNow?'rgba(34,197,94,0.08)':'none', border:`1px solid ${isFreeNow?'rgba(34,197,94,0.3)':'var(--border)'}`, color:isFreeNow?'var(--c-free)':'var(--txt4)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:'var(--fs-label)', display:'flex', alignItems:'center', justifyContent:'center', minHeight:28 }}>
                             <Gift size={11} strokeWidth={1.5} />
                           </button>
                           <button onClick={() => openEdit(name)}
                             aria-label={`Edit member: ${name}`}
-                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:10, fontFamily:"var(--font-mono),monospace", minHeight:28 }}>
+                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:'var(--fs-label)', fontFamily:"var(--font-mono),monospace", minHeight:28 }}>
                             Edit
                           </button>
                           <button onClick={() => deleteMember(name)}
@@ -471,7 +471,7 @@ export default function MembersView() {
                   placeholder={ph}
                   value={editData[field]}
                   onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-                  style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:13, fontFamily:"var(--font-mono),monospace" }}
+                  style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:'var(--fs-body)', fontFamily:"var(--font-mono),monospace" }}
                 />
               </div>
             ))}
@@ -483,7 +483,7 @@ export default function MembersView() {
                 value={editData.notes}
                 onChange={e => setEditData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
-                style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:13, fontFamily:"var(--font-sans),sans-serif", resize:'vertical', minHeight:64 }}
+                style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:'var(--fs-body)', fontFamily:"var(--font-sans),sans-serif", resize:'vertical', minHeight:64 }}
               />
             </div>
             <button className="modal-action" disabled={isSaving} style={{ opacity: isSaving ? 0.6 : 1, cursor: isSaving ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }} onClick={saveEdit}>

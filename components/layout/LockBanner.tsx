@@ -28,7 +28,7 @@ export default function LockBanner() {
           background:'var(--c-belum)', border:'none',
           color:'#fff', padding:'4px 12px',
           borderRadius:'var(--r-sm)',
-          cursor:'pointer', fontSize:11,
+          cursor:'pointer', fontSize:'var(--fs-caption)',
           flexShrink:0,
           fontFamily:"var(--font-sans),sans-serif",
           fontWeight:500,

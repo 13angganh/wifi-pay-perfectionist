@@ -222,7 +222,7 @@ export default function EntryView() {
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, color:'var(--txt)' }}>
                 {batchSelected.length} {t('nav.members')}
               </div>
-              <div style={{ fontSize:10, color:'var(--txt3)' }}>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>
                 {MONTH_NAMES[batchMonth]} {batchYear} · {activeZone}
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function EntryView() {
             }}
             style={{
               background:'none', border:'1px solid var(--border)', color:'var(--txt2)',
-              padding:'6px 12px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11,
+              padding:'6px 12px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)',
               display:'flex', alignItems:'center', gap:6, minHeight:36,
             }}
           >
@@ -250,7 +250,7 @@ export default function EntryView() {
             <div className="sum-lbl">{MONTH_NAMES[selMonth]} {selYear} · {activeZone}</div>
             <div className="sum-val">{rp(total)}</div>
           </div>
-          <div style={{ display:'flex', gap:10, fontSize:11, alignItems:'center' }}>
+          <div style={{ display:'flex', gap:10, fontSize:'var(--fs-caption)', alignItems:'center' }}>
             <span style={{ display:'flex', alignItems:'center', gap:4, color:'var(--c-lunas)' }}>
               <CheckCircle2 size={12} /> {paid}
             </span>
@@ -274,14 +274,14 @@ export default function EntryView() {
           display:'flex', justifyContent:'space-between', alignItems:'center',
         }}>
           <div>
-            <div style={{ fontSize:9, color:'rgba(239,68,68,0.6)', letterSpacing:'.06em', textTransform:'uppercase' }}>{t('entry.potentialUnpaid')}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'rgba(239,68,68,0.6)', letterSpacing:'.06em', textTransform:'uppercase' }}>{t('entry.potentialUnpaid')}</div>
             <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:16, fontWeight:800, color:'var(--c-belum)' }}>
               {rp(potensiUnpaid)}
             </div>
           </div>
           <div style={{ textAlign:'right' }}>
-            <div style={{ fontSize:10, color:'var(--txt4)' }}>{t('entry.from')} {unpaid} {t('entry.membersUnpaid')}</div>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginTop:2 }}>{t('common.since')} tarif</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('entry.from')} {unpaid} {t('entry.membersUnpaid')}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{t('common.since')} tarif</div>
           </div>
         </div>
       )}
@@ -295,7 +295,7 @@ export default function EntryView() {
           <select className="cs" value={selMonth} onChange={e => setSelMonth(+e.target.value)}>
             {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </select>
-          <span style={{ fontSize:11, color:'var(--txt3)', alignSelf:'center' }}>{MONTH_NAMES[selMonth]} {selYear}</span>
+          <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', alignSelf:'center' }}>{MONTH_NAMES[selMonth]} {selYear}</span>
         </div>
       )}
 
@@ -341,7 +341,7 @@ export default function EntryView() {
             </button>
           )}
         </div>
-        <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:8 }}>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginBottom:8 }}>
           {filtered.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {activeZone}
         </div>
       </>
@@ -388,7 +388,7 @@ export default function EntryView() {
           boxShadow:'0 -8px 32px rgba(0,0,0,0.5)',
         }}>
           <div style={{ width:36, height:4, borderRadius:2, background:'var(--bg4)', margin:'0 auto 16px' }} />
-          <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:10, fontWeight:600, letterSpacing:'.05em', textTransform:'uppercase' }}>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginBottom:10, fontWeight:600, letterSpacing:'.05em', textTransform:'uppercase' }}>
             Preview · {MONTH_NAMES[batchMonth]} {batchYear}
           </div>
           <div style={{ maxHeight:180, overflowY:'auto', marginBottom:14 }}>
@@ -397,15 +397,15 @@ export default function EntryView() {
                 display:'flex', justifyContent:'space-between', alignItems:'center',
                 padding:'8px 0', borderBottom:'1px solid var(--border2)',
               }}>
-                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</span>
+                <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</span>
                 <span style={{ fontSize:12, fontWeight:600, color: tarif ? 'var(--c-lunas)' : 'var(--txt4)' }}>
-                  {tarif ? rp(tarif) : <span style={{ fontSize:10 }}>{t('entry.noTarifShort')}</span>}
+                  {tarif ? rp(tarif) : <span style={{ fontSize:'var(--fs-label)' }}>{t('entry.noTarifShort')}</span>}
                 </span>
               </div>
             ))}
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, marginBottom:16 }}>
-            <span style={{ fontSize:11, color:'var(--txt3)' }}>Total</span>
+            <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>Total</span>
             <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>
               {rp(batchPreview.reduce((s, { tarif }) => s + (tarif || 0), 0))}
             </span>
@@ -416,7 +416,7 @@ export default function EntryView() {
               style={{
                 flex:1, padding:'12px 0', border:'1px solid var(--border)',
                 background:'none', color:'var(--txt2)', borderRadius:'var(--r-sm)',
-                cursor:'pointer', fontSize:13, fontWeight:600, minHeight:44,
+                cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, minHeight:44,
               }}
             >
               {t('action.cancel')}
@@ -426,7 +426,7 @@ export default function EntryView() {
               style={{
                 flex:2, padding:'12px 0', border:'none',
                 background: zc, color:'#fff', borderRadius:'var(--r-sm)',
-                cursor:'pointer', fontSize:13, fontWeight:700,
+                cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:700,
                 display:'flex', alignItems:'center', justifyContent:'center', gap:8,
                 minHeight:44,
               }}

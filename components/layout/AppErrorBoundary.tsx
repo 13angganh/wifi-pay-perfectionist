@@ -70,12 +70,12 @@ export default class AppErrorBoundary extends Component<{ children: React.ReactN
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:17, color:'var(--txt)' }}>
             {tStatic('app.errorTitle')}
           </div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:13, color:'var(--txt2)', maxWidth:280, lineHeight:1.55 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-body)', color:'var(--txt2)', maxWidth:280, lineHeight:1.55 }}>
             {tStatic('app.errorDesc')}
           </div>
           {this.state.error && (
             <div style={{
-              fontFamily:"var(--font-mono),monospace", fontSize:10, color:'var(--txt4)',
+              fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-label)', color:'var(--txt4)',
               background:'var(--bg3)', border:'1px solid var(--border)',
               borderRadius:'var(--r-sm)', padding:'8px 12px',
               maxWidth:300, wordBreak:'break-all', textAlign:'left',
@@ -89,7 +89,7 @@ export default class AppErrorBoundary extends Component<{ children: React.ReactN
               background:'var(--zc)', color:'#fff', border:'none',
               borderRadius:'var(--r-md)', padding:'10px 24px',
               fontFamily:"var(--font-sans),sans-serif", fontWeight:600,
-              fontSize:13, cursor:'pointer',
+              fontSize:'var(--fs-body)', cursor:'pointer',
             }}
           >
             {tStatic('app.reload')}

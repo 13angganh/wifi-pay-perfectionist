@@ -35,7 +35,7 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
           width:30, height:30, borderRadius:'50%', flexShrink:0,
           background:'linear-gradient(135deg,var(--zc),color-mix(in srgb,var(--zc) 60%,#000))',
           display:'flex', alignItems:'center', justifyContent:'center',
-          fontFamily:"var(--font-mono),monospace", fontWeight:500, fontSize:11, color:'#fff',
+          fontFamily:"var(--font-mono),monospace", fontWeight:500, fontSize:'var(--fs-caption)', color:'#fff',
         }}>
           {initials}
         </div>
@@ -48,7 +48,7 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
           }}>
             {displayName}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>{t('sidebar.manageAccount')}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:1 }}>{t('sidebar.manageAccount')}</div>
         </div>
         <User size={13} strokeWidth={1.5} style={{ color:'var(--txt4)', flexShrink:0 }} />
       </button>

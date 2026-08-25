@@ -89,7 +89,7 @@ export default function SettingsBiometricSection() {
   };
   const btnStyle = (danger=false, secondary=false): React.CSSProperties => ({
     width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
-    fontSize:13, fontWeight:600, marginTop:8, transition:'all var(--t-fast)',
+    fontSize:'var(--fs-body)', fontWeight:600, marginTop:8, transition:'all var(--t-fast)',
     border: danger ? '1px solid rgba(239,68,68,0.3)' : secondary ? '1px solid var(--border)' : 'none',
     background: danger ? 'rgba(239,68,68,0.1)' : secondary ? 'var(--bg3)' : 'var(--zc)',
     color: danger ? 'var(--c-belum)' : secondary ? 'var(--txt2)' : '#fff',
@@ -107,16 +107,16 @@ export default function SettingsBiometricSection() {
           <ScanFace size={16} strokeWidth={1.5} />
         </div>
         <div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
             {t('biometric.title')}
           </div>
-          <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>
             {t('biometric.subtitle')}
           </div>
         </div>
         <div style={{ marginLeft:'auto' }}>
           <span style={{
-            fontSize:11, fontWeight:700,
+            fontSize:'var(--fs-caption)', fontWeight:700,
             color: settings.biometricEnabled ? 'var(--c-lunas)' : 'var(--txt4)',
             display:'flex', alignItems:'center', gap:4,
           }}>
@@ -139,7 +139,7 @@ export default function SettingsBiometricSection() {
           display:'flex', alignItems:'center', gap:8,
           background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)',
           borderRadius:'var(--r-sm)', padding:'10px 12px',
-          fontSize:11, color:'var(--c-belum)',
+          fontSize:'var(--fs-caption)', color:'var(--c-belum)',
         }}>
           <AlertCircle size={14} />
           {t('biometric.notSupported')}
@@ -153,7 +153,7 @@ export default function SettingsBiometricSection() {
             <div style={{
               background:'rgba(201,149,42,0.08)', border:'1px solid rgba(201,149,42,0.25)',
               borderRadius:'var(--r-sm)', padding:'9px 12px',
-              fontSize:11, color:'var(--zc)', marginBottom:10,
+              fontSize:'var(--fs-caption)', color:'var(--zc)', marginBottom:10,
             }}>
               {t('biometric.enablePinWarning')}
             </div>
@@ -186,7 +186,7 @@ export default function SettingsBiometricSection() {
             </>
           )}
 
-          <div style={{ fontSize:10, color:'var(--txt5)', marginTop:10, lineHeight:1.6 }}>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt5)', marginTop:10, lineHeight:1.6 }}>
             {t('biometric.privacyNote')}
           </div>
         </>

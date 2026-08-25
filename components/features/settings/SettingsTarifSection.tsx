@@ -171,7 +171,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
       {(section === 'all' || section === 'export') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><ArrowUpDown size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.export')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.export')}</div>
         </div>
 
         <button
@@ -181,7 +181,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
           <span style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Download size={13} /> {t('settings.jsonBackup')}
           </span>
-          <span style={{ fontSize:10, color:'var(--txt4)' }}>{t('settings.jsonBackupDesc')}</span>
+          <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('settings.jsonBackupDesc')}</span>
         </button>
 
         <button
@@ -219,7 +219,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
             <span style={{ display:'flex', alignItems:'center', gap:8 }}>
               <Upload size={13} /> {t('settings.importData')}
             </span>
-            <span style={{ fontSize:10, color:'var(--txt4)' }}>{t('settings.importDataDesc')}</span>
+            <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('settings.importDataDesc')}</span>
           </button>
           <ImportInput />
         </div>
@@ -229,7 +229,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
       {(section === 'all' || section === 'wa') && <div style={cardStyle}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Share2 size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
         </div>
 
         <button onClick={() => setWaOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${waOpen ? 'var(--zc)' : 'var(--border)'}`, background: waOpen ? 'var(--zcdim)' : 'var(--bg3)', color: waOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}>
@@ -238,7 +238,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
         </button>
         {waOpen && (
           <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.waPeriod')}</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.waPeriod')}</div>
             <div style={{ display:'flex', gap:6 }}>
               <select style={selStyle} value={waYear} onChange={e => setWaYear(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -259,7 +259,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
         </button>
         {sfOpen && (
           <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.format')}</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.format')}</div>
             <div style={{ display:'flex', gap:6, marginBottom:10 }}>
               <ToggleChip label="PDF" active={sfFmt==='pdf'} onClick={() => setSfFmt('pdf')} />
               <ToggleChip label="Excel" active={sfFmt==='excel'} onClick={() => setSfFmt('excel')} />
@@ -277,11 +277,11 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
         <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
           <div style={{ color:'var(--zc)', marginTop:2 }}><Zap size={16} strokeWidth={1.5} /></div>
           <div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.quickPay')}</div>
-            <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{t('settings.quickPayDesc')}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.quickPay')}</div>
+            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>{t('settings.quickPayDesc')}</div>
           </div>
         </div>
-        <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.quickPayLabel')}</div>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.quickPayLabel')}</div>
         <input
           className="lf-input"
           style={{ marginBottom:0, textAlign:'left', letterSpacing:'normal', fontFamily:"var(--font-mono),monospace" }}
@@ -291,18 +291,18 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
         />
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:8 }}>
           {settings.quickAmounts.map(a => (
-            <span key={a} style={{ background:'var(--bg3)', border:'1px solid var(--zc)', color:'var(--zc)', padding:'3px 10px', borderRadius:'var(--r-xs)', fontSize:11, fontFamily:"var(--font-mono),monospace" }}>{a}</span>
+            <span key={a} style={{ background:'var(--bg3)', border:'1px solid var(--zc)', color:'var(--zc)', padding:'3px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-caption)', fontFamily:"var(--font-mono),monospace" }}>{a}</span>
           ))}
         </div>
         <button onClick={saveAmounts} style={{
           width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
-          fontSize:13, fontWeight:600, marginTop:8, border:'none',
+          fontSize:'var(--fs-body)', fontWeight:600, marginTop:8, border:'none',
           background:'var(--zc)', color:'#fff', boxShadow:'var(--shadow-z)',
           display:'flex', alignItems:'center', justifyContent:'center', gap:6,
         }}>
           <Check size={13} /> {t('settings.quickPaySave')}
         </button>
-        <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px', background:'var(--bg3)', borderRadius:'var(--r-xs)' }}>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px', background:'var(--bg3)', borderRadius:'var(--r-xs)' }}>
           {t('settings.quickPayNote')}
         </div>
       </div>}

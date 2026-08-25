@@ -208,7 +208,7 @@ export default function RekapView() {
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>
                 {batchSelected.length} {t('rekap.batchSelected')}
               </div>
-              <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>{MONTH_NAMES[mi]} {selYear} · {activeZone}</div>
+              <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>{MONTH_NAMES[mi]} {selYear} · {activeZone}</div>
             </div>
             <button onClick={exitBatch} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <X size={14} />
@@ -217,9 +217,9 @@ export default function RekapView() {
           <div style={{ overflowY:'auto', flex:1, padding:'10px 16px' }}>
             {previewItems.map(({ name, amt, hasTarif }) => (
               <div key={name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:13, color:'var(--txt)' }}>{name}</div>
+                <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', color:'var(--txt)' }}>{name}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  {!hasTarif && <span style={{ fontSize:9, color:'var(--txt4)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:'var(--r-xs)' }}>default</span>}
+                  {!hasTarif && <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:'var(--r-xs)' }}>default</span>}
                   <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:12, fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
                 </div>
               </div>
@@ -227,16 +227,16 @@ export default function RekapView() {
           </div>
           <div style={{ padding:'12px 16px 20px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-              <span style={{ fontSize:11, color:'var(--txt3)' }}>{t('common.total')}</span>
+              <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>{t('common.total')}</span>
               <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--zc)' }}>{rp(total)}</span>
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={exitBatch} style={{ flex:1, padding:'10px', borderRadius:'var(--r-sm)', border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'var(--txt2)', cursor:'pointer', fontSize:13, transition:'all var(--t-fast)' }}>
+              <button onClick={exitBatch} style={{ flex:1, padding:'10px', borderRadius:'var(--r-sm)', border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}>
                 {t('action.cancel')}
               </button>
               <button
                 onClick={handleBatchPay}
-                style={{ flex:2, padding:'10px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', cursor:'pointer', fontSize:13, fontWeight:600, boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}
+                style={{ flex:2, padding:'10px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}
               >
                 <CheckCheck size={14} />
                 {t('rekap.batchConfirm')}
@@ -434,7 +434,7 @@ export default function RekapView() {
               });
               return (
                 <tr key={name} data-name={name}>
-                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:10, color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
+                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:'var(--fs-label)', color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
                   <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
                   {cells}
                   <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
@@ -444,7 +444,7 @@ export default function RekapView() {
           </tbody>
           <tfoot>
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:10, color:'var(--txt2)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
+              <td colSpan={2} className="stk" style={{ left:0, fontSize:'var(--fs-label)', color:'var(--txt2)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
                 const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
                 return (
@@ -463,7 +463,7 @@ export default function RekapView() {
           </tfoot>
         </table>
       </div>
-      <div style={{ fontSize:10, color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
         {t('rekap.scrollHint')}
       </div>
       </> /* end data branch fragment */

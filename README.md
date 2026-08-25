@@ -890,6 +890,13 @@ File lain tidak berubah.
 ## Changelog
 
 ```
+v11.6.2 Next — Audit UI/UX: Restrukturisasi Settings + Migrasi Token (Aug 2026)
+✅ Fix: Label "Masukkan 4 digit PIN" di Pengaturan → PIN sudah 6 digit sejak v11.5.18, hanya teks label yang belum diperbarui (logika/validasi selalu sudah benar)
+✨ Fitur: Pengaturan direstrukturisasi jadi 2 level — 5 grup besar (Akun, Keamanan, Manajemen, Data, Tampilan) via CollapsibleGroup baru, masing-masing berisi CollapsibleSection individual (badge status Aktif/Nonaktif tetap di level ini seperti sebelumnya). Info Aplikasi berdiri sendiri di paling bawah, bukan collapsible.
+✨ Fitur: Grup "Akun" memisahkan "Akun Saya" (Email & Reset Password) dan "Akun Penagih" (Buat Akun Penagih) dengan sub-label — bukan digabung rata, karena keduanya beda konteks (atur akun sendiri vs membuat akun untuk orang lain)
+🔧 Refactor: 355 nilai fontSize/borderRadius literal dimigrasi ke CSS variable token yang sudah ada di styles/tokens.css (336 fontSize: 9/10/11/13/15px → var(--fs-micro/label/caption/body/heading); 19 borderRadius: 4/8/16/20px → var(--r-xs/sm/lg/xl)). Murni migrasi nilai yang sudah punya token resmi — nilai di luar skala (12/14/16/20px, total 117 pemakaian) sengaja belum disentuh, ditunda untuk diputuskan terpisah (apakah jadi token baru atau dipetakan ke skala yang ada)
+✅ Test: 250/250 test tetap lulus, tsc bersih, eslint bersih, full production build (16/16 halaman statis) terverifikasi
+
 v11.5.2 Next — Rekap Fix + 3 Fitur Baru (Jun 2026)
 🔧 Fix (low-risk, bukan garansi 100%): background solid .cv/.cz/.cn — kemungkinan penyebab nama hilang saat scroll
 🔧 Fix: scroll sync header Rekap tanpa rAF delay — kemungkinan penyebab konten tembus kolom judul
@@ -950,7 +957,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.5.20 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.6.2 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

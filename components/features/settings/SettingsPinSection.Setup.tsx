@@ -27,15 +27,15 @@ export default function PinSetup({ onSave }: Props) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
       <div>
-        <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6 }}>{t('settings.pin.new')}</div>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6 }}>{t('settings.pin.new')}</div>
         <input style={inputStyle} type="password" maxLength={6} inputMode="numeric" value={pin1} onChange={e => setPin1(e.target.value.replace(/\D/g,'').slice(0,6))} />
       </div>
       <div>
-        <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6 }}>{t('settings.pin.confirm')}</div>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6 }}>{t('settings.pin.confirm')}</div>
         <input style={inputStyle} type="password" maxLength={6} inputMode="numeric" value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g,'').slice(0,6))} />
       </div>
-      {err && <div style={{ fontSize:11, color:'var(--c-belum)' }}>{err}</div>}
-      <button onClick={handleSave} style={{ display:'flex', alignItems:'center', gap:6, background:'var(--zc)', color:'#fff', border:'none', padding:'11px 18px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:13, fontWeight:600 }}>
+      {err && <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-belum)' }}>{err}</div>}
+      <button onClick={handleSave} style={{ display:'flex', alignItems:'center', gap:6, background:'var(--zc)', color:'#fff', border:'none', padding:'11px 18px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600 }}>
         <ShieldCheck size={14} /> {t('settings.pin.activate')}
       </button>
     </div>

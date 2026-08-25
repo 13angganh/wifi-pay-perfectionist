@@ -82,11 +82,11 @@ export default function LogView() {
   return (
     <div>
       {/* Type filter tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:8, background:'var(--bg3)', padding:3, borderRadius:20, border:'1px solid var(--border)' }}>
-        <button onClick={() => setLogType('all')} style={{ flex:1, padding:6, borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', background: logType==='all' ? 'var(--zc)' : 'transparent', color: logType==='all' ? '#fff' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:8, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
+        <button onClick={() => setLogType('all')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', background: logType==='all' ? 'var(--zc)' : 'transparent', color: logType==='all' ? '#fff' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
           <ScrollText size={11} /> {t('common.all')}
         </button>
-        <button onClick={() => setLogType('pay')} style={{ flex:1, padding:6, borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', background: logType==='pay' ? 'var(--c-lunas)' : 'transparent', color: logType==='pay' ? '#0a0c12' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+        <button onClick={() => setLogType('pay')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', background: logType==='pay' ? 'var(--c-lunas)' : 'transparent', color: logType==='pay' ? '#0a0c12' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
           <Banknote size={11} /> {t('log.payOnly')}
         </button>
       </div>
@@ -108,7 +108,7 @@ export default function LogView() {
           <option value="">{t('log.allMonths')}</option>
           {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
         </select>
-        <button onClick={reset} aria-label={`${t('action.reset')} filter`} style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)', padding:'6px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', gap:4, transition:'all var(--t-fast)' }}>
+        <button onClick={reset} aria-label={`${t('action.reset')} filter`} style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)', padding:'6px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4, transition:'all var(--t-fast)' }}>
           <RotateCcw size={12} /> {t('action.reset')}
         </button>
       </div>
@@ -120,7 +120,7 @@ export default function LogView() {
         </div>
       ) : (
         <>
-          <div style={{ fontSize:10, color:'var(--txt3)', margin:'10px 0', letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', margin:'10px 0', letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>
             {filtered.length} dari {logs.length} {t('log.autoDelete')}
           </div>
 

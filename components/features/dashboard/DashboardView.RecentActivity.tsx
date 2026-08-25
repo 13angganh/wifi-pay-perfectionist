@@ -56,19 +56,19 @@ export default function DashboardRecentActivity(p: Props) {
           p.top5.map((item, i) => (
             <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom: i < p.top5.length - 1 ? '1px solid var(--border2)' : 'none' }}>
               <div>
-                <span style={{ fontSize:13, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{item.name}</span>
-                <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:6 }}>{item.z}</span>
+                <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{item.name}</span>
+                <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginLeft:6 }}>{item.z}</span>
               </div>
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{item.count} {t('common.months')}</div>
-                <div style={{ fontSize:9, color:'var(--txt4)' }}>{t('common.since')} {item.oldest}</div>
+                <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{t('common.since')} {item.oldest}</div>
               </div>
             </div>
           ))
         )}
         {p.totalTunggak > 5 && (
           <div
-            style={{ fontSize:10, color:'var(--txt3)', textAlign:'center', marginTop:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
+            style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', textAlign:'center', marginTop:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
             onClick={p.onNavTunggakan}
             role="button"
           >
@@ -84,7 +84,7 @@ export default function DashboardRecentActivity(p: Props) {
           <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Wallet size={14} style={{ color:'var(--txt3)' }} /> {t('nav.operasional')} {p.bulanLbl}
           </div>
-          <div style={{ fontSize:11, color: p.totalOps > 0 ? 'var(--c-belum)' : 'var(--txt4)', marginTop:3 }}>
+          <div style={{ fontSize:'var(--fs-caption)', color: p.totalOps > 0 ? 'var(--c-belum)' : 'var(--txt4)', marginTop:3 }}>
             {p.totalOps > 0 ? rp(p.totalOps) : t('common.noData')}
           </div>
         </div>
@@ -97,18 +97,18 @@ export default function DashboardRecentActivity(p: Props) {
           <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Database size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.lastBackup')}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)' }}>{p.backupLbl}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.backupLbl}</div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button
-            style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
+            style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
             onClick={() => { doJSONBackup(p.appData); showToast('Backup berhasil diunduh'); }}
           >
             <Database size={12} /> Download
           </button>
           {isShareSupported() && (
             <button
-              style={{ flex:1, background:'rgba(201,149,42,0.08)', border:'1px solid rgba(201,149,42,0.25)', color:'var(--zc)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:11, fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
+              style={{ flex:1, background:'rgba(201,149,42,0.08)', border:'1px solid rgba(201,149,42,0.25)', color:'var(--zc)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
               onClick={async () => {
                 const ok = await doJSONShare(p.appData);
                 if (ok) showToast('Backup berhasil dibagikan');
@@ -127,16 +127,16 @@ export default function DashboardRecentActivity(p: Props) {
           <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Share2 size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.waSummary')}
           </div>
-          <div style={{ fontSize:10, color:'var(--txt4)' }}>{p.bulanLbl}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.bulanLbl}</div>
         </div>
         <button
-          style={{ width:'100%', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-lunas)', padding:12, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:13, fontWeight:600, transition:'all var(--t-fast)', minHeight:44, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
+          style={{ width:'100%', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-lunas)', padding:12, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, transition:'all var(--t-fast)', minHeight:44, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
           onClick={() => doWASummary(p.appData, p.dy, p.dm)}
         >
           <Share2 size={15} />
           {t('dashboard.sendWA')} {p.bulanLbl}
         </button>
-        <div style={{ fontSize:9, color:'var(--txt4)', marginTop:6, textAlign:'center' }}>
+        <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:6, textAlign:'center' }}>
           {t('dashboard.periodNote')}
         </div>
       </div>

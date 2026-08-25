@@ -49,7 +49,7 @@ export default function ComplianceChart({ appData, activeZone, selYear, MONTH_NA
 
   const selStyle: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:10, flex:'none', width:'auto',
+    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-label)', flex:'none', width:'auto',
   };
 
   return (
@@ -68,7 +68,7 @@ export default function ComplianceChart({ appData, activeZone, selYear, MONTH_NA
         ].map(d => (
           <div key={d.label} style={{ flex:1, textAlign:'center', background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 4px', border:`1px solid ${d.color}22` }}>
             <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
           </div>
         ))}
       </div>

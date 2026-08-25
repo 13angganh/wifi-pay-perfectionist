@@ -22,25 +22,25 @@ export default function RiwayatMonthRow({ displayName, tgl, value, isFree, onCli
   let statusEl: React.ReactNode;
   if (isFree) {
     statusEl = (
-      <span style={{ color:'var(--c-free)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+      <span style={{ color:'var(--c-free)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
         <Gift size={12} /> Free
       </span>
     );
   } else if (value !== null && value > 0) {
     statusEl = (
-      <span style={{ color:'var(--c-lunas)', fontSize:11, fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
+      <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
         {rp(value)}
       </span>
     );
   } else if (value === 0) {
     statusEl = (
-      <span style={{ color:'var(--c-lunas)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+      <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
         <CheckCircle2 size={12} /> {t('rekap.accumulation')}
       </span>
     );
   } else {
     statusEl = (
-      <span style={{ color:'var(--c-belum)', fontSize:11, display:'flex', alignItems:'center', gap:4 }}>
+      <span style={{ color:'var(--c-belum)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
         <XCircle size={12} /> {t('status.belum')}
       </span>
     );
@@ -50,7 +50,7 @@ export default function RiwayatMonthRow({ displayName, tgl, value, isFree, onCli
     <div className="rw-month-row" style={{ cursor:'pointer' }} onClick={onClick}>
       <div>
         <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName}</div>
-        {tgl && <div style={{ fontSize:9, color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
+        {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
       </div>
       {statusEl}
     </div>

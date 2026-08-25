@@ -195,21 +195,21 @@ export default function SettingsTenantSection() {
           borderRadius:'var(--r-sm)', marginBottom:12,
         }}>
           <AlertTriangle size={14} color="var(--c-belum)" style={{ flexShrink:0, marginTop:1 }} />
-          <div style={{ fontSize:11, color:'var(--txt2)', lineHeight:1.5 }}>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt2)', lineHeight:1.5 }}>
             {t('settings.tenant.successWarning')}
           </div>
         </div>
 
         <div style={{
           background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)',
-          padding:'12px', marginBottom:12, fontFamily:"var(--font-mono),monospace", fontSize:13,
+          padding:'12px', marginBottom:12, fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)',
         }}>
           <div style={{ marginBottom:8 }}>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:2 }}>EMAIL</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:2 }}>EMAIL</div>
             <div style={{ color:'var(--txt)' }}>{createdCreds.email}</div>
           </div>
           <div>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:2 }}>PASSWORD</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:2 }}>PASSWORD</div>
             <div style={{ color:'var(--txt)' }}>{createdCreds.pass}</div>
           </div>
         </div>
@@ -244,7 +244,7 @@ export default function SettingsTenantSection() {
         <div style={{ marginBottom:16 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
             <Users size={12} color="var(--txt4)" />
-            <span style={{ fontSize:10, color:'var(--txt3)' }}>
+            <span style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>
               {t('settings.tenant.existingList')} ({tenantList.length})
             </span>
           </div>
@@ -256,18 +256,18 @@ export default function SettingsTenantSection() {
               }}>
                 <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
                   <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ fontSize:13, color:'var(--txt)', fontWeight:600, marginBottom:2, wordBreak:'break-word' }}>
+                    <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontWeight:600, marginBottom:2, wordBreak:'break-word' }}>
                       {tenant.label || tenant.email}
                     </div>
                     {tenant.label && (
-                      <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:4, wordBreak:'break-word' }}>
+                      <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginBottom:4, wordBreak:'break-word' }}>
                         {tenant.email}
                       </div>
                     )}
-                    <div style={{ fontSize:9, color:'var(--txt4)', fontFamily:"var(--font-mono),monospace", wordBreak:'break-all', marginBottom:4 }}>
+                    <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', fontFamily:"var(--font-mono),monospace", wordBreak:'break-all', marginBottom:4 }}>
                       UID: {tenant.uid}
                     </div>
-                    <div style={{ display:'flex', gap:10, fontSize:10, color:'var(--txt4)' }}>
+                    <div style={{ display:'flex', gap:10, fontSize:'var(--fs-label)', color:'var(--txt4)' }}>
                       <span>{tenant.memberCount} {t('settings.tenant.membersUnit')}</span>
                       <span>{new Date(tenant.createdAt).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}</span>
                     </div>
@@ -290,7 +290,7 @@ export default function SettingsTenantSection() {
       )}
 
       <div style={{ marginBottom:12 }}>
-        <label style={{ fontSize:10, color:'var(--txt3)', display:'block', marginBottom:4 }}>
+        <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', display:'block', marginBottom:4 }}>
           {t('settings.tenant.labelLabel')}
         </label>
         <input
@@ -299,13 +299,13 @@ export default function SettingsTenantSection() {
           placeholder={t('settings.tenant.labelPlaceholder')}
           style={{
             width:'100%', background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)',
-            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:13, outline:'none',
+            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-body)', outline:'none',
           }}
         />
       </div>
 
       <div style={{ marginBottom:12 }}>
-        <label style={{ fontSize:10, color:'var(--txt3)', display:'block', marginBottom:4 }}>
+        <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', display:'block', marginBottom:4 }}>
           {t('settings.tenant.emailLabel')}
         </label>
         <input
@@ -314,13 +314,13 @@ export default function SettingsTenantSection() {
           placeholder={t('settings.tenant.emailPlaceholder')}
           style={{
             width:'100%', background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)',
-            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:13, outline:'none',
+            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-body)', outline:'none',
           }}
         />
       </div>
 
       <div style={{ marginBottom:14 }}>
-        <label style={{ fontSize:10, color:'var(--txt3)', display:'block', marginBottom:4 }}>
+        <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', display:'block', marginBottom:4 }}>
           {t('settings.tenant.passwordLabel')}
         </label>
         <input
@@ -329,19 +329,19 @@ export default function SettingsTenantSection() {
           placeholder={t('settings.tenant.passwordPlaceholder')}
           style={{
             width:'100%', background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)',
-            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:13, outline:'none',
+            padding:'9px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-body)', outline:'none',
             fontFamily:"var(--font-mono),monospace",
           }}
         />
       </div>
 
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-        <label style={{ fontSize:10, color:'var(--txt3)' }}>
+        <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>
           {t('settings.tenant.selectMembers')} ({selected.size}/{memberList.length})
         </label>
         {memberList.length > 0 && (
           <button onClick={toggleAll} disabled={submitting} style={{
-            background:'none', border:'none', color:'var(--zc)', fontSize:11, cursor:'pointer', padding:0,
+            background:'none', border:'none', color:'var(--zc)', fontSize:'var(--fs-caption)', cursor:'pointer', padding:0,
           }}>
             {allSelected ? t('settings.tenant.deselectAll') : t('settings.tenant.selectAll')}
           </button>
@@ -349,7 +349,7 @@ export default function SettingsTenantSection() {
       </div>
 
       {memberList.length === 0 ? (
-        <div style={{ fontSize:11, color:'var(--txt4)', padding:'12px', textAlign:'center' }}>
+        <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt4)', padding:'12px', textAlign:'center' }}>
           {t('settings.tenant.noMembers')}
         </div>
       ) : (
@@ -367,14 +367,14 @@ export default function SettingsTenantSection() {
                 background: isChecked ? 'rgba(139,92,246,0.06)' : 'transparent',
               }}>
                 <div style={{
-                  width:16, height:16, borderRadius:4, flexShrink:0,
+                  width:16, height:16, borderRadius:'var(--r-xs)', flexShrink:0,
                   border: `1.5px solid ${isChecked ? 'var(--zc)' : 'var(--border)'}`,
                   background: isChecked ? 'var(--zc)' : 'transparent',
                   display:'flex', alignItems:'center', justifyContent:'center',
                 }}>
                   {isChecked && <Check size={11} color="#fff" strokeWidth={3} />}
                 </div>
-                <span style={{ fontSize:9, color:'var(--txt4)', fontFamily:"var(--font-mono),monospace", flexShrink:0 }}>{zone}</span>
+                <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', fontFamily:"var(--font-mono),monospace", flexShrink:0 }}>{zone}</span>
                 <span style={{ fontSize:12, color:'var(--txt)', flex:1 }}>{name}</span>
               </label>
             );
@@ -393,7 +393,7 @@ export default function SettingsTenantSection() {
         {submitting ? t('settings.tenant.creating') : t('settings.tenant.createButton')}
       </button>
 
-      <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
         {t('settings.tenant.note')}
       </div>
     </div>

@@ -32,7 +32,7 @@ ChartJS.register(
 function GrafikPctBadge({ pct }: { pct: number | null }) {
   if (!pct) return null;
   return (
-    <span style={{ fontSize:10, fontWeight:600, color: pct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:6, display:'inline-flex', alignItems:'center', gap:2 }}>
+    <span style={{ fontSize:'var(--fs-label)', fontWeight:600, color: pct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:6, display:'inline-flex', alignItems:'center', gap:2 }}>
       {pct >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
       {Math.abs(pct)}%
     </span>
@@ -292,7 +292,7 @@ export default function GrafikView() {
 
   const selStyle: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:11, flex:1,
+    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-caption)', flex:1,
   };
 
   return (
@@ -317,16 +317,16 @@ export default function GrafikView() {
       {/* Stat cards */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>
+          <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>
             {t('common.total').toUpperCase()} {selYear}<GrafikPctBadge pct={curYPct} />
           </div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:15, fontWeight:800, color:zc }}>{rp(mTotal)}</div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{t('grafik.avgMonth')}: {rp(mAvg)}</div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-heading)', fontWeight:800, color:zc }}>{rp(mTotal)}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>{t('grafik.avgMonth')}: {rp(mAvg)}</div>
         </div>
         <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.vsLastYear').toUpperCase()}<GrafikPctBadge pct={curYPct} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:15, fontWeight:800, color:'var(--txt2)' }}>{rp(prevYTotal)}</div>
-          <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{t('common.year')} {selYear - 1}</div>
+          <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.vsLastYear').toUpperCase()}<GrafikPctBadge pct={curYPct} /></div>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-heading)', fontWeight:800, color:'var(--txt2)' }}>{rp(prevYTotal)}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>{t('common.year')} {selYear - 1}</div>
         </div>
       </div>
 
@@ -335,7 +335,7 @@ export default function GrafikView() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div className="chart-title" style={{ margin:0 }}>{t('grafik.monthly').toUpperCase()} {selYear} · {activeZone}</div>
           {proyeksi > 0 && (
-            <div style={{ fontSize:9, color:'var(--c-lunas)', display:'flex', alignItems:'center', gap:4 }}>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--c-lunas)', display:'flex', alignItems:'center', gap:4 }}>
               <span style={{ width:8, height:8, background:'#22C55E40', border:'1px solid #22C55E', borderRadius:2, display:'inline-block' }} />
               {nextMonthLabel.slice(0, 3)}* {t('grafik.proj')}
             </div>
@@ -358,7 +358,7 @@ export default function GrafikView() {
       <div className="chart-box">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div className="chart-title" style={{ margin:0 }}>{t('grafik.composition').toUpperCase()} {donutZone}</div>
-          <select style={{ ...selStyle, flex:'none', width:'auto', fontSize:10 }} value={donutMonth} onChange={e => setDonutMonth(+e.target.value)}>
+          <select style={{ ...selStyle, flex:'none', width:'auto', fontSize:'var(--fs-label)' }} value={donutMonth} onChange={e => setDonutMonth(+e.target.value)}>
             {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
           </select>
         </div>
@@ -370,7 +370,7 @@ export default function GrafikView() {
           ].map(d => (
             <div key={d.label} style={{ flex:1, textAlign:'center', background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 4px', border:`1px solid ${d.color}22` }}>
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
-              <div style={{ fontSize:9, color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
+              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
             </div>
           ))}
         </div>
@@ -390,15 +390,15 @@ export default function GrafikView() {
       {/* Card proyeksi */}
       {proyeksi > 0 && (
         <div style={{ background:'var(--bg2)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'var(--r-md)', padding:14, marginBottom:12, boxShadow:'var(--shadow-xs)' }}>
-          <div style={{ fontSize:9, color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
+          <div style={{ fontSize:'var(--fs-micro)', color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
-              <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>{nextMonthLabel} {selYear}</div>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>{nextMonthLabel} {selYear}</div>
             </div>
             <div style={{ textAlign:'right' }}>
-              <div style={{ fontSize:10, color:'var(--txt3)' }}>{t('grafik.basedOn')}</div>
-              <div style={{ fontSize:10, color:'var(--txt4)' }}>avg {last3.length} {t('grafik.lastMonths')}</div>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>{t('grafik.basedOn')}</div>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>avg {last3.length} {t('grafik.lastMonths')}</div>
             </div>
           </div>
         </div>
@@ -409,7 +409,7 @@ export default function GrafikView() {
         <div className="chart-title" style={{ marginBottom:12 }}>{t('grafik.twoperiod').toUpperCase()}</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
           <div>
-            <div style={{ fontSize:9, color:'var(--zc)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period1').toUpperCase()}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--zc)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period1').toUpperCase()}</div>
             <div style={{ display:'flex', gap:5 }}>
               <select style={selStyle} value={p1Year}  onChange={e => setP1Year(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -421,7 +421,7 @@ export default function GrafikView() {
             <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
           </div>
           <div>
-            <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
             <div style={{ display:'flex', gap:5 }}>
               <select style={selStyle} value={p2Year}  onChange={e => setP2Year(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}

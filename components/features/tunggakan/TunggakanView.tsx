@@ -75,7 +75,7 @@ export default function TunggakanView() {
       </div>
 
       {/* Mode tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:20, border:'1px solid var(--border)' }}>
+      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
         {([
           ['nakal', <AlertCircle key="ic" size={12} />, t('tunggakan.nakal'), allArrears.length, 'var(--c-belum)'],
           ['rajin', <Star key="ic" size={12} />,        t('tunggakan.rajin'),   rajin.length,       'var(--c-lunas)'],
@@ -85,8 +85,8 @@ export default function TunggakanView() {
             key={m}
             onClick={() => { setMode(m as TMode); setAgingFilter('total'); }}
             style={{
-              flex:1, padding:'7px 4px', borderRadius:16, border:'none', cursor:'pointer',
-              fontSize:11, fontWeight:600, minHeight:36,
+              flex:1, padding:'7px 4px', borderRadius:'var(--r-lg)', border:'none', cursor:'pointer',
+              fontSize:'var(--fs-caption)', fontWeight:600, minHeight:36,
               background: mode === m ? color as string : 'transparent',
               color:      mode === m ? (m === 'rajin' ? '#0a0c12' : '#fff') : 'var(--txt3)',
               display:'flex', alignItems:'center', justifyContent:'center', gap:5,
@@ -119,7 +119,7 @@ export default function TunggakanView() {
                 border:`1px solid ${agingFilter === key ? borderColor as string : 'var(--border)'}`,
                 background: agingFilter === key ? bgColor as string : 'transparent',
                 color: agingFilter === key ? textColor as string : 'var(--txt4)',
-                fontSize:11, fontWeight: agingFilter === key ? 700 : 500,
+                fontSize:'var(--fs-caption)', fontWeight: agingFilter === key ? 700 : 500,
                 cursor:'pointer', whiteSpace:'nowrap', minHeight:36,
                 transition:'all var(--t-fast)',
                 flexShrink:0,
@@ -130,7 +130,7 @@ export default function TunggakanView() {
               <span style={{
                 background: agingFilter === key ? 'rgba(0,0,0,0.2)' : 'var(--bg3)',
                 borderRadius:'var(--r-full)', padding:'1px 7px',
-                fontSize:10, fontWeight:700,
+                fontSize:'var(--fs-label)', fontWeight:700,
                 color: agingFilter === key ? textColor as string : 'var(--txt3)',
               }}>
                 {cnt}
@@ -177,7 +177,7 @@ export default function TunggakanView() {
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
                   <span className="tcard-name">{i + 1}. {x.name}</span>
                   <span style={{
-                    fontSize:10, fontWeight:600, color: agingColor,
+                    fontSize:'var(--fs-label)', fontWeight:600, color: agingColor,
                     display:'flex', alignItems:'center', gap:4,
                   }}>
                     {x.count >= 4 ? <Flame size={11} /> : x.count >= 2 ? <AlertCircle size={11} /> : <Clock size={11} />}
@@ -196,13 +196,13 @@ export default function TunggakanView() {
                     const memberTarif = appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif as number | undefined;
                     doWABlast(x.name, activeZone, x.unpaid, memberTarif ?? settings?.quickAmounts?.[0] ?? 100);
                   }}
-                  style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:5, background:'rgba(37,211,102,0.08)', border:'1px solid rgba(37,211,102,0.25)', color:'#22C55E', borderRadius:'var(--r-sm)', padding:'5px 10px', cursor:'pointer', fontSize:10, fontWeight:700, transition:'all var(--t-fast)' }}
+                  style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:5, background:'rgba(37,211,102,0.08)', border:'1px solid rgba(37,211,102,0.25)', color:'#22C55E', borderRadius:'var(--r-sm)', padding:'5px 10px', cursor:'pointer', fontSize:'var(--fs-label)', fontWeight:700, transition:'all var(--t-fast)' }}
                 >
                   <MessageCircle size={11} />
                   Kirim WA
                 </button>
                 {!appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif && (
-                  <span style={{ fontSize:9, color:'var(--txt4)', marginLeft:6 }}>
+                  <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginLeft:6 }}>
                     ({t('tunggakan.tarifDefaultHint')})
                   </span>
                 )}
@@ -232,7 +232,7 @@ export default function TunggakanView() {
                 <span className="tcard-name" style={{ color:'var(--c-lunas)', display:'flex', alignItems:'center', gap:6 }}>
                   <CheckCircle2 size={13} /> {i + 1}. {name}
                 </span>
-                <span style={{ fontSize:10, color:'var(--c-lunas)' }}>{t('tunggakan.paidAll')}</span>
+                <span style={{ fontSize:'var(--fs-label)', color:'var(--c-lunas)' }}>{t('tunggakan.paidAll')}</span>
               </div>
             </div>
           ))
@@ -264,10 +264,10 @@ export default function TunggakanView() {
                   <span className="tcard-name" style={{ color:'var(--c-free)', display:'flex', alignItems:'center', gap:6 }}>
                     <Gift size={13} /> {i + 1}. {name}
                   </span>
-                  <span style={{ fontSize:10, color:'var(--c-free)' }}>{t('status.free')}</span>
+                  <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)' }}>{t('status.free')}</span>
                 </div>
                 {fm && (
-                  <div style={{ fontSize:10, color:'var(--txt4)', marginTop:3 }}>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>
                     Dari {MONTH_NAMES[fm.fromMonth]} {fm.fromYear}{toStr}
                   </div>
                 )}

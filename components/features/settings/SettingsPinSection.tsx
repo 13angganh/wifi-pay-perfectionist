@@ -48,7 +48,7 @@ function Btn({ label, onClick, danger=false, secondary=false, icon }: {
   return (
     <button onClick={onClick} style={{
       width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
-      fontSize:13, fontWeight:600, marginTop:8, transition:'all var(--t-fast)',
+      fontSize:'var(--fs-body)', fontWeight:600, marginTop:8, transition:'all var(--t-fast)',
       border: danger ? '1px solid rgba(239,68,68,0.3)' : secondary ? '1px solid var(--border)' : 'none',
       background: danger ? 'rgba(239,68,68,0.1)' : secondary ? 'var(--bg3)' : 'var(--zc)',
       color: danger ? 'var(--c-belum)' : secondary ? 'var(--txt2)' : '#fff',
@@ -65,10 +65,10 @@ function PinCard({ title, desc, pinErr, children }: {
 }) {
   return (
     <div style={{ background:'var(--bg2)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-md)', padding:16, marginBottom:10, boxShadow:'var(--shadow-md)' }}>
-      <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, marginBottom:4, color:'var(--txt)' }}>{title}</div>
-      {desc && <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:12 }}>{desc}</div>}
+      <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', marginBottom:4, color:'var(--txt)' }}>{title}</div>
+      {desc && <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginBottom:12 }}>{desc}</div>}
       {children}
-      {pinErr && <div style={{ fontSize:11, color:'var(--c-belum)', textAlign:'center', marginTop:8 }}>{pinErr}</div>}
+      {pinErr && <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-belum)', textAlign:'center', marginTop:8 }}>{pinErr}</div>}
     </div>
   );
 }
@@ -122,14 +122,14 @@ export default function SettingsPinSection() {
           <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
             <div style={{ color:'var(--zc)', marginTop:2 }}><Shield size={16} strokeWidth={1.5} /></div>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>{t('settings.pin')}</div>
-              <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.pin')}</div>
+              <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>
                 {settings.pinEnabled ? t('Aktif — app terkunci saat dibuka') : t('Nonaktif — app langsung terbuka')}
               </div>
             </div>
           </div>
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12, marginTop:-8 }}>
-            <span style={{ fontSize:11, fontWeight:700, color: settings.pinEnabled ? 'var(--c-lunas)' : 'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
+            <span style={{ fontSize:'var(--fs-caption)', fontWeight:700, color: settings.pinEnabled ? 'var(--c-lunas)' : 'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
               {settings.pinEnabled ? <Check size={12} /> : null}
               {settings.pinEnabled ? t('settings.pinStatus.active') : t('settings.pinStatus.inactive')}
             </span>
@@ -143,8 +143,8 @@ export default function SettingsPinSection() {
           }
           {settings.pinEnabled && (
             <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid var(--border2)' }}>
-              <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:10 }}>{t('settings.autoLock')}</div>
-              <div style={{ fontSize:11, color:'var(--txt4)', marginBottom:8, lineHeight:1.5 }}>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:10 }}>{t('settings.autoLock')}</div>
+              <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt4)', marginBottom:8, lineHeight:1.5 }}>
                 {t('settings.autoLockDesc')}
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:5 }}>

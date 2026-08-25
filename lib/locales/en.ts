@@ -123,6 +123,17 @@ const en: Record<string, string> = {
   'settings.appInfo'         : 'App Info',
   'settings.version'         : 'Version',
 
+  // Settings restructured into 2 levels: large groups (level 1) each containing
+  // several individual CollapsibleSections (level 2, unchanged). Level-1 groups
+  // are pure navigation containers — not a replacement for the sections inside them.
+  'settings.group.account'    : 'Account',
+  'settings.group.security'   : 'Security',
+  'settings.group.management' : 'Management',
+  'settings.group.data'       : 'Data',
+  'settings.group.appearance' : 'Appearance',
+  'settings.group.accountMine': 'My Account',
+  'settings.group.accountTenant': 'Collector Account',
+
   // v11.5.12: CollapsibleSection titles/badges in SettingsView.tsx — previously
   // hardcoded Indonesian, never wired into the translation system at all (unlike the
   // sub-content text inside each section, which was already connected long ago).
@@ -291,7 +302,7 @@ const en: Record<string, string> = {
   'settings.pinStatus.active'   : 'Active',
   'settings.pinStatus.inactive' : 'Inactive',
   'settings.pin.newTitle'       : 'Create New PIN',
-  'settings.pin.enterNew'       : 'Enter 4-digit PIN',
+  'settings.pin.enterNew'       : 'Enter 6-digit PIN',
   'settings.pin.reenterNew'     : 'Re-enter the same PIN',
   'settings.pin.enterCurrent'   : 'Enter current PIN to confirm',
   'settings.pin.enterOld'       : 'Enter old PIN',

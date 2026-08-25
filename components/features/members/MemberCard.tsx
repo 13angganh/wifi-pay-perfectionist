@@ -465,11 +465,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   // Badge status
   let tagEl: React.ReactNode;
   if (displayFree)
-    tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
+    tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:'var(--fs-micro)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
   else if (displayVal !== null && displayVal > 0)
     tagEl = <span className="mc-tag tpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><CheckCircle2 size={9} /></span>;
   else if (displayVal === 0)
-    tagEl = <span className="mc-tag" style={{ background:'rgba(34,197,94,0.08)', color:'var(--c-lunas)', border:'1px solid rgba(34,197,94,0.2)', fontSize:9, display:'flex', alignItems:'center', gap:3 }}><Check size={9} /> 0</span>;
+    tagEl = <span className="mc-tag" style={{ background:'rgba(34,197,94,0.08)', color:'var(--c-lunas)', border:'1px solid rgba(34,197,94,0.2)', fontSize:'var(--fs-micro)', display:'flex', alignItems:'center', gap:3 }}><Check size={9} /> 0</span>;
   else
     tagEl = <span className="mc-tag tunpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><XCircle size={9} /></span>;
 
@@ -534,8 +534,8 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
             </span>
           ) : displayVal !== null && (
             displayVal === 0
-              ? <span style={{ fontSize:10, color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>
-              : <span style={{ fontSize:11, color:'var(--c-lunas)' }}>{displayVal.toLocaleString('id-ID')}</span>
+              ? <span style={{ fontSize:'var(--fs-label)', color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>
+              : <span style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)' }}>{displayVal.toLocaleString('id-ID')}</span>
           )}
           {!isSaving && tagEl}
           {!batchMode && (
@@ -577,7 +577,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                   status bulan lain yang membingungkan saat toggle atas beda dari bulan
                   yang sedang dipilih di dalam kartu. Untuk kartu tertutup, tetap murni
                   val/freeCur (toggle atas) seperti semula. */}
-              <select key={cardYear} className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardYear}
+              <select key={cardYear} className="cs" style={{ fontSize:'var(--fs-caption)', padding:'4px 8px' }} value={cardYear}
                 onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, +e.target.value, cardMonth); }}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -585,18 +585,18 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                   perubahan bersumber dari cardYear (tahun berubah, bulan bisa jadi
                   sama persis) — key digabung agar dropdown bulan juga ikut mount ulang
                   setiap kali BAIK tahun MAUPUN bulan berubah dari toggle luar. */}
-              <select key={`${cardYear}-${cardMonth}`} className="cs" style={{ fontSize:11, padding:'4px 8px' }} value={cardMonth}
+              <select key={`${cardYear}-${cardMonth}`} className="cs" style={{ fontSize:'var(--fs-caption)', padding:'4px 8px' }} value={cardMonth}
                 onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, cardYear, +e.target.value); }}>
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
               </select>
             </div>
 
             {freeEntry ? (
-              <div style={{ background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:11, color:'var(--c-lunas)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <div style={{ background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:'var(--fs-caption)', color:'var(--c-lunas)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                 <Gift size={13} /> {t('rekap.freeMember')}
               </div>
             ) : isLocked ? (
-              <div style={{ background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:11, color:'var(--c-belum)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <div style={{ background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:'var(--fs-caption)', color:'var(--c-belum)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                 <Lock size={13} /> {t('rekap.dataLocked')}
               </div>
             ) : (
@@ -691,7 +691,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                         {isSaving ? <Loader2 size={11} className="spin" /> : `${info.tarif as number}`}
                       </button>
                     ) : (
-                      <span style={{ fontSize:9, color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>
+                      <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>
                     )}
                     {(settings?.quickAmounts || DEFAULT_SETTINGS.quickAmounts)
                       .filter(a => a !== info.tarif)
@@ -710,7 +710,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                 </div>
 
                 {!info.tarif && (
-                  <div style={{ fontSize:9, color:'var(--txt4)', marginTop:-4, marginBottom:4 }}>
+                  <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:-4, marginBottom:4 }}>
                     {t('membercard.setTarifHint')}
                   </div>
                 )}
@@ -721,7 +721,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
             <div style={{ marginTop:8, paddingTop:8, borderTop:'1px solid var(--border2)', display:'flex', justifyContent:'flex-end' }}>
               <button
                 onClick={openRiwayat}
-                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--txt3)', fontSize:11, display:'flex', alignItems:'center', gap:5, padding:'4px 0', minHeight:32 }}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--txt3)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:5, padding:'4px 0', minHeight:32 }}
               >
                 <History size={13} /> {t('membercard.history')}
               </button>

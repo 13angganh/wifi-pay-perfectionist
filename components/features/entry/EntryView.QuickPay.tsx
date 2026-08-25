@@ -14,7 +14,7 @@ export default function EntryQuickPay() {
 
   return (
     <div style={{ background:'var(--bg2)', border:'1px solid var(--zc)', borderRadius:'var(--r-md)', padding:12, marginBottom:10, boxShadow:'var(--shadow-z)' }}>
-      <div style={{ fontSize:10, color:'var(--zc)', letterSpacing:'.06em', marginBottom:8 }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--zc)', letterSpacing:'.06em', marginBottom:8 }}>
         QUICK PAY — {batchSelected.length} member
       </div>
       <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>

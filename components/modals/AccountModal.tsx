@@ -51,7 +51,7 @@ export default function AccountModal({ open, onClose }: Props) {
 
   const btnRow: React.CSSProperties = {
     width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)',
-    cursor:'pointer', fontSize:13, fontWeight:600, marginBottom:8,
+    cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, marginBottom:8,
     fontFamily:"var(--font-sans),sans-serif", transition:'all var(--t-fast)',
     display:'flex', alignItems:'center', justifyContent:'center', gap:8,
     border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)',
@@ -71,22 +71,22 @@ export default function AccountModal({ open, onClose }: Props) {
         </div>
 
         {/* Info akun */}
-        <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:8, padding:12, marginBottom:14 }}>
-          <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4 }}>{t('account.loggedInAs')}</div>
-          {userName && <div style={{ fontSize:13, color:'var(--txt)', fontWeight:600 }}>{userName}</div>}
-          <div style={{ fontSize:11, color:'var(--txt4)', marginTop:2 }}>{userEmail}</div>
+        <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:14 }}>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4 }}>{t('account.loggedInAs')}</div>
+          {userName && <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontWeight:600 }}>{userName}</div>}
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt4)', marginTop:2 }}>{userEmail}</div>
 
           {/* Provider badges */}
           <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap' }}>
             {isEmailLinked && (
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
+              <span style={{ fontSize:'var(--fs-micro)', fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
                 borderRadius:100, background:'rgba(59,130,246,0.12)', color:'#60a5fa',
                 border:'1px solid rgba(59,130,246,0.25)' }}>
                 {t('account.badgeEmail')}
               </span>
             )}
             {isGoogleLinked && (
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
+              <span style={{ fontSize:'var(--fs-micro)', fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
                 borderRadius:100, background:'rgba(234,67,53,0.1)', color:'#f87171',
                 border:'1px solid rgba(234,67,53,0.25)' }}>
                 {t('account.badgeGoogle')}
@@ -110,7 +110,7 @@ export default function AccountModal({ open, onClose }: Props) {
         )}
 
         {isGoogleLinked && (
-          <div style={{ fontSize:11, color:'var(--c-lunas)', textAlign:'center', marginBottom:12,
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)', textAlign:'center', marginBottom:12,
             padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)',
             border:'1px solid rgba(34,197,94,0.2)' }}>
             {t('account.googleLinked')}

@@ -44,12 +44,12 @@ export default function PinChange({ currentHash, onSave, onDeactivate }: Props) 
         [t('settings.pin.confirm'), pin2, setPin2],
       ].map(([label, val, set]) => (
         <div key={String(label)}>
-          <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6 }}>{String(label)}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6 }}>{String(label)}</div>
           <input style={inputStyle} type="password" maxLength={6} inputMode="numeric" value={String(val)} onChange={e => (set as (v: string) => void)(e.target.value.replace(/\D/g,'').slice(0,6))} />
         </div>
       ))}
-      {err && <div style={{ fontSize:11, color:'var(--c-belum)' }}>{err}</div>}
-      <button onClick={handleChange} style={{ display:'flex', alignItems:'center', gap:6, background:'var(--zc)', color:'#fff', border:'none', padding:'11px 18px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:13, fontWeight:600 }}>
+      {err && <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-belum)' }}>{err}</div>}
+      <button onClick={handleChange} style={{ display:'flex', alignItems:'center', gap:6, background:'var(--zc)', color:'#fff', border:'none', padding:'11px 18px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600 }}>
         <RefreshCw size={14} /> {t('settings.pin.change')}
       </button>
       <button onClick={onDeactivate} style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12 }}>

@@ -20,7 +20,7 @@ export default function ZoneForm({ value, color, onChange, onColor, onAdd }: Pro
   return (
     <div style={{ display:'flex', gap:8, alignItems:'center' }}>
       <input
-        style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'9px 12px', borderRadius:'var(--r-sm)', fontFamily:"var(--font-mono),monospace", fontSize:13, minHeight:38 }}
+        style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'9px 12px', borderRadius:'var(--r-sm)', fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', minHeight:38 }}
         placeholder={t('settings.zones.placeholder')}
         value={value}
         onChange={e => onChange(e.target.value.toUpperCase().slice(0,6))}

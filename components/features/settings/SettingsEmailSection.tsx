@@ -42,10 +42,10 @@ export default function SettingsEmailSection() {
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
         <Mail size={16} strokeWidth={1.5} style={{ color:'var(--zc)', flexShrink:0 }} />
         <div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:13, color:'var(--txt)' }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
             {t('emailSection.title')}
           </div>
-          <div style={{ fontSize:11, color:'var(--txt3)', marginTop:2 }}>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>
             {t('emailSection.currentLabel')} <span style={{ color:'var(--txt2)', fontWeight:500 }}>{userEmail}</span>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function SettingsEmailSection() {
         </div>
       ) : (
         <>
-          <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>
             {t('emailSection.newEmailLabel')}
           </div>
           <input
@@ -76,13 +76,13 @@ export default function SettingsEmailSection() {
             style={{
               width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
               color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)',
-              fontSize:13, outline:'none', marginBottom:10, boxSizing:'border-box',
+              fontSize:'var(--fs-body)', outline:'none', marginBottom:10, boxSizing:'border-box',
               transition:'border .2s', fontFamily:"var(--font-mono),monospace",
             }}
             onFocus={e => (e.target as HTMLInputElement).style.borderColor='var(--zc)'}
             onBlur={e  => (e.target as HTMLInputElement).style.borderColor='var(--border)'}
           />
-          <div style={{ fontSize:10, color:'var(--txt4)', marginBottom:10, lineHeight:1.6 }}>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginBottom:10, lineHeight:1.6 }}>
             {t('emailSection.firebaseNote')}
           </div>
           <button
@@ -93,7 +93,7 @@ export default function SettingsEmailSection() {
               background: (!newEmail.trim() || loading) ? 'var(--bg3)' : 'var(--zc)',
               color: (!newEmail.trim() || loading) ? 'var(--txt4)' : '#fff',
               border:'none', cursor: (!newEmail.trim() || loading) ? 'not-allowed' : 'pointer',
-              fontSize:13, fontWeight:600, fontFamily:"var(--font-sans),sans-serif",
+              fontSize:'var(--fs-body)', fontWeight:600, fontFamily:"var(--font-sans),sans-serif",
               transition:'all var(--t-fast)', opacity: loading ? 0.6 : 1,
             }}
           >
@@ -103,11 +103,11 @@ export default function SettingsEmailSection() {
       )}
       {/* Reset password */}
       <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
-        <div style={{ fontSize:11, color:'var(--txt3)', marginBottom:8 }}>
+        <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginBottom:8 }}>
           {t('emailSection.forgotPassword')}
         </div>
         {resetSent ? (
-          <div style={{ fontSize:11, color:'var(--c-lunas)', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)' }}>
+          <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)' }}>
             {t('emailSection.resetSentDesc')} {userEmail}
           </div>
         ) : (

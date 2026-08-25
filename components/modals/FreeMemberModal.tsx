@@ -139,7 +139,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
 
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:15, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
             <Gift size={16} strokeWidth={1.5} color="var(--c-free)" />
             Free Member: {name}
           </div>
@@ -154,7 +154,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
 
         {/* Dari */}
         <div style={{ marginBottom:12 }}>
-          <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.startFrom").toUpperCase()}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.startFrom").toUpperCase()}</div>
           <div style={{ display:'flex', gap:6 }}>
             <select style={cs} value={fromYear}  onChange={e => setFromYear(+e.target.value)}>
               {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -178,7 +178,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         {/* Sampai */}
         {!noEnd && (
           <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.until").toUpperCase()}</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:6, letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>{t("freemodal.until").toUpperCase()}</div>
             <div style={{ display:'flex', gap:6 }}>
               <select style={cs} value={toYear}  onChange={e => setToYear(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -194,14 +194,14 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:16 }}>
           <button
             onClick={handleSave}
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'var(--c-lunas)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:13, transition:'all var(--t-fast)' }}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'var(--c-lunas)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}
           >
             <Check size={14} /> {t("freemodal.save")}
           </button>
           {existing && (
             <button
               onClick={handleRemove}
-              style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:13, transition:'all var(--t-fast)' }}
+              style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'11px', borderRadius:'var(--r-sm)', cursor:'pointer', fontWeight:600, fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}
             >
               <CreditCard size={14} /> {t("freemodal.remove")}
             </button>

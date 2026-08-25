@@ -86,7 +86,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
         <button
           onClick={onClose}
           aria-label={t("action.close")}
-          style={{ background:'rgba(24,28,39,0.9)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt2)', padding:'10px 14px', borderRadius:'var(--r-md)', cursor:'pointer', fontSize:13, flexShrink:0, transition:'all var(--t-fast)', display:'flex', alignItems:'center' }}
+          style={{ background:'rgba(24,28,39,0.9)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt2)', padding:'10px 14px', borderRadius:'var(--r-md)', cursor:'pointer', fontSize:'var(--fs-body)', flexShrink:0, transition:'all var(--t-fast)', display:'flex', alignItems:'center' }}
         >
           {t('action.close')}
         </button>
@@ -111,7 +111,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
             >
               {/* Zona badge */}
               <span style={{
-                fontSize:9, padding:'2px 7px', borderRadius:'var(--r-xs)', fontWeight:600, flexShrink:0,
+                fontSize:'var(--fs-micro)', padding:'2px 7px', borderRadius:'var(--r-xs)', fontWeight:600, flexShrink:0,
                 background: r.z === 'KRS' ? 'var(--zcdim)' : 'rgba(249,115,22,0.10)',
                 color: r.z === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)',
                 border: `1px solid ${r.z === 'KRS' ? 'rgba(var(--zc-rgb,59,130,246),0.25)' : 'rgba(249,115,22,0.25)'}`,
@@ -123,7 +123,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
               {/* Nama + info */}
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="gsr-name">{r.name}</div>
-                {r.id && <div style={{ fontSize:9, color:'var(--txt4)', fontFamily:"var(--font-mono),monospace" }}>{r.id}{r.ip ? ' · ' + r.ip : ''}</div>}
+                {r.id && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', fontFamily:"var(--font-mono),monospace" }}>{r.id}{r.ip ? ' · ' + r.ip : ''}</div>}
               </div>
 
               {/* Status */}
@@ -145,7 +145,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
                     <XCircle size={11} /> {t("status.belum")}
                   </span>
                 )}
-                {r.tarif && <div style={{ fontSize:9, color:'var(--txt4)', marginTop:2 }}>{t("members.tarifShort")}: {rp(r.tarif)}</div>}
+                {r.tarif && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{t("members.tarifShort")}: {rp(r.tarif)}</div>}
               </div>
             </div>
           );

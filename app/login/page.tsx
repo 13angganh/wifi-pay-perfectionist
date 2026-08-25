@@ -22,7 +22,7 @@ function GoogleButton({ onClick, loading, label }: {
         width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:10,
         padding:'11px 14px', borderRadius:'var(--r-sm)', cursor: loading ? 'not-allowed' : 'pointer',
         background:'var(--bg)', border:'1px solid var(--border)',
-        color:'var(--txt)', fontSize:13, fontWeight:600,
+        color:'var(--txt)', fontSize:'var(--fs-body)', fontWeight:600,
         fontFamily:"var(--font-sans),sans-serif",
         transition:'all var(--t-fast)', opacity: loading ? 0.6 : 1,
         marginBottom: 0,
@@ -128,7 +128,7 @@ export default function LoginPage() {
   };
 
   const divider = (
-    <div style={{ textAlign:'center', margin:'14px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
+    <div style={{ textAlign:'center', margin:'14px 0', fontSize:'var(--fs-label)', color:'var(--txt5)', position:'relative' }}>
       <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
       <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>atau</span>
     </div>
@@ -144,13 +144,13 @@ export default function LoginPage() {
       padding:24, zIndex:200, overflowY:'auto',
     }}>
       {/* Logo */}
-      <div style={{ width:80, height:80, borderRadius:20, overflow:'hidden', marginBottom:16, boxShadow:'0 8px 32px rgba(201,149,42,0.3), 0 0 0 1px rgba(255,255,255,0.06)' }}>
+      <div style={{ width:80, height:80, borderRadius:'var(--r-xl)', overflow:'hidden', marginBottom:16, boxShadow:'0 8px 32px rgba(201,149,42,0.3), 0 0 0 1px rgba(255,255,255,0.06)' }}>
         <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
       </div>
       <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:26, fontWeight:800, letterSpacing:'-0.03em', marginBottom:2 }}>
         {APP_NAME}
       </div>
-      <div style={{ fontSize:10, color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>{APP_VERSION_FULL}</div>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', letterSpacing:'.12em', marginBottom:28 }}>{APP_VERSION_FULL}</div>
 
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:24, width:'100%', maxWidth:360, boxShadow:'var(--shadow-md)' }}>
 
@@ -190,7 +190,7 @@ export default function LoginPage() {
             </div>
 
             {remembered && (
-              <button onClick={() => setState('remembered')} style={{ background:'none', border:'none', color:'var(--txt3)', fontSize:11, cursor:'pointer', marginBottom:12, display:'block' }}>
+              <button onClick={() => setState('remembered')} style={{ background:'none', border:'none', color:'var(--txt3)', fontSize:'var(--fs-caption)', cursor:'pointer', marginBottom:12, display:'block' }}>
                 ← {t('action.back')}
               </button>
             )}
@@ -198,14 +198,14 @@ export default function LoginPage() {
             <GoogleButton onClick={handleLoginGoogle} loading={gLoading} label="Masuk dengan Google" />
             {divider}
 
-            <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
             <input
               style={inputStyle} type="email" inputMode="email" placeholder="email@gmail.com"
               value={email} onChange={e => setEmail(e.target.value)} autoComplete="email"
               onFocus={e => (e.target as HTMLInputElement).style.borderColor='var(--zc)'}
               onBlur={e  => (e.target as HTMLInputElement).style.borderColor='var(--border)'}
             />
-            <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>PASSWORD</div>
+            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>PASSWORD</div>
             <input
               style={inputStyle} type="password" placeholder="••••••••"
               value={pass} onChange={e => setPass(e.target.value)}
@@ -218,19 +218,19 @@ export default function LoginPage() {
               {loading ? t('common.loading') : t('login.submit')}
             </button>
             {resetSent && (
-              <div style={{ fontSize:11, color:'var(--c-lunas)', textAlign:'center', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)', marginBottom:8 }}>
+              <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)', textAlign:'center', padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)', border:'1px solid rgba(34,197,94,0.2)', marginBottom:8 }}>
                 ✓ Link reset dikirim ke {email} — cek inbox
               </div>
             )}
             <div style={{ textAlign:'center', marginTop:4, marginBottom:10 }}>
               <span
-                style={{ fontSize:11, color:'var(--txt3)', cursor:'pointer', textDecoration:'underline' }}
+                style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', cursor:'pointer', textDecoration:'underline' }}
                 onClick={handleReset}
               >
                 {resetLoading ? 'Mengirim...' : 'Lupa password?'}
               </span>
             </div>
-            <div style={{ textAlign:'center', marginTop:4, fontSize:11, color:'var(--txt3)' }}>
+            <div style={{ textAlign:'center', marginTop:4, fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>
               {t('login.noAccount')}{' '}
               <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={() => { setState('register'); setErr(''); }}>
                 {t('login.registerHere')}
@@ -258,7 +258,7 @@ export default function LoginPage() {
               const sets  = [setREmail, setRPass, setRName];
               return (
                 <div key={label}>
-                  <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>{label}</div>
+                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>{label}</div>
                   <input
                     style={inputStyle} type={types[i]} autoComplete={modes[i]}
                     placeholder={i===0?'email@gmail.com':i===1?'••••••••':t('login.namePlaceholder')}
@@ -273,7 +273,7 @@ export default function LoginPage() {
             <button className="lf-btn" onClick={handleRegister} disabled={rLoading}>
               {rLoading ? t('common.loading') : t('login.registerSubmit')}
             </button>
-            <div style={{ textAlign:'center', marginTop:14, fontSize:11, color:'var(--txt3)' }}>
+            <div style={{ textAlign:'center', marginTop:14, fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>
               {t('login.hasAccount')}{' '}
               <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={() => { setState('form'); setRErr(''); }}>
                 {t('login.loginHere')}

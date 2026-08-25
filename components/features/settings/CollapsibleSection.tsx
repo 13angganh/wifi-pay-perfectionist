@@ -48,7 +48,7 @@ export default function CollapsibleSection({
         {/* Title */}
         <span style={{
           flex:1, fontFamily:"var(--font-sans),sans-serif",
-          fontWeight:700, fontSize:13, color:'var(--txt)',
+          fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)',
         }}>
           {title}
         </span>
@@ -56,8 +56,8 @@ export default function CollapsibleSection({
         {/* Badge */}
         {badge && (
           <span style={{
-            fontSize:9, fontWeight:700, letterSpacing:'.05em',
-            padding:'2px 8px', borderRadius:100,
+            fontSize:'var(--fs-micro)', fontWeight:700, letterSpacing:'.05em',
+            padding:'2px 8px', borderRadius:'var(--r-full)',
             background:'var(--bg3)', color: badgeColor,
             border:'1px solid var(--border)',
             marginRight:4, flexShrink:0,

@@ -18,7 +18,7 @@ export default function LoadingScreen() {
       {/* Logo */}
       <div style={{
         width:72, height:72,
-        borderRadius:20,
+        borderRadius:'var(--r-xl)',
         overflow:'hidden',
         border:'1px solid rgba(201,149,42,0.25)',
         boxShadow:'0 4px 24px rgba(201,149,42,0.18)',
@@ -50,7 +50,7 @@ export default function LoadingScreen() {
 
       {/* Tagline */}
       <div style={{
-        fontSize:11,
+        fontSize:'var(--fs-caption)',
         color:'var(--txt4)',
         marginTop:4,
         marginBottom:32,

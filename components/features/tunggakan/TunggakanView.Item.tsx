@@ -25,10 +25,10 @@ export default function TunggakanItem({ index, name, unpaid, onClick }: Props) {
     >
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:10, color:'var(--txt4)', width:18 }}>{index + 1}</span>
+          <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-label)', color:'var(--txt4)', width:18 }}>{index + 1}</span>
           <span className="tcard-name">{name}</span>
         </div>
-        <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:11, color:'var(--c-belum)', fontWeight:700, flexShrink:0 }}>
+        <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-caption)', color:'var(--c-belum)', fontWeight:700, flexShrink:0 }}>
           {unpaid.length} bln
         </span>
       </div>

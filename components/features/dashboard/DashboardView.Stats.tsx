@@ -42,7 +42,7 @@ function PctBadge({ pct, prevLabel }: { pct: number | null; prevLabel?: string }
   if (pct === null) return null;
   const up = pct >= 0;
   return (
-    <span style={{ fontSize:9, fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
+    <span style={{ fontSize:'var(--fs-micro)', fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
       {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
       {Math.abs(pct)}%{prevLabel ? ` vs ${prevLabel}` : ''}
     </span>
@@ -99,7 +99,7 @@ export default function DashboardStats(p: Props) {
         borderColor:'rgba(34,197,94,0.15)',
         padding:'20px 16px',
       }}>
-        <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:4 }}>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:4 }}>
           {t('dashboard.thisMonth')}
         </div>
         <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'clamp(22px,6vw,32px)', fontWeight:800, color:'var(--c-lunas)', lineHeight:1.1, marginBottom:6 }}>
@@ -108,7 +108,7 @@ export default function DashboardStats(p: Props) {
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
           <PctBadge pct={p.totalPct} />
           {p.totalOps > 0 && (
-            <span style={{ fontSize:10, color:'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
+            <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
               <Minus size={10} /> Ops: {rp(p.totalOps)} →
               <span style={{ color: p.netIncome >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', fontWeight:600, marginLeft:2 }}>
                 {t('dashboard.net')}: {rp(p.netIncome)}
@@ -122,7 +122,7 @@ export default function DashboardStats(p: Props) {
       <motion.div variants={itemVariants} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
         {[p.krsStats, p.slkStats].map(z => (
           <div key={z.zone} style={{ ...cardBase, boxShadow:'var(--shadow-md)', padding:'14px 14px', marginBottom:0 }}>
-            <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
               {z.zone} <PctBadge pct={z.pct2} />
             </div>
             <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'clamp(12px,3.8vw,15px)', fontWeight:800, color:z.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginBottom:8 }}>
@@ -130,7 +130,7 @@ export default function DashboardStats(p: Props) {
             </div>
             {/* Animated gradient progress bar */}
             <ProgressBar pct={z.pct} color={z.color} />
-            <div style={{ fontSize:9, color:'var(--txt4)', marginTop:4 }}>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:4 }}>
               {z.lunas}/{z.allLen} {t('status.lunas')} ({z.pct}%)
             </div>
           </div>
@@ -161,18 +161,18 @@ export default function DashboardStats(p: Props) {
             [t('status.lunas'), p.krsLunas + p.slkLunas, 'var(--c-lunas)'],
           ].map(([label, val, color]) => (
             <div key={String(label)} style={{ flex:1, background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center', border:'1px solid var(--border)' }}>
-              <div style={{ fontSize:9, color:'var(--txt4)', marginBottom:2 }}>{label}</div>
+              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:2 }}>{label}</div>
               <div style={{ fontSize:20, fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: String(color), lineHeight:1 }}>{val}</div>
             </div>
           ))}
         </div>
         {p.totalFree > 0 && (
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--zcdim)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'7px 10px' }}>
-            <span style={{ fontSize:10, color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>
+            <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>
               <Gift size={12} /> {t('status.free')} {p.bulanLbl}
             </span>
             <span style={{ fontSize:12, fontWeight:700, color:'var(--c-free)' }}>
-              {p.totalFree} {t('common.members')} <span style={{ fontSize:9, opacity:.7 }}>(KRS:{p.krsFree} SLK:{p.slkFree})</span>
+              {p.totalFree} {t('common.members')} <span style={{ fontSize:'var(--fs-micro)', opacity:.7 }}>(KRS:{p.krsFree} SLK:{p.slkFree})</span>
             </span>
           </div>
         )}

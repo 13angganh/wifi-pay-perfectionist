@@ -128,7 +128,7 @@ export default function PinLock() {
     }}>
       {/* Logo */}
       <div style={{
-        width:72, height:72, borderRadius:20, marginBottom:20,
+        width:72, height:72, borderRadius:'var(--r-xl)', marginBottom:20,
         overflow:'hidden',
         boxShadow:'0 8px 32px rgba(201,149,42,0.25), 0 0 0 1px rgba(255,255,255,0.06)',
       }}>
@@ -146,7 +146,7 @@ export default function PinLock() {
 
       {/* Subtitle */}
       <div style={{
-        fontSize:11, color:'var(--txt3)',
+        fontSize:'var(--fs-caption)', color:'var(--txt3)',
         letterSpacing:'.1em', textTransform:'uppercase',
         marginBottom:32,
       }}>
@@ -171,7 +171,7 @@ export default function PinLock() {
 
       {/* Error */}
       <div style={{
-        fontSize:11, color:'var(--c-belum)',
+        fontSize:'var(--fs-caption)', color:'var(--c-belum)',
         marginBottom:20, minHeight:16, textAlign:'center',
         opacity: error ? 1 : 0,
         transition:'opacity .15s',

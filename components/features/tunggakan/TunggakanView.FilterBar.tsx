@@ -25,13 +25,13 @@ export default function TunggakanFilterBar({ mode, agingFilter, counts, agingCou
   return (
     <>
       {/* Mode tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:20, border:'1px solid var(--border)' }}>
+      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
         {([
           ['nakal', <AlertCircle size={12} key="a" />, t('tunggakan.nakal'), counts.nakal, 'var(--c-belum)'],
           ['rajin', <Star        size={12} key="b" />, t('tunggakan.rajin'), counts.rajin, 'var(--c-lunas)'],
           ['free',  <Gift        size={12} key="c" />, t('status.free'),    counts.free,  'var(--c-free)'],
         ] as [TMode, React.ReactNode, string, number, string][]).map(([m, icon, label, cnt, color]) => (
-          <button key={m} onClick={() => onMode(m)} style={{ flex:1, padding:'7px 4px', borderRadius:16, border:'none', cursor:'pointer', fontSize:11, fontWeight:600, minHeight:36, background: mode === m ? color : 'transparent', color: mode === m ? (m === 'rajin' ? '#0a0c12' : '#fff') : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all var(--t-fast)' }}>
+          <button key={m} onClick={() => onMode(m)} style={{ flex:1, padding:'7px 4px', borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, minHeight:36, background: mode === m ? color : 'transparent', color: mode === m ? (m === 'rajin' ? '#0a0c12' : '#fff') : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all var(--t-fast)' }}>
             {icon} {label} ({cnt})
           </button>
         ))}
@@ -46,9 +46,9 @@ export default function TunggakanFilterBar({ mode, agingFilter, counts, agingCou
             ['segera', <AlertCircle   size={11} key="ac" />, t('tunggakan.filter.soon'),     agingCounts.segera, '#F97316',      '#1a0d00',                   '#F9731633'],
             ['kritis', <Flame         size={11} key="fl" />, t('tunggakan.filter.critical'), agingCounts.kritis, 'var(--c-belum)','rgba(239,68,68,0.08)',     'rgba(239,68,68,0.25)'],
           ] as [AgingFilter, React.ReactNode, string, number, string, string, string][]).map(([key, icon, label, cnt, textColor, bgColor, borderColor]) => (
-            <button key={key} onClick={() => onAging(key)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:'var(--r-full)', border:`1px solid ${agingFilter === key ? borderColor : 'var(--border)'}`, background: agingFilter === key ? bgColor : 'transparent', color: agingFilter === key ? textColor : 'var(--txt4)', fontSize:11, fontWeight: agingFilter === key ? 700 : 500, cursor:'pointer', whiteSpace:'nowrap', minHeight:36, transition:'all var(--t-fast)', flexShrink:0 }}>
+            <button key={key} onClick={() => onAging(key)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:'var(--r-full)', border:`1px solid ${agingFilter === key ? borderColor : 'var(--border)'}`, background: agingFilter === key ? bgColor : 'transparent', color: agingFilter === key ? textColor : 'var(--txt4)', fontSize:'var(--fs-caption)', fontWeight: agingFilter === key ? 700 : 500, cursor:'pointer', whiteSpace:'nowrap', minHeight:36, transition:'all var(--t-fast)', flexShrink:0 }}>
               {icon} {label}
-              <span style={{ background: agingFilter === key ? 'rgba(0,0,0,0.2)' : 'var(--bg3)', borderRadius:'var(--r-full)', padding:'1px 7px', fontSize:10, fontWeight:700 }}>{cnt}</span>
+              <span style={{ background: agingFilter === key ? 'rgba(0,0,0,0.2)' : 'var(--bg3)', borderRadius:'var(--r-full)', padding:'1px 7px', fontSize:'var(--fs-label)', fontWeight:700 }}>{cnt}</span>
             </button>
           ))}
         </div>

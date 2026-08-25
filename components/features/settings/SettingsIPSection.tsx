@@ -112,7 +112,7 @@ export default function SettingsIPSection() {
 
   return (
     <div>
-      <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>
         {t('settings.ip.zoneLabel').toUpperCase()}
       </div>
       <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
@@ -135,7 +135,7 @@ export default function SettingsIPSection() {
 
       <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:12 }}>
         <div>
-          <label style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
+          <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
             {t('settings.ip.findLabel').toUpperCase()}
           </label>
           <input
@@ -144,13 +144,13 @@ export default function SettingsIPSection() {
             placeholder="contoh: 10.13 atau .13 atau 192.168.1"
             style={{
               width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:13,
+              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
               fontFamily:"var(--font-mono),monospace", outline:'none',
             }}
           />
         </div>
         <div>
-          <label style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
+          <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
             {t('settings.ip.replaceLabel').toUpperCase()}
           </label>
           <input
@@ -159,7 +159,7 @@ export default function SettingsIPSection() {
             placeholder="contoh: 10.90"
             style={{
               width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:13,
+              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
               fontFamily:"var(--font-mono),monospace", outline:'none',
             }}
           />
@@ -168,7 +168,7 @@ export default function SettingsIPSection() {
 
       {find.trim() && (
         <div style={{
-          fontSize:11, color: previewCount > 0 ? 'var(--zc)' : 'var(--txt4)',
+          fontSize:'var(--fs-caption)', color: previewCount > 0 ? 'var(--zc)' : 'var(--txt4)',
           marginBottom:12, padding:'8px 10px', background:'rgba(255,255,255,0.02)',
           borderRadius:'var(--r-xs)',
         }}>
@@ -186,7 +186,7 @@ export default function SettingsIPSection() {
           background: find.trim() ? 'var(--zc)' : 'var(--bg3)',
           color: find.trim() ? '#fff' : 'var(--txt4)',
           border:'none', borderRadius:'var(--r-sm)', padding:'10px',
-          fontSize:13, fontWeight:600, cursor: find.trim() ? 'pointer' : 'not-allowed',
+          fontSize:'var(--fs-body)', fontWeight:600, cursor: find.trim() ? 'pointer' : 'not-allowed',
           transition:'all var(--t-fast)',
         }}
       >
@@ -194,7 +194,7 @@ export default function SettingsIPSection() {
         {t('settings.ip.convertButton')}
       </button>
 
-      <div style={{ fontSize:10, color:'var(--txt4)', marginTop:10, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:10, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
         {t('settings.ip.note')}
       </div>
     </div>

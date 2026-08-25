@@ -30,7 +30,7 @@ export default function RememberedUser({ greeterName, loading, error, onContinue
       <button className="lf-btn" onClick={onContinue} disabled={loading}>
         {loading ? t('common.loading') : t('login.continue')}
       </button>
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:11, color:'var(--txt4)' }}>{t('login.or')}</div>
+      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-caption)', color:'var(--txt4)' }}>{t('login.or')}</div>
       <button className="lf-btn secondary" onClick={onSwitch} style={{ fontSize:12 }}>
         {t('login.changeAccount')}
       </button>

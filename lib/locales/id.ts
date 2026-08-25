@@ -125,6 +125,17 @@ const id: Record<string, string> = {
   'settings.appInfo'         : 'Info Aplikasi',
   'settings.version'         : 'Versi',
 
+  // Restrukturisasi Settings jadi 2 level: grup besar (level 1) berisi beberapa
+  // CollapsibleSection individual (level 2, tidak berubah). Grup level 1 murni
+  // kontainer navigasi — bukan pengganti section individual di dalamnya.
+  'settings.group.account'    : 'Akun',
+  'settings.group.security'   : 'Keamanan',
+  'settings.group.management' : 'Manajemen',
+  'settings.group.data'       : 'Data',
+  'settings.group.appearance' : 'Tampilan',
+  'settings.group.accountMine': 'Akun Saya',
+  'settings.group.accountTenant': 'Akun Penagih',
+
   // v11.5.12: judul & badge header CollapsibleSection di SettingsView.tsx — sebelumnya
   // hardcoded, tidak pernah tersambung ke sistem terjemahan sama sekali (beda dari
   // teks sub-konten di dalamnya yang sudah lama terhubung). Nilai di sini SAMA PERSIS
@@ -295,7 +306,7 @@ const id: Record<string, string> = {
   'settings.pinStatus.active'   : 'Aktif',
   'settings.pinStatus.inactive' : 'Nonaktif',
   'settings.pin.newTitle'       : 'Buat PIN Baru',
-  'settings.pin.enterNew'       : 'Masukkan 4 digit PIN',
+  'settings.pin.enterNew'       : 'Masukkan 6 digit PIN',
   'settings.pin.reenterNew'     : 'Masukkan PIN yang sama lagi',
   'settings.pin.enterCurrent'   : 'Masukkan PIN saat ini untuk konfirmasi',
   'settings.pin.enterOld'       : 'Masukkan PIN lama',

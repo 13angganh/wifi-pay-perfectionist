@@ -150,7 +150,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
             style={{
               background:'var(--c-lunas)', color:'#0a0c12', border:'none',
-              padding:'6px 14px', borderRadius:6, fontSize:11, fontWeight:700,
+              padding:'6px 14px', borderRadius:6, fontSize:'var(--fs-caption)', fontWeight:700,
               cursor:'pointer', flexShrink:0,
             }}
           >
@@ -227,13 +227,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
-              fontSize:13, fontWeight:700,
+              fontSize:'var(--fs-body)', fontWeight:700,
               color: theme === 'gold' ? 'var(--gold-bright, #E8B84B)' : 'var(--txt)',
               fontFamily:"var(--font-sans), sans-serif",
             }}>
               {t('pwa.installTitle')}
             </div>
-            <div style={{ fontSize:11, color:'var(--txt3)', marginTop:1 }}>
+            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:1 }}>
               {t('pwa.installDesc')}
             </div>
           </div>

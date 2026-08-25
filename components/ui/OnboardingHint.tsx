@@ -151,7 +151,7 @@ export default function OnboardingHint({ forceShow }: Props) {
           </div>
           <div style={{
             fontFamily:"var(--font-sans),sans-serif",
-            fontSize:13, color:'var(--txt2)', lineHeight:1.55,
+            fontSize:'var(--fs-body)', color:'var(--txt2)', lineHeight:1.55,
             marginBottom:20,
           }}>
             {hint.desc}
@@ -178,7 +178,7 @@ export default function OnboardingHint({ forceShow }: Props) {
               background:'var(--zc)', color:'#fff', border:'none',
               borderRadius:'var(--r-md)', padding:'9px 20px',
               fontFamily:"var(--font-sans),sans-serif", fontWeight:600,
-              fontSize:13, cursor:'pointer',
+              fontSize:'var(--fs-body)', cursor:'pointer',
               minWidth:80,
               transition:'opacity var(--t-fast)',
             }}
@@ -195,7 +195,7 @@ export default function OnboardingHint({ forceShow }: Props) {
               display:'block', width:'100%', marginTop:12,
               background:'none', border:'none',
               fontFamily:"var(--font-sans),sans-serif",
-              fontSize:11, color:'var(--txt4)',
+              fontSize:'var(--fs-caption)', color:'var(--txt4)',
               cursor:'pointer', textAlign:'center',
             }}
           >

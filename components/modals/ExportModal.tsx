@@ -101,7 +101,7 @@ export default function ExportModal({ open, onClose }: Props) {
             {/* Share info — hanya tampil saat JSON dan share tersedia */}
             {expFmt === 'json' && shareAvail && (
               <div style={{
-                fontSize:11, color:'var(--txt3)', padding:'8px 12px',
+                fontSize:'var(--fs-caption)', color:'var(--txt3)', padding:'8px 12px',
                 background:'var(--bg3)', borderRadius:'var(--r-sm)',
                 marginBottom:12, lineHeight:1.6,
               }}>

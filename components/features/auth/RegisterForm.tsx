@@ -44,7 +44,7 @@ export default function RegisterForm({ rEmail, rPass, rName, rErr, rLoading, onR
 
       {fields.map(f => (
         <div key={f.label}>
-          <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>{f.label}</div>
+          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>{f.label}</div>
           <input
             style={inputStyle} type={f.type} autoComplete={f.ac} placeholder={f.ph}
             value={f.val} onChange={e => f.set(e.target.value)}
@@ -59,11 +59,11 @@ export default function RegisterForm({ rEmail, rPass, rName, rErr, rLoading, onR
         {rLoading ? t('common.loading') : t('login.registerSubmit')}
       </button>
 
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:10, color:'var(--txt5)', position:'relative' }}>
+      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-label)', color:'var(--txt5)', position:'relative' }}>
         <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
         <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
       </div>
-      <div style={{ fontSize:11, color:'var(--txt3)', textAlign:'center' }}>
+      <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', textAlign:'center' }}>
         {t('login.hasAccount')}{' '}
         <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={onBackToLogin}>
           {t('login.loginHere')}

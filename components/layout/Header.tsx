@@ -118,7 +118,7 @@ export default function Header({ onToggleSidebar }: Props) {
 
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{
-              width:30, height:30, borderRadius:8,
+              width:30, height:30, borderRadius:'var(--r-sm)',
               overflow:'hidden', flexShrink:0,
               boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
             }}>
@@ -128,7 +128,7 @@ export default function Header({ onToggleSidebar }: Props) {
               <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>
                 {APP_NAME}
               </div>
-              <div style={{ fontSize:9, color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
+              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
             </div>
           </div>
 
@@ -191,7 +191,7 @@ export default function Header({ onToggleSidebar }: Props) {
               ? <Lock size={14} strokeWidth={1.5} />
               : <LockOpen size={14} strokeWidth={1.5} />
             }
-            <span style={{ fontSize:9 }}>{globalLocked ? t('header.lock') : t('header.unlock')}</span>
+            <span style={{ fontSize:'var(--fs-micro)' }}>{globalLocked ? t('header.lock') : t('header.unlock')}</span>
           </button>
 
           {/* Pencarian */}

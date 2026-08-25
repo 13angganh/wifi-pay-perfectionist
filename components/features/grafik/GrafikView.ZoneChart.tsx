@@ -74,7 +74,7 @@ export default function ZoneChart({ appData, activeZone, selYear, MONTH_NAMES, c
 
   const selStyle: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:11, flex:1,
+    padding:'6px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-caption)', flex:1,
   };
 
   return (
@@ -93,7 +93,7 @@ export default function ZoneChart({ appData, activeZone, selYear, MONTH_NAMES, c
         <div className="chart-title" style={{ marginBottom:12 }}>{t('grafik.twoperiod').toUpperCase()}</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
           <div>
-            <div style={{ fontSize:9, color:'var(--zc)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period1').toUpperCase()}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--zc)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period1').toUpperCase()}</div>
             <div style={{ display:'flex', gap:5 }}>
               <select style={selStyle} value={p1Year}  onChange={e => setP1Year(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}
@@ -105,7 +105,7 @@ export default function ZoneChart({ appData, activeZone, selYear, MONTH_NAMES, c
             <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
           </div>
           <div>
-            <div style={{ fontSize:9, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
+            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
             <div style={{ display:'flex', gap:5 }}>
               <select style={selStyle} value={p2Year}  onChange={e => setP2Year(+e.target.value)}>
                 {getYears().map(y => <option key={y} value={y}>{y}</option>)}

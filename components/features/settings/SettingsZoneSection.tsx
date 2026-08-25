@@ -157,17 +157,17 @@ export default function SettingsZoneSection() {
                   <input autoFocus value={editZonaVal}
                     onChange={e => setEditZonaVal(e.target.value.toUpperCase())}
                     onKeyDown={e => { if (e.key === 'Enter') saveEditZona(z); if (e.key === 'Escape') setEditingZona(null); }}
-                    style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--zc)', color:'var(--txt)', padding:'4px 8px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"var(--font-mono),monospace" }}
+                    style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--zc)', color:'var(--txt)', padding:'4px 8px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-body)', fontFamily:"var(--font-mono),monospace" }}
                     maxLength={6}
                   />
                 ) : (
                   <div style={{ flex:1 }}>
-                    <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:13, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+                    <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
                       {z}
-                      {isCustom && <span style={{ fontSize:9, background:'var(--zcdim)', color:'var(--zc)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>Custom</span>}
-                      {isHidden && <span style={{ fontSize:9, background:'rgba(255,255,255,0.06)', color:'var(--txt4)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>{t('settings.zona.hidden')}</span>}
+                      {isCustom && <span style={{ fontSize:'var(--fs-micro)', background:'var(--zcdim)', color:'var(--zc)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>Custom</span>}
+                      {isHidden && <span style={{ fontSize:'var(--fs-micro)', background:'rgba(255,255,255,0.06)', color:'var(--txt4)', padding:'1px 6px', borderRadius:'var(--r-xs)' }}>{t('settings.zona.hidden')}</span>}
                     </div>
-                    <div style={{ fontSize:10, color:'var(--txt4)', marginTop:1 }}>{memCount} {t('common.members')}</div>
+                    <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:1 }}>{memCount} {t('common.members')}</div>
                   </div>
                 )}
 
@@ -203,7 +203,7 @@ export default function SettingsZoneSection() {
 
       {addZonaOpen ? (
             <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'12px', marginTop:8 }}>
-              <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>{t('settings.addZone').toUpperCase()}</div>
+              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>{t('settings.addZone').toUpperCase()}</div>
               <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:10 }}>
                 <input
                   autoFocus value={newZonaKey}
@@ -211,10 +211,10 @@ export default function SettingsZoneSection() {
                   onKeyDown={e => { if (e.key === 'Enter') addZona(); if (e.key === 'Escape') setAddZonaOpen(false); }}
                   placeholder={t('settings.zona.namePlaceholder')}
                   maxLength={6}
-                  style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)', padding:'8px 10px', borderRadius:'var(--r-xs)', fontSize:13, fontFamily:"var(--font-mono),monospace", outline:'none' }}
+                  style={{ flex:1, background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt)', padding:'8px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-body)', fontFamily:"var(--font-mono),monospace", outline:'none' }}
                 />
                 <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                  <label style={{ fontSize:10, color:'var(--txt3)' }}>{t('settings.zona.color')}:</label>
+                  <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>{t('settings.zona.color')}:</label>
                   <input
                     type="color" value={newZonaColor} onChange={e => setNewZonaColor(e.target.value)}
                     style={{ width:32, height:28, border:'1px solid var(--border)', borderRadius:'var(--r-xs)', cursor:'pointer', padding:2, background:'var(--bg4)' }}
@@ -236,7 +236,7 @@ export default function SettingsZoneSection() {
             </button>
           )}
 
-      <div style={{ fontSize:10, color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
             {t('settings.zonesNote')}
           </div>
     </div>

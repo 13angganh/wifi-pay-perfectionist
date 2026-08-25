@@ -130,12 +130,12 @@ export default function OperasionalView() {
         <select className="cs" value={opsMonth} onChange={e => setOpsMonth(+e.target.value)}>
           {MONTH_NAMES.map((m, i) => <option key={i} value={i} disabled={opsYear===minYear&&i<0}>{m}</option>)}
         </select>
-        <span style={{ fontSize:11, color:'var(--txt3)', alignSelf:'center', fontFamily:FONT }}>{MONTH_NAMES[opsMonth]} {opsYear}</span>
+        <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', alignSelf:'center', fontFamily:FONT }}>{MONTH_NAMES[opsMonth]} {opsYear}</span>
       </div>
 
       {/* Items */}
       <div className="ops-card">
-        <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10, fontFamily:FONT }}>
+        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10, fontFamily:FONT }}>
           {t('ops.expenseTitle')}
         </div>
 

@@ -37,7 +37,7 @@ export default function OperasionalForm({ items, onAdd, onUpdate, onDelete }: Pr
 
   return (
     <div className="ops-card">
-      <div style={{ fontSize:10, color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10, fontFamily:FONT }}>
+      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10, fontFamily:FONT }}>
         {t('ops.expenseTitle')}
       </div>
 

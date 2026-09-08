@@ -173,7 +173,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               id="content"
               style={{
                 flex:1, overflowY:'auto',
-                WebkitOverflowScrolling:'touch' as React.CSSProperties['WebkitOverflowScrolling'],
                 padding:'12px 12px 0',
                 paddingBottom:'max(24px, env(safe-area-inset-bottom))',
                 background:'var(--bg)',

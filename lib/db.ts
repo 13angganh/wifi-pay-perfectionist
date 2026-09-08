@@ -49,6 +49,7 @@ export function listenDB(
         freeMembers:    val.freeMembers    || {},
         deletedMembers: val.deletedMembers || {},
         operasional:    val.operasional    || {},
+        tenants:        val.tenants        || {}, // v11.6.4 FIX — lihat catatan di atas
         _globalLocked:  val._globalLocked,
         _lockedEntries: val._lockedEntries || {},
       };

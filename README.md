@@ -1,3 +1,66 @@
+# WiFi Pay Next — Update v11.6.4
+
+> Audit menyeluruh atas permintaan user: cari bug/crash umum, plus investigasi khusus bug render blank di menu Rekap saat scroll cepat di mobile (Chrome Android) yang tidak muncul di PC.
+
+## Fix: bug render blank Rekap saat fast-scroll mobile — pengurangan kontributor (bukan penghilangan akar masalah)
+
+Investigasi menemukan root cause akar masalah adalah *checkerboarding* — istilah resmi Chromium untuk kondisi saat compositor thread scroll lebih cepat dari kemampuan raster thread mengecat tile baru, khususnya untuk tabel besar (~1.300+ sel `<td>` per zona) yang dirender tanpa virtualisasi. Chromium sendiri mengakui ini sebagai keterbatasan arsitektural yang hanya bisa diminimalkan, bukan dihilangkan total tanpa windowing/virtualisasi (di luar cakupan perubahan kali ini — dicatat sebagai opsi terpisah untuk didiskusikan lagi jika diperlukan).
+
+Tiga kontributor tambahan (di luar fix `overflow-y:clip`/`contain:content` yang sudah ada dari v11.5.7/v11.5.8) diperbaiki:
+
+1. **`components/features/rekap/RekapView.tsx`** — baris `<tr>` diekstrak jadi komponen `Row` terpisah dibungkus `React.memo` dengan custom comparator (shallow-compare default tidak cukup karena array `cells` selalu reference baru tiap render parent). Handler `onCellPointerDown`/`onCellPointerUp`/`onCellClick`/`closeModal` dibungkus `useCallback` — tanpa ini, reference function yang selalu baru tiap render akan membatalkan seluruh manfaat memo. Diverifikasi lewat test sementara (dihapus setelah lulus): klik cell member A tidak lagi men-trigger re-render row member lain (dibuktikan via DOM node reference yang tidak berubah), sementara row yang memang harus update tetap ter-update dengan benar.
+2. **`hooks/useIdleTimeout.ts`** — listener `'scroll'` (untuk auto-lock PIN idle timeout) dipisah dari event diskrit lain dan diberi throttle rAF (pola identik dengan `handleContentScroll` di `AppShell.tsx`). Sebelumnya, setiap scroll event (bisa puluhan kali/detik saat fling-scroll cepat) memanggil `clearTimeout`+`setTimeout` tanpa batas — menambah beban main-thread tepat saat compositor sedang berjuang rasterize.
+3. **`components/layout/AppShell.tsx`** — `WebkitOverflowScrolling: 'touch'` dihapus. Dikonfirmasi via riset: properti WebKit lama ini tidak didukung Chrome di platform manapun termasuk Android (device target project ini) — murni dead code, no-op.
+
+**Dipertimbangkan tapi TIDAK dijalankan:** menaikkan `contain: style` → `contain: strict` di kolom nama (`td.stk`). Riset menemukan peringatan resmi Chrome Developers bahwa `contain: strict` menyertakan size containment — tanpa dimensi eksplisit di elemen `<td>` itu sendiri, elemen berisiko collapse jadi 0×0px. Tidak ditemukan sumber otoritatif yang mengonfirmasi kombinasi `contain:strict` + `table-layout:fixed`+`colgroup` (yang dipakai project ini) aman dari risiko itu — karena tidak bisa dipastikan, dan risikonya (kolom nama hilang total) jauh lebih buruk dari bug yang sedang diperbaiki, perubahan ini tidak dijalankan. `td.stk` tetap `contain: style` seperti sebelumnya.
+
+## Fix: `listenDB()` tidak memetakan field `tenants` dari Firebase
+
+Bug fungsional: `listenDB()` (`lib/db.ts`) membangun ulang objek `AppData` dari payload Firebase, tapi melewatkan field `tenants` — satu-satunya field dari 11 field `AppData` yang terlewat (dikonfirmasi via perbandingan lengkap ke `types/index.ts`). Efeknya: fitur "Daftar Penagih" (`SettingsTenantSection.tsx`, baca `appData.tenants ?? {}`) selalu tampak kosong setelah reload/refresh app, walau data tersimpan sempurna di Firebase — `registerTenant()` menulis langsung ke path terpisah dan write-path sudah benar sejak awal, bug murni di read-path `listenDB()` ini. Lolos `tsc` karena `AppData.tenants` bertipe optional (`tenants?:`).
+
+Diperbaiki dengan menambah `tenants: val.tenants || {}` mengikuti pola field lain yang sudah ada. Test regresi baru ditambahkan (`lib/__tests__/listenDB.test.ts`, 3 test) — divalidasi dengan sanity-check: fix sengaja dibalikkan sementara untuk membuktikan test benar-benar gagal tanpa fix, sebelum dikembalikan.
+
+## Dokumentasi: dua hook dead-code ditemukan saat audit
+
+`hooks/useRekap.ts` dan `hooks/useEntry.ts` (keduanya berkomentar "Dipecah dari [...]View.tsx (task 1.15)") ternyata tidak diimpor di manapun — dikonfirmasi via grep, tidak ada satu pun pemanggil. Komponen nyata yang dipakai app (`RekapView.tsx`, `EntryView.tsx`) menduplikasi logic yang sama langsung inline, kemungkinan sisa refactor task 1.15 yang tidak pernah selesai diintegrasikan. `useEntry.ts` juga punya bug yang sama seperti versi lama `EntryView.tsx` (filter tab "Lunas" tidak exclude free member, beda dari counter summary yang exclude) — diperbaiki agar konsisten, meski dampaknya ke user sebelumnya nol karena file ini tidak pernah dieksekusi. Kedua file diberi catatan status di komentar kepala file. Tidak dihapus — kemungkinan memang direncanakan untuk dipakai suatu saat, mengikuti pola project ini yang konsisten memecah logic ke hooks terpisah (`useDashboard.ts`, dst).
+
+## File yang berubah (v11.6.4)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/rekap/RekapView.tsx` | Ekstrak `Row` jadi komponen `React.memo` + custom comparator; `closeModal`/`onCellPointerDown`/`onCellPointerUp`/`onCellClick` → `useCallback` |
+| `hooks/useIdleTimeout.ts` | Listener `'scroll'` dipisah + throttle rAF |
+| `components/layout/AppShell.tsx` | Hapus `WebkitOverflowScrolling: 'touch'` (dead code) |
+| `lib/db.ts` | `listenDB()`: tambah pemetaan field `tenants` |
+| `lib/__tests__/listenDB.test.ts` | **Baru** — 3 test regresi untuk fix `tenants` |
+| `hooks/useEntry.ts` | Fix filter "paid" exclude free member; catatan status dead-code |
+| `hooks/useRekap.ts` | Catatan status dead-code (tidak ada perubahan logic) |
+| `lib/constants.ts` | Versi → v11.6.4 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **253/253 unit test lulus** (12 file — naik dari 11, `listenDB.test.ts` baru ditambahkan) · `pnpm audit` 0 vulnerabilities (tidak ada perubahan dependency di sesi ini) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
+# WiFi Pay Next — Update v11.6.3
+
+> Next.js August 2026 security release: dua kerentanan kritis (CVE-2026-75604 RCE Windows-hosted, GHSA-2xp9-vwfh-vxw4 RCE AVIF Image Optimization) dipatch di 16.3.3; 16.3.4 mengaktifkan kembali AVIF Image Optimization yang sempat dinonaktifkan sementara di 16.3.3.
+
+## Upgrade: Next.js 16.3.2 → 16.3.4 (stable, patch security)
+
+Kedua CVE dipatch di rentang 16.3.2→16.3.4 dan tidak membawa breaking change API maupun perubahan rule ESLint — rilis 16.3.3 dan 16.3.4 murni backport bug fix/security, tidak menyertakan fitur/perubahan pending di canary. Exposure langsung app ini terhadap kedua CVE rendah (App Router murni tanpa Pages Router, tidak ada pemakaian `next/image`/AVIF di codebase), dan deployment production di Vercel sudah terlindungi otomatis terlepas dari versi lokal (runtime Vercel pakai Linux, AVIF optimization sudah dinonaktifkan di layanan terkelola mereka) — upgrade ini tetap dilakukan untuk menyamakan versi lokal (dev di Windows) dengan versi yang sudah dipatch, menutup celah kalau ke depannya app mulai pakai `next/image` atau di-self-host.
+
+## File yang berubah (v11.6.3)
+
+| File | Perubahan |
+|------|-----------|
+| `package.json` | `next` 16.3.2→16.3.4, `eslint-config-next` 16.3.2→16.3.4 (pin eksak, mengikuti versi `next` persis — keduanya dirilis dari monorepo yang sama) |
+| `pnpm-lock.yaml` | Diregenerasi dari nol |
+| `lib/constants.ts` | Versi → v11.6.3 |
+
+**Hasil validasi:** `pnpm audit` → **0 vulnerabilities** · `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **250/250 unit test lulus** (11 file test, tidak ada test baru — perubahan pada dependency, bukan logika aplikasi).
+
+---
+
 # WiFi Pay Next — Update v11.5.20
 
 > Laporan dari log build Vercel: `npm install` menampilkan 10 vulnerabilities (1 low, 2 moderate, 5 high, 2 critical).

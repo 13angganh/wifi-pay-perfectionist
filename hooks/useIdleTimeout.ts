@@ -9,6 +9,7 @@ import { useAppStore } from '@/store/useAppStore';
 export function useIdleTimeout(timeoutMinutes: number) {
   const { settings, pinUnlocked, setPinUnlocked } = useAppStore();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Jika PIN tidak aktif, timeout 0, atau PIN sudah terkunci → tidak perlu listen
@@ -23,15 +24,33 @@ export function useIdleTimeout(timeoutMinutes: number) {
       }, ms);
     }
 
-    const events = ['mousemove', 'keydown', 'touchstart', 'scroll', 'click'] as const;
-    events.forEach(ev => window.addEventListener(ev, reset, { passive: true }));
+    // 'scroll' dipisah dari event diskrit lain: scroll event dari #content
+    // (overflow-y:auto) bubbles ke window dan bisa terpicu puluhan kali/detik
+    // saat fling-scroll cepat di mobile. Tanpa throttle, tiap event memanggil
+    // reset() (clearTimeout+setTimeout) — beban JS tambahan tepat saat
+    // compositor sedang rasterize sel Rekap. Pola rAF identik dgn
+    // handleContentScroll di AppShell.tsx: guard cegah rAF menumpuk, reset()
+    // jalan max sekali per frame.
+    function onScroll() {
+      if (scrollRafRef.current !== null) return;
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        reset();
+      });
+    }
+
+    const discreteEvents = ['mousemove', 'keydown', 'touchstart', 'click'] as const;
+    discreteEvents.forEach(ev => window.addEventListener(ev, reset, { passive: true }));
+    window.addEventListener('scroll', onScroll, { passive: true });
 
     // Mulai timer pertama kali
     reset();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      events.forEach(ev => window.removeEventListener(ev, reset));
+      if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
+      discreteEvents.forEach(ev => window.removeEventListener(ev, reset));
+      window.removeEventListener('scroll', onScroll);
     };
   }, [timeoutMinutes, settings.pinEnabled, pinUnlocked, setPinUnlocked]);
 }

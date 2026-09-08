@@ -1,6 +1,16 @@
 // ══════════════════════════════════════════
 // hooks/useEntry.ts — Entry page data & filter logic
 // Dipecah dari EntryView.tsx (task 1.15)
+//
+// CATATAN v11.6.4: hook ini TIDAK DIPAKAI di manapun (dikonfirmasi via
+// grep — tidak ada satupun import 'useEntry' di seluruh codebase).
+// EntryView.tsx (komponen nyata yang dipakai app) punya logic-nya sendiri
+// ditulis inline, terpisah total dari hook ini — kemungkinan sisa refactor
+// task 1.15 yang tidak pernah selesai diintegrasikan. Filter 'paid' di sini
+// sempat tidak exclude free member (beda dari EntryView.tsx yang sudah
+// benar) — sudah disamakan di v11.6.4, tapi karena tidak ada satupun
+// pemanggil, perubahan ini murni preventif untuk kalau hook ini suatu saat
+// benar-benar dipakai.
 // ══════════════════════════════════════════
 'use client';
 
@@ -36,7 +46,7 @@ export function useEntry() {
   const filterStatus2 = filterStatus ?? 'all';
   const filtered = mems.filter(m => {
     if (!fuzzyMatch(m, search)) return false;
-    if (filterStatus2 === 'paid')   return isLunas(appData, activeZone, m, selYear, selMonth);
+    if (filterStatus2 === 'paid')   return isLunas(appData, activeZone, m, selYear, selMonth) && !isFree(appData, activeZone, m, selYear, selMonth);
     if (filterStatus2 === 'unpaid') return getPay(appData, activeZone, m, selYear, selMonth) === null && !isFree(appData, activeZone, m, selYear, selMonth);
     if (filterStatus2 === 'free')   return isFree(appData, activeZone, m, selYear, selMonth);
     return true;

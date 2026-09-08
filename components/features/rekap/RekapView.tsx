@@ -1,7 +1,7 @@
 // components/features/rekap/RekapView.tsx — Fase 4: Skeleton + EmptyState
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
@@ -15,6 +15,113 @@ import { Search, X, Gift, CheckCheck, LayoutList } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import RekapModal from './RekapModal';
+
+interface CellData {
+  mi: number;
+  v: number | null;
+  free: boolean;
+  isDimmed: boolean;
+  isSelected: boolean;
+  isExp: boolean;
+  isFlashing: boolean;
+  flashKey: number;
+  monthLabel: string;
+}
+
+interface RowProps {
+  name: string;
+  index: number;
+  rowTotal: number;
+  cells: CellData[];
+  selYear: number;
+  onCellPointerDown: (name: string, mi: number) => void;
+  onCellPointerUp: () => void;
+  onCellClick: (name: string, mi: number) => void;
+}
+
+function cellDataEqual(a: CellData, b: CellData): boolean {
+  return a.v === b.v && a.free === b.free && a.isDimmed === b.isDimmed
+    && a.isSelected === b.isSelected && a.isExp === b.isExp
+    && a.isFlashing === b.isFlashing && a.flashKey === b.flashKey;
+}
+
+const Row = memo(function Row({
+  name, index, rowTotal, cells, selYear,
+  onCellPointerDown, onCellPointerUp, onCellClick,
+}: RowProps) {
+  return (
+    <tr data-name={name}>
+      <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:'var(--fs-label)', color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{index + 1}</td>
+      <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
+      {cells.map(c => {
+        const cls  = c.v! > 0 ? 'cv' : c.v === 0 && !c.free ? 'cz' : 'cn';
+        const disp = c.free
+          ? <span style={{ display:'inline-block', width:'100%', textAlign:'right' }}><Gift size={9} style={{ opacity:0.6, verticalAlign:'middle' }} /></span>
+          : c.v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
+          : c.v !== null ? (c.v * 1000).toLocaleString('id-ID') : '—';
+
+        return (
+          <td
+            key={c.mi}
+            className={`${cls}${c.isExp ? ' rekap-exp-cell' : ''}`}
+            style={{
+              position: 'relative',
+              opacity: c.isDimmed ? 0.2 : 1,
+              pointerEvents: c.isDimmed ? 'none' : undefined,
+              outline: c.isSelected ? '2px solid var(--zc)' : undefined,
+              outlineOffset: '-2px',
+              background: c.isSelected ? 'var(--zcdim)' : undefined,
+              transition: 'opacity var(--t-base), background var(--t-fast)',
+              userSelect: 'none',
+              cursor: 'pointer',
+            }}
+            onPointerDown={() => onCellPointerDown(name, c.mi)}
+            onPointerUp={onCellPointerUp}
+            onPointerCancel={onCellPointerUp}
+            onClick={() => onCellClick(name, c.mi)}
+            title={c.free ? 'Free Member' : `${c.monthLabel} ${selYear}`}
+          >
+            <span style={{ position:'relative', zIndex:1 }}>
+              {disp}{c.isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
+            </span>
+            {/* v11.5.7 FIX: overlay flash terpisah dari <td> utama — key di sini boleh
+                berubah (successKey) untuk memaksa restart animasi CSS tanpa lagi
+                mengubah key <td> induk. Sebelumnya key <td> ikut berubah setiap flash,
+                membuat React unmount+remount seluruh sel (termasuk semua pointer/click
+                handler-nya) selama window 750ms — kontributor nyata untuk render
+                glitch acak yang dilaporkan, meski sempit jendelanya. inset:0 + zIndex:0
+                membuat overlay ini menutupi persis area <td> DI BAWAH konten teks
+                (zIndex:1 di atas), sehingga hasil visualnya identik dengan animasi
+                background langsung di <td> — teks tetap terbaca selama flash. */}
+            {c.isFlashing && (
+              <span
+                key={`flash-${c.flashKey}`}
+                className="rekap-cell-paid-flash"
+                style={{ position:'absolute', inset:0, zIndex:0, pointerEvents:'none' }}
+              />
+            )}
+          </td>
+        );
+      })}
+      <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
+    </tr>
+  );
+}, (prev, next) => {
+  // Custom comparator — WAJIB, shallow-compare default React.memo tidak cukup:
+  // array `cells` selalu reference baru tiap render parent (hasil .map() ulang),
+  // jadi harus deep-compare tiap elemen satu-satu. Row skip re-render hanya jika
+  // SEMUA primitif sama DAN setiap elemen cells identik secara nilai.
+  if (prev.name !== next.name || prev.index !== next.index
+    || prev.rowTotal !== next.rowTotal || prev.selYear !== next.selYear
+    || prev.onCellPointerDown !== next.onCellPointerDown
+    || prev.onCellPointerUp !== next.onCellPointerUp
+    || prev.onCellClick !== next.onCellClick) return false;
+  if (prev.cells.length !== next.cells.length) return false;
+  for (let k = 0; k < prev.cells.length; k++) {
+    if (!cellDataEqual(prev.cells[k], next.cells[k])) return false;
+  }
+  return true;
+});
 
 export default function RekapView() {
   const {
@@ -87,7 +194,9 @@ export default function RekapView() {
 
   // v11.5.2: closeModal menerima info sel yang baru dibayar (opsional) — jika diisi,
   // trigger flash minimal pada sel itu. Dipanggil tanpa argumen untuk tutup biasa (X/klik luar).
-  function closeModal(paidCell?: { name: string; month: number }) {
+  // useCallback: dipanggil dari onCellPointerDown yg juga di-useCallback (utk Row memo di
+  // bawah) — tanpa ini, reference closeModal berubah tiap render & membatalkan memo Row.
+  const closeModal = useCallback((paidCell?: { name: string; month: number }) => {
     modalClosing.current = true;
     inputDirty.current   = false;
     setRekapExpanded(null);
@@ -98,7 +207,7 @@ export default function RekapView() {
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setFlashCell(null), 750);
     }
-  }
+  }, [activeZone, selYear, setRekapExpanded]);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
@@ -108,7 +217,7 @@ export default function RekapView() {
     setBatchSelected([]);
   }
 
-  function onCellPointerDown(name: string, mi: number) {
+  const onCellPointerDown = useCallback((name: string, mi: number) => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
       if (batchColIdx === null || batchColIdx !== mi) {
@@ -117,13 +226,13 @@ export default function RekapView() {
         closeModal();
       }
     }, 500);
-  }
+  }, [batchColIdx, closeModal]);
 
-  function onCellPointerUp() {
+  const onCellPointerUp = useCallback(() => {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-  }
+  }, []);
 
-  function onCellClick(name: string, mi: number) {
+  const onCellClick = useCallback((name: string, mi: number) => {
     if (batchColIdx !== null && batchColIdx === mi) {
       setBatchSelected(prev =>
         prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
@@ -136,7 +245,7 @@ export default function RekapView() {
       const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
       setRekapExpanded(isExp ? null : { name, month: mi });
     }
-  }
+  }, [batchColIdx, rekapExpanded, setRekapExpanded]);
 
   async function handleBatchPay() {
     if (batchColIdx === null || batchSelected.length === 0) return;
@@ -370,7 +479,7 @@ export default function RekapView() {
           <tbody>
             {filtered.map((name, i) => {
               let rowTotal = 0;
-              const cells = MONTHS.map((_, mi) => {
+              const cellData: CellData[] = MONTHS.map((_, mi) => {
                 const raw  = getPay(appData, activeZone, name, selYear, mi);
                 const free = isFree(appData, activeZone, name, selYear, mi);
                 const v    = free ? 0 : raw;
@@ -378,67 +487,28 @@ export default function RekapView() {
 
                 const isDimmed   = batchColIdx !== null && batchColIdx !== mi;
                 const isSelected = batchColIdx === mi && batchSelected.includes(name);
-
-                const cls  = v! > 0 ? 'cv' : v === 0 && !free ? 'cz' : 'cn';
-                const disp = free
-                  ? <span style={{ display:'inline-block', width:'100%', textAlign:'right' }}><Gift size={9} style={{ opacity:0.6, verticalAlign:'middle' }} /></span>
-                  : v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
-                  : v !== null ? (v * 1000).toLocaleString('id-ID') : '—';
-
                 const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
                 const isFlashing = flashCell?.name === name && flashCell?.month === mi
                   && flashCell?.zone === activeZone && flashCell?.year === selYear;
 
-                return (
-                  <td
-                    key={mi}
-                    className={`${cls}${isExp ? ' rekap-exp-cell' : ''}`}
-                    style={{
-                      position: 'relative',
-                      opacity: isDimmed ? 0.2 : 1,
-                      pointerEvents: isDimmed ? 'none' : undefined,
-                      outline: isSelected ? '2px solid var(--zc)' : undefined,
-                      outlineOffset: '-2px',
-                      background: isSelected ? 'var(--zcdim)' : undefined,
-                      transition: 'opacity var(--t-base), background var(--t-fast)',
-                      userSelect: 'none',
-                      cursor: 'pointer',
-                    }}
-                    onPointerDown={() => onCellPointerDown(name, mi)}
-                    onPointerUp={onCellPointerUp}
-                    onPointerCancel={onCellPointerUp}
-                    onClick={() => onCellClick(name, mi)}
-                    title={free ? 'Free Member' : `${MONTH_NAMES[mi]} ${selYear}`}
-                  >
-                    <span style={{ position:'relative', zIndex:1 }}>
-                      {disp}{isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
-                    </span>
-                    {/* v11.5.7 FIX: overlay flash terpisah dari <td> utama — key di sini boleh
-                        berubah (successKey) untuk memaksa restart animasi CSS tanpa lagi
-                        mengubah key <td> induk. Sebelumnya key <td> ikut berubah setiap flash,
-                        membuat React unmount+remount seluruh sel (termasuk semua pointer/click
-                        handler-nya) selama window 750ms — kontributor nyata untuk render
-                        glitch acak yang dilaporkan, meski sempit jendelanya. inset:0 + zIndex:0
-                        membuat overlay ini menutupi persis area <td> DI BAWAH konten teks
-                        (zIndex:1 di atas), sehingga hasil visualnya identik dengan animasi
-                        background langsung di <td> — teks tetap terbaca selama flash. */}
-                    {isFlashing && (
-                      <span
-                        key={`flash-${flashCell!.successKey}`}
-                        className="rekap-cell-paid-flash"
-                        style={{ position:'absolute', inset:0, zIndex:0, pointerEvents:'none' }}
-                      />
-                    )}
-                  </td>
-                );
+                return {
+                  mi, v, free, isDimmed, isSelected, isExp, isFlashing,
+                  flashKey: isFlashing ? flashCell!.successKey : 0,
+                  monthLabel: MONTH_NAMES[mi],
+                };
               });
               return (
-                <tr key={name} data-name={name}>
-                  <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:'var(--fs-label)', color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{i + 1}</td>
-                  <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
-                  {cells}
-                  <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
-                </tr>
+                <Row
+                  key={name}
+                  name={name}
+                  index={i}
+                  rowTotal={rowTotal}
+                  cells={cellData}
+                  selYear={selYear}
+                  onCellPointerDown={onCellPointerDown}
+                  onCellPointerUp={onCellPointerUp}
+                  onCellClick={onCellClick}
+                />
               );
             })}
           </tbody>

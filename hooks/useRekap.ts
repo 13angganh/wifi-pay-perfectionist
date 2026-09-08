@@ -1,6 +1,14 @@
 // ══════════════════════════════════════════
 // hooks/useRekap.ts — Rekap filter & data logic
 // Dipecah dari RekapView.tsx (task 1.15)
+//
+// CATATAN v11.6.4: hook ini TIDAK DIPAKAI di manapun (dikonfirmasi via
+// grep — tidak ada satupun import 'useRekap' di seluruh codebase).
+// RekapView.tsx (komponen nyata yang dipakai app) menduplikasi logic ini
+// langsung inline, tidak pernah memanggil hook ini — kemungkinan sisa
+// refactor task 1.15 yang tidak pernah selesai diintegrasikan (sama
+// seperti hooks/useEntry.ts). Isi hook ini sendiri sudah benar, tidak ada
+// bug — murni tidak terpakai.
 // ══════════════════════════════════════════
 'use client';
 

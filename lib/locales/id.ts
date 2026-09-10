@@ -476,6 +476,10 @@ const id: Record<string, string> = {
   'rekap.scrollHint'             : '← geser kanan untuk lihat semua bulan →',
   'rekap.deletePayment'          : 'Hapus pembayaran',
   'rekap.batchSelected'          : 'Member Dipilih',
+  'rekap.page'                   : 'Halaman',
+  'rekap.pagePrev'               : 'Halaman sebelumnya',
+  'rekap.pageNext'               : 'Halaman berikutnya',
+  'rekap.subtotalPage'           : 'Subtotal Halaman',
 
   'common.search' : 'Cari',
 

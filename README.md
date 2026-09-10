@@ -1,3 +1,74 @@
+# WiFi Pay Next — Update v11.6.6
+
+> Feedback user setelah pagination v11.6.5: baris "Total" di tfoot selalu menampilkan total seluruh zona (by design, tidak berubah oleh halaman aktif) — tapi tidak ada subtotal khusus member yang sedang terlihat di halaman aktif, berpotensi membingungkan.
+
+## Fitur baru: Baris "Subtotal Halaman" di tfoot Rekap
+
+Ditambahkan baris `<tfoot>` baru — "Subtotal Halaman X" — berdampingan dengan baris "Total" yang sudah ada, dihitung khusus dari `paginatedMembers` (member yang terlihat di halaman aktif), bukan dari seluruh zona. User bisa langsung membandingkan dua angka tanpa menghitung manual: subtotal halaman ini vs total keseluruhan zona.
+
+**Keputusan desain:**
+- Baris subtotal ditaruh **di atas** baris "Total" (alur baca dari konteks lokal → global).
+- **Hanya muncul saat `totalPages > 1`** — kalau cuma 1 halaman, subtotal = total, dua baris identik itu percuma bukan membantu, jadi disembunyikan.
+- Warna `var(--zc)` (warna aksen zona yang sama dengan grand total) dengan opacity `0.65` — bukan token warna baru — supaya terasa "dalam keluarga warna yang sama" tapi jelas sekunder, mengikuti pola `--zcdim` (warna zona + alpha) yang sudah dipakai project ini untuk highlight sel terpilih.
+- Saat batch mode aktif, kolom yang bukan fokus batch tetap dim ke `opacity:0.2` (sama dengan baris "Total") — dievaluasi ulang setelah percobaan awal (`0.2 × 0.65 = 0.13`) ternyata terlalu redup, hampir tidak terbaca; diganti ke nilai kondisional eksplisit alih-alih perkalian dua faktor redup yang ditumpuk.
+
+**Verifikasi:** 5 test regresi baru ditambahkan (`RekapView.pagination.test.tsx`, diperluas dari sesi v11.6.5) — mencakup kemunculan/kesembunyian baris sesuai jumlah halaman, subtotal yang menghitung hanya dari member halaman aktif (dibuktikan dengan payment data yang sengaja beda nilai jelas antar halaman), dan regresi terhadap baris "Total" yang harus tetap independen dari halaman aktif seperti sebelumnya. Dua bug disanity-check dengan sengaja "merusak" implementasi lebih dulu (pakai `mems` alih-alih `paginatedMembers`; guard `totalPages > 1` disabotase jadi selalu true) untuk memastikan test benar-benar menangkap regresi, bukan lulus kebetulan — keduanya berhasil sebelum dikembalikan.
+
+Dalam proses menulis test, tiga assertion awal (`getByText` generik untuk angka "250.000"/"50.000" dan teks "Total") ternyata ambigu — cocok di lebih dari satu tempat di DOM (summary bar di atas tabel, `<th>` header kolom, `<span>` di batch-sheet). Diperbaiki dengan query yang lebih presisi (menargetkan elemen `<td>` di baris `<tfoot>` secara spesifik via `closest('tr')`), bukan melonggarkan assertion.
+
+## File yang berubah (v11.6.6)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/rekap/RekapView.tsx` | Variabel `pageSubtotal`; baris `<tfoot>` baru "Subtotal Halaman X" |
+| `lib/locales/id.ts`, `lib/locales/en.ts` | 1 key i18n baru: `rekap.subtotalPage` |
+| `components/features/rekap/__tests__/RekapView.pagination.test.tsx` | +5 test regresi baru (describe block terpisah) |
+| `lib/constants.ts` | Versi → v11.6.6 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **267/267 unit test lulus** (13 file — naik dari 262, 5 test subtotal baru ditambahkan) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
+# WiFi Pay Next — Update v11.6.5
+
+> Lanjutan dari v11.6.4: setelah mitigasi (React.memo, throttle scroll) mengurangi tapi tidak menghilangkan bug render blank saat fast-scroll, didiskusikan opsi yang lebih jauh menyerang akar masalah (jumlah sel dirender). Dua opsi diriset mendalam (`content-visibility:auto` dan pagination) dengan syarat: boleh breaking change, tapi fungsi/tujuan UI-UX harus tetap setara.
+
+## Riset: `content-visibility:auto` — dicoret, tidak kompatibel dengan sticky column
+
+Diriset sebagai kandidat "windowing tanpa breaking change terlihat", tapi ditemukan (dikonfirmasi Web Platform Tests resmi): `content-visibility:auto` memaksa `contain:layout` pada elemen yang diberi properti itu, dan `contain:layout` membentuk containing block baru — `position:sticky` di dalam elemen itu berhenti bekerja sepenuhnya. Kolom nama (`td.stk`) di tabel Rekap sticky di dalam `<tr>`; menerapkan `content-visibility:auto` pada `<tr>` (satu-satunya cara wajar menerapkannya per-baris) akan merusak kolom nama sticky itu secara pasti, bukan risiko teoretis. Tabel HTML tidak bisa dibungkus wrapper per-baris tanpa merusak struktur tabel, jadi opsi ini secara struktural tidak kompatibel dengan desain yang ada. Tidak dijalankan.
+
+## Fitur baru: Pagination Rekap (20 member/halaman)
+
+Diputuskan lewat diskusi eksplisit: `ROWS_PER_PAGE=20` (`lib/constants.ts`) — dipilih dari perhitungan 12 kolom bulan × 20 baris = 300 sel per halaman (jauh di bawah ambang checkerboarding ~1.300 sel sebelum pagination), dan 20 baris kira-kira sepadan dengan tinggi layar mobile biasa tanpa scroll vertikal sama sekali di dalam satu halaman — kemungkinan besar menghilangkan kondisi yang memicu fast fling-scroll di dalam satu halaman itu sendiri, bukan cuma mengurangi bebannya.
+
+**Keputusan desain (dari diskusi eksplisit dengan user):**
+- Kontrol pagination di bawah tabel.
+- Halaman **direset ke 1** saat ganti zona (KRS/SLK punya jumlah member berbeda, halaman N di zona lama belum tentu ada di zona baru) atau saat mengetik pencarian (ekspektasi wajar: hasil pencarian selalu muncul di halaman pertama).
+- Halaman **dipertahankan** saat ganti tahun (daftar member zona yang sama biasanya tidak berubah antar tahun, cuma data pembayarannya beda).
+
+**Verifikasi teknis sebelum implementasi** (baca kode langsung, bukan asumsi) — semuanya aman terhadap pagination tanpa perlu diubah:
+- Grand total & total per-kolom bulan di footer sudah dihitung dari **seluruh member zona** sejak sebelum pagination ada, bukan dari yang sedang ditampilkan.
+- Batch-select (long-press pilih banyak sekaligus) bekerja lintas halaman secara natural — state-nya independen dari pagination, dan bottom-sheet konfirmasi sebelum bayar menampilkan **semua** yang dipilih, termasuk dari halaman yang sedang tidak aktif.
+- Nomor urut dibuat **absolut** lintas halaman (`startIdx + i`, bukan index lokal `.map()`) — halaman 2 mulai dari 21, bukan reset ke 1.
+- `clampedPage` sebagai safety-net terpisah: kalau halaman yang tersimpan jadi "basi" karena user menghapus banyak member di menu lain (di luar reset zona/search), halaman otomatis di-clamp ke rentang valid, mencegah halaman kosong ter-render dalam kondisi apa pun.
+
+**Detail implementasi teknis:**
+- Reset halaman awalnya ditulis dengan `useEffect`, tapi ditangkap `eslint` (`react-hooks/set-state-in-effect`) sebagai error resmi — `setState` sinkron di `useEffect` memaksa render pass tambahan yang sia-sia. Diganti ke pola resmi React "adjusting state during render" (dari `react.dev/learn/you-might-not-need-an-effect`): lacak nilai `activeZone`/`search` dari render sebelumnya via `useState` terpisah, bandingkan langsung di body komponen, panggil `setState` di situ juga.
+- Kontrol pagination (`ChevronLeft`/`ChevronRight`, tombol 32×32px) mengikuti gaya visual year-nav yang sudah ada di `RiwayatModal.tsx` untuk konsistensi. Nomor halaman diberi `font-variant-numeric: tabular-nums` (didukung font Inter yang dipakai project ini) supaya tombol prev/next tidak bergeser posisi saat jumlah digit halaman berubah (mis. "9 / 9" → "10 / 15"), tanpa perlu menebak nilai `minWidth` piksel.
+
+## File yang berubah (v11.6.5)
+
+| File | Perubahan |
+|------|-----------|
+| `lib/constants.ts` | `ROWS_PER_PAGE=20`; versi → v11.6.5 |
+| `components/features/rekap/RekapView.tsx` | Logic pagination lengkap (`totalPages`, `clampedPage`, `paginatedMembers`, nomor urut absolut); kontrol UI pagination; pola reset state "adjusting during render" |
+| `lib/locales/id.ts`, `lib/locales/en.ts` | 3 key i18n baru: `rekap.page`, `rekap.pagePrev`, `rekap.pageNext` |
+| `components/features/rekap/__tests__/RekapView.pagination.test.tsx` | **Baru** — 9 test regresi, mencakup semua keputusan desain di atas |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **262/262 unit test lulus** (13 file — naik dari 253, `RekapView.pagination.test.tsx` baru ditambahkan dengan 9 test) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
 # WiFi Pay Next — Update v11.6.4
 
 > Audit menyeluruh atas permintaan user: cari bug/crash umum, plus investigasi khusus bug render blank di menu Rekap saat scroll cepat di mobile (Chrome Android) yang tidak muncul di PC.

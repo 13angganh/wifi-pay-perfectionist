@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
+import { MONTHS, MONTHS_EN, getYears, ROWS_PER_PAGE } from '@/lib/constants';
 import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
@@ -11,7 +11,7 @@ import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
-import { Search, X, Gift, CheckCheck, LayoutList } from 'lucide-react';
+import { Search, X, Gift, CheckCheck, LayoutList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import RekapModal from './RekapModal';
@@ -147,6 +147,44 @@ export default function RekapView() {
 
   const [batchColIdx,   setBatchColIdx]   = useState<number | null>(null);
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
+  // v11.6.5: Pagination Rekap — currentPage 1-based (utk keterbacaan UI/kontrol),
+  // dikonversi ke index 0-based saat slicing array di bawah.
+  //
+  // Reset ke halaman 1 saat activeZone ATAU search berubah — SENGAJA TIDAK
+  // bereaksi ke selYear: keputusan eksplisit dari diskusi dengan user, halaman
+  // DIPERTAHANKAN saat ganti tahun (daftar member zona yg sama biasanya
+  // urutannya tidak berubah antar tahun, cuma data pembayarannya beda), tapi
+  // DIRESET saat ganti zona (KRS/SLK punya jumlah member yg beda, halaman N di
+  // zona lama belum tentu ada/tidak kosong di zona baru) atau search
+  // (ekspektasi wajar: hasil pencarian selalu muncul di halaman pertama,
+  // bukan halaman terakhir yg kebetulan masih aktif).
+  //
+  // Pola "adjusting state during render" — BUKAN useEffect+setState (yg
+  // ditangkap eslint react-hooks/set-state-in-effect sbg error, bukan sekadar
+  // warning: setState sinkron di useEffect memaksa render pass tambahan yg
+  // sia-sia, komponen sempat render sekali dgn currentPage basi lalu render
+  // ulang). Pola resmi dari react.dev/learn/you-might-not-need-an-effect,
+  // bagian "Adjusting some state when a prop changes": simpan nilai
+  // activeZone/search dari render SEBELUMNYA di state terpisah, bandingkan
+  // !== langsung di body komponen (bukan di effect), panggil setState
+  // langsung di situ kalau beda. React re-render KOMPONEN INI SAJA sblm
+  // children di-render/DOM di-commit — makanya anak² (Row, dst) tidak pernah
+  // sempat lihat currentPage basi, beda dari useEffect yg baru jalan SETELAH
+  // commit pertama (children akan sempat render 1x dgn nilai lama).
+  //
+  // activeZone diubah dari BANYAK titik masuk di luar file ini (Header.tsx,
+  // GlobalSearch.tsx, RiwayatModal.tsx, dst — dikonfirmasi via grep, bukan
+  // cuma dari komponen ini sendiri via setZone()) — pola ini bereaksi ke
+  // STATE, bukan ke satu onChange tertentu, jadi semua jalur masuk itu
+  // otomatis tertangkap tanpa perlu diduplikasi ke tiap titik.
+  const [currentPage, setCurrentPage] = useState(1);
+  const [prevZoneForPage,  setPrevZoneForPage]  = useState(activeZone);
+  const [prevSearchForPage, setPrevSearchForPage] = useState(search);
+  if (activeZone !== prevZoneForPage || search !== prevSearchForPage) {
+    setPrevZoneForPage(activeZone);
+    setPrevSearchForPage(search);
+    setCurrentPage(1);
+  }
   // v11.5.2: flash minimal saat bayar sukses dari RekapModal — TIDAK dipicu saat modal
   // ditutup tanpa aksi (X / klik luar), hanya saat quickPay/manualPay benar-benar sukses.
   // successKey memastikan re-trigger animasi CSS meski sel yang sama dibayar dua kali
@@ -159,6 +197,31 @@ export default function RekapView() {
   const filtered  = mems.filter(m => fuzzyMatch(m, search));
   const grand     = MONTHS.reduce((s, _, mi) =>
     s + mems.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
+
+  // v11.6.5: Pagination Rekap — totalPages selalu minimal 1 (bahkan saat
+  // filtered.length === 0) supaya kontrol halaman tidak menampilkan "0 dari 0"
+  // yang janggal; EmptyState di bawah sudah menangani kasus kosong secara
+  // terpisah. clampedPage adalah SAFETY-NET terpisah dari reset activeZone/
+  // search di atas: currentPage React state bisa "basi" lewat jalur LAIN yang
+  // tidak tersentuh reset itu sama sekali — mis. user hapus banyak member
+  // lewat menu Members (di luar Rekap) sementara currentPage masih tersimpan
+  // di halaman 5 dari sesi sebelumnya, sehingga total tinggal 2 halaman tanpa
+  // activeZone/search pernah berubah. Clamp di sini mencegah halaman kosong
+  // ter-render pada kondisi apapun, termasuk yang tidak tertangkap reset di
+  // atas. startIdx/endIdx 0-based utk slice; paginatedMembers inilah yang
+  // di-.map() di <tbody>, BUKAN filtered langsung.
+  const totalPages    = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const clampedPage   = Math.min(Math.max(1, currentPage), totalPages);
+  const startIdx      = (clampedPage - 1) * ROWS_PER_PAGE;
+  const endIdx         = startIdx + ROWS_PER_PAGE;
+  const paginatedMembers = filtered.slice(startIdx, endIdx);
+  // v11.6.6: Subtotal khusus member yg terlihat di halaman aktif — pola
+  // identik dgn perhitungan `grand` di atas, cuma sumber data beda
+  // (paginatedMembers, bukan mems). Dipakai baris "Subtotal Halaman" baru
+  // di tfoot, ditampilkan berdampingan dgn "Total Keseluruhan" yang sudah
+  // ada agar user bisa langsung bandingkan tanpa menghitung manual.
+  const pageSubtotal = MONTHS.reduce((s, _, mi) =>
+    s + paginatedMembers.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
 
   // FIX v11.5.5: rollback state lokal + log error asli jika Firebase gagal (lihat
   // catatan detail di MembersView.tsx persist() — bug yang sama: tanpa rollback, retry
@@ -477,7 +540,7 @@ export default function RekapView() {
             <col style={{ width:80, minWidth:80 }} />
           </colgroup>
           <tbody>
-            {filtered.map((name, i) => {
+            {paginatedMembers.map((name, i) => {
               let rowTotal = 0;
               const cellData: CellData[] = MONTHS.map((_, mi) => {
                 const raw  = getPay(appData, activeZone, name, selYear, mi);
@@ -501,7 +564,7 @@ export default function RekapView() {
                 <Row
                   key={name}
                   name={name}
-                  index={i}
+                  index={startIdx + i}
                   rowTotal={rowTotal}
                   cells={cellData}
                   selYear={selYear}
@@ -513,6 +576,28 @@ export default function RekapView() {
             })}
           </tbody>
           <tfoot>
+            {totalPages > 1 && (
+              <tr style={{ background:'var(--bg3)', borderTop:'1px solid var(--border)' }}>
+                <td colSpan={2} className="stk" style={{ left:0, fontSize:'var(--fs-label)', color:'var(--txt3)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>
+                  {t('rekap.subtotalPage')} {clampedPage}
+                </td>
+                {MONTHS.map((_, mi) => {
+                  const pageColTotal = paginatedMembers.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
+                  return (
+                    <td key={mi} style={{
+                      color:'var(--zc)',
+                      opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 0.65,
+                      fontWeight:600,
+                      transition:'opacity var(--t-base)',
+                      background:'var(--bg3)',
+                    }}>
+                      {pageColTotal > 0 ? (pageColTotal * 1000).toLocaleString('id-ID') : ''}
+                    </td>
+                  );
+                })}
+                <td style={{ color:'var(--zc)', opacity:0.65, fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg3)' }}>{pageSubtotal > 0 ? (pageSubtotal * 1000).toLocaleString('id-ID') : ''}</td>
+              </tr>
+            )}
             <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
               <td colSpan={2} className="stk" style={{ left:0, fontSize:'var(--fs-label)', color:'var(--txt2)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
               {MONTHS.map((_, mi) => {
@@ -536,6 +621,36 @@ export default function RekapView() {
       <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
         {t('rekap.scrollHint')}
       </div>
+
+      {/* v11.6.5: Kontrol pagination — di bawah tabel (sesuai keputusan desain).
+          Gaya visual disalin persis dari year-nav RiwayatModal.tsx (tombol
+          kotak 32x32, bg3+border, chevron tengah, disabled opacity 0.4) demi
+          konsistensi dengan kontrol navigasi serupa yang sudah ada di app.
+          Hanya dirender kalau totalPages > 1 — satu halaman saja tidak perlu
+          kontrol yang selalu disabled, itu cuma noise visual tanpa guna. */}
+      {totalPages > 1 && (
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:12, marginTop:12 }}>
+          <button
+            onClick={() => setCurrentPage(Math.max(1, clampedPage - 1))}
+            disabled={clampedPage <= 1}
+            aria-label={t('rekap.pagePrev')}
+            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: clampedPage <= 1 ? 0.4 : 1, transition:'all var(--t-fast)' }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)', fontVariantNumeric:'tabular-nums', textAlign:'center' }}>
+            {t('rekap.page')} {clampedPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, clampedPage + 1))}
+            disabled={clampedPage >= totalPages}
+            aria-label={t('rekap.pageNext')}
+            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: clampedPage >= totalPages ? 0.4 : 1, transition:'all var(--t-fast)' }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
       </> /* end data branch fragment */
       )} {/* end loading/empty/data conditional */}
 

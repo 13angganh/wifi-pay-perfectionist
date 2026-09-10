@@ -466,6 +466,10 @@ const en: Record<string, string> = {
   'rekap.scrollHint'             : '← scroll right to see all months →',
   'rekap.deletePayment'          : 'Delete payment',
   'rekap.batchSelected'          : 'Members Selected',
+  'rekap.page'                   : 'Page',
+  'rekap.pagePrev'               : 'Previous page',
+  'rekap.pageNext'               : 'Next page',
+  'rekap.subtotalPage'           : 'Page Subtotal',
 
   'common.search' : 'Search',
 

@@ -23,7 +23,7 @@ import type { ViewName } from '@/types';
 // tampil "v11.4" tanpa suffix "Next" yang dipakai di semua tempat lain).
 // Saat naik versi: HANYA ubah baris ini, seluruh app otomatis konsisten.
 export const APP_NAME         = 'WiFi Pay';
-export const APP_VERSION      = 'v11.6.4';
+export const APP_VERSION      = 'v11.6.6';
 export const APP_VERSION_SUFFIX = 'Next';
 export const APP_VERSION_FULL = `${APP_VERSION} ${APP_VERSION_SUFFIX}`; // "v11.5 Next"
 
@@ -62,6 +62,15 @@ export const DEFAULT_SLK = [
   "RIFKI","RINA","ROBI","ROSI","SAMSUDI","SATAM","SHELA","SHOFIA","SOFI",
   "SUKI","SUTIK","UUS","VIVI","WAHYU","WARDA","ZAHDAN"
 ];
+
+// v11.6.5: Rekap pagination — jumlah baris (member) per halaman. Dipusatkan di
+// sini (bukan hardcode di RekapView.tsx) mengikuti pola project yang sudah
+// konsisten menaruh angka konfigurasi (APP_VERSION, MONTHS, dst) di file ini.
+// 20 dipilih dari diskusi eksplisit dengan user: 12 kolom bulan × 20 baris =
+// 300 sel per halaman, jauh di bawah ambang checkerboarding (~1.300 sel
+// sebelum pagination), dan 20 baris kira-kira sepadan dengan tinggi layar
+// mobile biasa tanpa scroll vertikal sama sekali di dalam satu halaman.
+export const ROWS_PER_PAGE = 20;
 
 export const PAGE_TITLES: Record<string, string> = {
   dashboard:   'Beranda',

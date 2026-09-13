@@ -1,3 +1,37 @@
+# WiFi Pay Next — Update v11.6.7
+
+> Permintaan user: update Next.js & eslint-config-next ke versi stable terbaru.
+
+## Upgrade Next.js & eslint-config-next 16.3.4 → 16.3.5
+
+CATATAN PROSES (dicatat apa adanya krn relevan utk sesi verifikasi versi serupa ke depan): riset awal via `web_fetch` ke beberapa sumber (endpoint dist-tags npm registry, halaman GitHub releases resmi, dokumentasi Next.js) berulang kali menunjukkan `16.3.4` sebagai versi stable terbaru — termasuk setelah dicek ulang beberapa kali di waktu berbeda. User menunjukkan bukti langsung (isi halaman npmjs.com/package/next, published "9 jam lalu") bahwa `16.3.5` sudah rilis. Root cause ketidaksesuaian: `web_fetch` (alat browser) mengembalikan data yang ternyata cache basi dari sumber-sumber itu, sementara `npm view next version` (memanggil npm CLI sungguhan langsung, bukan lewat browser fetch) mengembalikan `16.3.5` dengan benar — dikonfirmasi jalur registry yang benar-benar dipakai `pnpm install` untuk resolve dependency tidak pernah salah, murni alat verifikasi berbasis browser yang basi. Pelajaran utk sesi serupa ke depan: kalau verifikasi versi via `web_fetch` bertentangan dgn bukti langsung dari user, cross-check via `npm view <package> version` di sandbox lebih dulu sblm menyimpulkan — itu sumber paling otoritatif krn itu jalur yg sama persis yg dipakai install sungguhan.
+
+`16.3.5` adalah rilis backport bug-fix (bukan minor/major), pola sama seperti `16.3.1`/`16.3.4` sebelumnya — 5 fix di-backport, tidak ada breaking change:
+- `next/image`: skip entry 0-byte saat inisialisasi disk LRU cache (#98185)
+- `next/image`: reject gambar kosong saat baca/tulis ke disk cache (#98186)
+- Emit whole-app server NFTs saat `output: 'standalone'` dipakai dgn adapter (#98167)
+- Tambah CSP nonce ke script tag file loading & template (#98403)
+- Fix retensi signal prerender `use cache` (#98448)
+
+EKSEKUSI:
+- `package.json`: `next` 16.3.4→16.3.5, `eslint-config-next` 16.3.4→16.3.5 (pin eksak keduanya, sesuai konvensi tercatat)
+- `pnpm-lock.yaml`: dihapus, diregenerasi dari nol via `pnpm install --no-frozen-lockfile`
+- `lib/constants.ts`: APP_VERSION v11.6.6→v11.6.7
+
+VERIFIKASI: `pnpm audit` 0 vulnerabilities, `tsc` bersih, `eslint .` (seluruh proyek) bersih — termasuk memastikan tidak ada rule baru dari `eslint-config-next@16.3.5` yang menangkap masalah di codebase ini, 267/267 test lulus (13 file — tidak ada test baru krn murni perubahan dependency).
+
+## File yang berubah (v11.6.7)
+
+| File | Perubahan |
+|------|-----------|
+| `package.json` | `next` & `eslint-config-next` → 16.3.5 |
+| `pnpm-lock.yaml` | Diregenerasi dari nol |
+| `lib/constants.ts` | Versi → v11.6.7 |
+
+**Hasil validasi:** `pnpm audit` 0 vulnerabilities · `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **267/267 unit test lulus** (13 file, tidak ada test baru) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
 # WiFi Pay Next — Update v11.6.6
 
 > Feedback user setelah pagination v11.6.5: baris "Total" di tfoot selalu menampilkan total seluruh zona (by design, tidak berubah oleh halaman aktif) — tapi tidak ada subtotal khusus member yang sedang terlihat di halaman aktif, berpotensi membingungkan.

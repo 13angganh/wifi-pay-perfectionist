@@ -129,24 +129,47 @@ describe('i18n — static key coverage (mencegah regresi seperti v11.5 bug #3)',
   });
 });
 
-// ── Konvensi warna kunci/buka (bug #2 v11.5.1: warna terbalik di Members) ──
+// ── Konvensi warna kunci/buka (bug #2 v11.5.1, lalu diperbaiki ulang v11.6.9) ──
+//
+// v11.5.1: warna awalnya terbalik total di Members (membersLocked=true tampil hijau).
+// v11.6.8: teks Members diubah dari label STATE ke label AKSI (KUNCI MEMBER/BUKA MEMBER),
+//   tapi warna waktu itu masih dikaitkan ke variabel state scr langsung (membersLocked ?
+//   merah : hijau) — TIDAK disesuaikan dgn perubahan teks, sehingga kata "KUNCI MEMBER"
+//   jadi tampil hijau & "BUKA MEMBER" jadi tampil merah. User laporkan ini scr langsung:
+//   kata yg sama ("KUNCI"/"BUKA") py warna berlawanan arah antara Header vs Members.
+// v11.6.9: FIX final — aturan warna sekarang diuji berbasis KATA yang tertulis di tombol,
+//   bukan berbasis pola ternary variabel state. Aturannya: kata "KUNCI"/"KUNCI MEMBER"
+//   SELALU pakai c-belum (merah), kata "BUKA"/"BUKA MEMBER" SELALU pakai c-lunas (hijau),
+//   di komponen manapun kata itu muncul — terlepas apakah komponen itu label-state
+//   (Header) atau label-aksi (Members), krn urutan ternary keduanya BERBEDA scr sengaja.
 
-describe('Konvensi warna lock/unlock — Header vs Members harus konsisten', () => {
+describe('Konvensi warna lock/unlock — kata KUNCI selalu merah, BUKA selalu hijau', () => {
   const ROOT = path.resolve(__dirname, '../..');
 
-  it('Header: globalLocked=true (terkunci) harus pakai warna MERAH (c-belum)', () => {
+  it('Header (label STATE): globalLocked=true→teks KUNCI+merah, false→teks BUKA+hijau', () => {
     const content = fs.readFileSync(path.join(ROOT, 'components/layout/Header.tsx'), 'utf8');
-    // Pola: color: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)'
+    // Header: color:globalLocked?merah:hijau DAN teks:globalLocked?'header.lock'(KUNCI):'header.unlock'(BUKA)
+    // → urutan warna & urutan teks SAMA (keduanya ikut globalLocked langsung) → KUNCI=merah, BUKA=hijau. Benar.
     expect(content).toMatch(/globalLocked\s*\?\s*'var\(--c-belum\)'\s*:\s*'var\(--c-lunas\)'/);
+    expect(content).toMatch(/globalLocked\s*\?\s*t\('header\.lock'\)\s*:\s*t\('header\.unlock'\)/);
   });
 
-  it('MembersView: membersLocked=true (terkunci) harus pakai warna MERAH (c-belum), BUKAN hijau', () => {
+  it('MembersView (label AKSI): warna harus KEBALIKAN urutan Header krn teks sudah dibalik ke aksi', () => {
     const content = fs.readFileSync(path.join(ROOT, 'components/features/members/MembersView.tsx'), 'utf8');
-    // Sebelum fix v11.5.1, ini ditulis terbalik: membersLocked ? 'var(--c-lunas)' : 'var(--c-belum)'
-    // (terkunci=hijau, terbuka=merah) — kebalikan dari konvensi Header.
-    expect(content).toMatch(/membersLocked\s*\?\s*'var\(--c-belum\)'\s*:\s*'var\(--c-lunas\)'/);
-    // Pastikan pola TERBALIK (bug lama) benar-benar tidak ada lagi
-    expect(content).not.toMatch(/color:membersLocked\?'var\(--c-lunas\)':'var\(--c-belum\)'/);
+    // Members: teks membersLocked?'members.unlock'(BUKA MEMBER):'members.lock'(KUNCI MEMBER)
+    // — urutan teks SUDAH dibalik dari Header (state terkunci → tampilkan aksi "BUKA").
+    // Supaya kata "KUNCI"=merah & "BUKA"=hijau tetap konsisten dgn Header, warna WAJIB
+    // ikut urutan yg SAMA dgn teks (bukan disamakan mentah ke pola ternary Header):
+    // color:membersLocked?hijau:merah — kebalikan urutan Header, tapi HASIL kata→warna sama.
+    expect(content).toMatch(/color:membersLocked\?'var\(--c-lunas\)':'var\(--c-belum\)'/);
+    // Pastikan pola v11.6.8 (warna msh ikut state langsung, blm disesuaikan teks aksi) tidak ada lagi
+    expect(content).not.toMatch(/color:membersLocked\?'var\(--c-belum\)':'var\(--c-lunas\)'/);
+  });
+
+  it('MembersView: ikon Lock (tertutup) menyertai teks KUNCI MEMBER, LockOpen menyertai BUKA MEMBER', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'components/features/members/MembersView.tsx'), 'utf8');
+    // Pola JSX: membersLocked ? <LockOpen.../>+unlock-text : <Lock.../>+lock-text
+    expect(content).toMatch(/membersLocked\s*\?\s*<><LockOpen[^/]*\/>\s*\{t\('members\.unlock'\)\}<\/>\s*:\s*<><Lock[^O][^/]*\/>\s*\{t\('members\.lock'\)\}<\/>/);
   });
 });
 

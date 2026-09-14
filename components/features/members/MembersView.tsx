@@ -277,17 +277,21 @@ export default function MembersView() {
             });
           })()}
         </div>
-        {/* v11.6.8: label tombol diubah dari STATE ke AKSI — "KUNCI MEMBER" saat member
-            masih terbuka (mengajak mengunci), "BUKA MEMBER" saat sudah terkunci (mengajak
-            membuka). Sebelumnya label = state saat ini, membingungkan krn terbaca seolah
-            tombol menunjukkan kondisi sekarang, bukan apa yg terjadi jika diklik.
-            Warna TETAP ikut STATE spt semula & spt Header.tsx globalLocked (konvensi
-            universal access-control: merah=terkunci, hijau=terbuka — dikunci via test
-            i18n-and-ui-consistency.test.ts sejak v11.5.1, JANGAN dibalik lagi). Hanya
-            teks+ikon yg berubah arah, warna tidak. */}
+        {/* v11.6.9: FIX — warna sblmnya (v11.6.8) msh ikut variabel STATE (membersLocked),
+            padahal teks sudah diubah jadi label AKSI di v11.6.8. Akibatnya kata "KUNCI
+            MEMBER" tampil HIJAU & "BUKA MEMBER" tampil MERAH — terbalik dari Header.tsx
+            (di sana kata "KUNCI" = merah, "BUKA" = hijau, krn Header msh label state
+            dgn urutan berbeda). User laporkan langsung: dua kata yg sama ("KUNCI"/"BUKA")
+            py warna berlawanan arah di 2 tempat = inkonsisten & membingungkan.
+            FIX: warna skrg eksplisit ikut KATA yg tertulis, bukan variabel state secara
+            langsung — KUNCI selalu merah (c-belum), BUKA selalu hijau (c-lunas), di mana pun
+            kata itu muncul. Utk Members yg teksnya label-aksi, ini berarti urutan ternary
+            KEBALIKAN dari v11.6.8: membersLocked=false (state terbuka, tombol tawarkan aksi
+            "KUNCI") → merah; membersLocked=true (state terkunci, tombol tawarkan aksi
+            "BUKA") → hijau. */}
         <button onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
           aria-label={membersLocked ? 'Buka kunci daftar member' : 'Kunci daftar member'}
-          style={{ background:membersLocked?'rgba(239,68,68,0.06)':'rgba(34,197,94,0.06)', border:`1px solid ${membersLocked?'rgba(239,68,68,0.25)':'rgba(34,197,94,0.25)'}`, color:membersLocked?'var(--c-belum)':'var(--c-lunas)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
+          style={{ background:membersLocked?'rgba(34,197,94,0.06)':'rgba(239,68,68,0.06)', border:`1px solid ${membersLocked?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)'}`, color:membersLocked?'var(--c-lunas)':'var(--c-belum)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
           {membersLocked ? <><LockOpen size={12} strokeWidth={1.5} /> {t('members.unlock')}</> : <><Lock size={12} strokeWidth={1.5} /> {t('members.lock')}</>}
         </button>
       </div>

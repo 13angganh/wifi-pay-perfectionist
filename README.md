@@ -1,3 +1,29 @@
+# WiFi Pay Next — Update v11.6.9
+
+> Permintaan user: warna tombol Buka/Kunci Member di v11.6.8 salah arah — kata "KUNCI MEMBER" tampil hijau, "BUKA MEMBER" tampil merah, berlawanan dgn kata "KUNCI"/"BUKA" di Header yg arahnya sudah benar sejak lama (KUNCI=merah, BUKA=hijau).
+
+## Fix: Warna tombol Member — disesuaikan ke arah KATA, bukan variabel state langsung
+
+Root cause bug v11.6.8: waktu teks tombol Member diubah dari label STATE ke label AKSI (v11.6.8), warnanya TIDAK ikut disesuaikan — masih dikaitkan langsung ke variabel `membersLocked` dgn urutan yg sama spt sebelum teks diubah. Akibatnya krn urutan teks sudah dibalik (state terkunci → tampilkan aksi "BUKA", bukan lagi tampilkan state "KUNCI"), warna yg menempel di variabel yg sama ikut salah kaprah — kata "KUNCI MEMBER" jadi kebagian warna hijau (harusnya nempel di kata "BUKA"), dan sebaliknya.
+
+FIX: urutan ternary warna di `MembersView.tsx` dibalik supaya kata yg tertulis konsisten dgn Header — **KUNCI (MEMBER) selalu merah (c-belum), BUKA (MEMBER) selalu hijau (c-lunas)**, di manapun kata itu muncul di app. Header.tsx TIDAK disentuh (sudah benar sejak awal, arah warnanya jadi acuan perbaikan ini).
+
+Ikon TIDAK berubah — `Lock` (gembok tertutup) tetap menyertai teks "KUNCI MEMBER", `LockOpen` (gembok terbuka) tetap menyertai "BUKA MEMBER" — itu sudah benar sejak v11.6.8 dan tidak terpengaruh bug warna ini.
+
+Test regresi `i18n-and-ui-consistency.test.ts` (describe "Konvensi warna lock/unlock") ditulis ulang total — versi v11.5.1/v11.6.8 menguji pola ternary variabel state scr harfiah (rapuh terhadap perubahan struktur kode spt yg baru terjadi), versi baru menguji **hasil kata→warna** (KUNCI=merah, BUKA=hijau) yg tahan thd refactor di masa depan selama hasil akhirnya tetap konsisten. +1 test baru khusus verifikasi pasangan ikon-teks (Lock↔KUNCI MEMBER, LockOpen↔BUKA MEMBER) tidak ikut kebalik. Ketiga test disanity-check dgn sengaja mengembalikan kode ke pola salah v11.6.8 sblm dikembalikan — test warna berhasil menangkap regresi (gagal spt seharusnya), test ikon tetap lulus (krn ikon memang tidak disabotase) — membuktikan test independen satu sama lain, bukan ikut gagal serentak.
+
+## File yang berubah (v11.6.9)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MembersView.tsx` | Warna tombol Buka/Kunci: urutan ternary dibalik agar kata KUNCI=merah, BUKA=hijau (konsisten dgn Header) |
+| `lib/__tests__/i18n-and-ui-consistency.test.ts` | Describe block "Konvensi warna lock/unlock" ditulis ulang total (3 test: Header, warna Members, ikon Members) |
+| `lib/constants.ts` | Versi → v11.6.9 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **270/270 unit test lulus** (13 file, +1 test baru dari 269 sebelumnya) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
 # WiFi Pay Next — Update v11.6.8
 
 > Permintaan user: dua laporan dari screenshot — (1) tombol Buka/Kunci Member terasa "aneh dan membingungkan", (2) label versi APP_VERSION_FULL tampil beda kecerahan antara Sidebar dan menu lain padahal teksnya sama.
@@ -1161,7 +1187,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.6.8 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.6.9 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

@@ -1,3 +1,54 @@
+# WiFi Pay Next — Update v11.7.0
+
+> Permintaan user, 3 hal: (1) toggle Buka/Kunci Member masih "terbalik" menurut panduan UX yang diberikan user (State-Driven vs Action-Driven pattern) — solusinya: pisah jadi indikator status + tombol aksi terpisah, sama untuk toggle Entry di Header; (2) warna tombol aksi disesuaikan per 3 tema (dark/light/gold), terasa "kontras dan touchable"; (3) bug terpisah: field tanggal di kartu member selalu bisa diedit manual meski Pengaturan sudah "Otomatis".
+
+## Fix #1: Toggle Kunci/Buka — direstrukturisasi total jadi 2 elemen (status + aksi)
+
+User memberi panduan UX lengkap soal 2 pola valid utk toggle lock/unlock — State-Driven (warna & teks murni menggambarkan kondisi saat ini) dan Action-Driven (warna & teks murni menggambarkan aksi yg terjadi jika diklik) — dan menunjukkan bahwa tombol gabungan 1-elemen yg dipakai sejak v11.6.8/v11.6.9 (teks pendek "KUNCI"/"BUKA") ambigu: tidak murni State maupun Action, karena kata kerja imperatif dipakai utk menampilkan status.
+
+Setelah didiskusikan (termasuk preview visual via Visualizer utk membandingkan opsi warna solid-tema vs netral, lalu ikon-saja vs ikon+teks), keputusan final: **Header & Members direstrukturisasi jadi 2 elemen terpisah**, konsisten satu sama lain:
+
+1. **Badge status** (kiri, `aria-hidden`, tidak bisa diklik) — ikon+teks kata sifat ("Terkunci"/"Terbuka", key `*.statusLocked`/`*.statusUnlocked` yg baru) + warna (merah=terkunci, hijau=terbuka, TIDAK berubah dari sebelumnya).
+2. **Tombol aksi** (kanan, ikon-saja tanpa teks, lingkaran solid, class CSS baru `header-lock-action-btn`) — ikon menggambarkan HASIL aksi (LockOpen saat status terkunci = tombol utk membuka, dst), warna solid ikut tema aktif (lihat Fix #2).
+
+**LockBanner dihapus** (`components/layout/LockBanner.tsx`, referensinya di `AppShell.tsx`, CSS `.lock-banner`) — banner ini (pesan panjang "Entry terkunci — ketuk untuk membuka") tadinya tampil tepat di bawah Header, jadi kalau dipertahankan akan duplikat info dgn badge status baru. User: "hilangkan saja penjelasan global lock karena sudah paham dan sudah bisa diketahui dari statusnya". Header selalu tampil di semua halaman (root layout `AppShell`), jadi menghapus banner tidak menghilangkan satu-satunya akses ke toggle. Key i18n `lockbanner.message` **dipertahankan** — ternyata masih dipakai di tempat lain (`MemberCard.tsx`, toast error saat mencoba ubah nilai pembayaran ketika entry terkunci) yg tidak terkait langsung dgn komponen banner yg dihapus; hanya `lockbanner.unlock` (benar2 orphan) yg dihapus.
+
+**Perbaikan aksesibilitas tambahan** (ditemukan sendiri saat review, bukan diminta eksplisit): karena badge status `aria-hidden` (murni visual), tombol aksi jadi satu-satunya elemen yg terbaca screen reader — kalau `aria-label`-nya cuma "KUNCI"/"BUKA" pendek (spt semula), pengguna screen reader kehilangan konteks status sepenuhnya (lebih parah dari versi lama). Ditambah key `*.actionAriaLocked`/`*.actionAriaUnlocked` baru — kalimat lengkap yg menyampaikan status+aksi sekaligus ("Entry sedang terkunci. Ketuk untuk membuka."), khusus utk `aria-label`. `title` (tooltip hover) tetap pakai teks pendek lama karena muncul berdampingan visual dgn badge yg sudah terlihat.
+
+## Fix #2: Warna tombol aksi disesuaikan per tema
+
+Tidak ada warna "aksen biru generik" yg sama di 3 tema app ini — Dark & Light punya `--zc-krs` (biru zona KRS), tapi Gold sengaja dirancang "hangat keemasan, bukan biru dingin" (komentar eksisting di `tokens.css`) & sudah py aksen resminya sendiri, `--gold`. Memaksakan 1 warna biru sama persis di ketiga tema akan terasa asing di Gold, bertentangan dgn filosofi tema itu.
+
+FIX: `header-lock-action-btn` (CSS, `styles/components.header.css`) — default (dark & light) pakai `background: var(--zc-krs)` + ikon putih; Gold di-override via `body.gold .header-lock-action-btn` ke `background: var(--gold)`. Sempat py bug kontras halus: ikon putih di atas `--gold` cuma **2.69:1** (di bawah WCAG AA 3:1 utk elemen grafis/ikon) — dihitung manual via rumus WCAG relative luminance, ditemukan sblm sempat di-ship. Diganti ikon Gold ke `var(--bg)` (hitam hangat tema itu, sudah jadi token resmi) → kontras **7.36:1**.
+
+## Fix #3: Field tanggal member — sekarang ikut Pengaturan Otomatis/Manual
+
+Root cause: `settings.autoDate` (Pengaturan → toggle Otomatis/Manual) sudah benar dipakai di `doQuickPay` (`MemberCard.tsx`) utk auto-isi tanggal saat quick-pay — TAPI field `<input type="date">` terpisah di kartu member yg sama (utk override/koreksi tanggal manual) sama sekali tidak pernah mengecek `autoDate`, sehingga selalu bisa diedit tidak peduli pengaturannya. User: "yang terjadi saat ini adalah tanggal selalu manual meskipun di menu pengaturan sudah otomatis".
+
+FIX: field itu sekarang `disabled={isSaving || settings?.autoDate === true}` — terkunci (tak bisa diedit) saat Otomatis aktif, tetap seperti semula (aktif, hanya disabled saat sedang menyimpan) saat Manual. Ditemukan & diperbaiki sekalian masalah terkait: `key` pada field ini (`${cardYear}-${cardMonth}`, ditambahkan di v11.5.9 utk field NOMINAL & tanggal) TIDAK cukup memicu re-render `defaultValue` saat `doQuickPay` mengisi tanggal otomatis DALAM tahun/bulan yg sama (krn cardYear/cardMonth tidak berubah saat itu) — kalau tidak diperbaiki, field yg baru di-disable akan menampilkan tanggal basi/kosong meski data sebenarnya sudah terisi sistem. `key` diperkuat dgn menambahkan nilai tanggal itu sendiri ke dalamnya, supaya field remount & `defaultValue` terbaca ulang setiap kali nilainya berubah dari manapun (quick-pay otomatis maupun `saveDate` manual via `onBlur` — remount di kedua kasus aman krn tidak mengganggu pengetikan yg sedang berlangsung).
+
+## Test regresi ditulis ulang total (2×) — catatan proses
+
+Test `i18n-and-ui-consistency.test.ts` blok "Konvensi warna lock/unlock" dari v11.6.9 (menguji tombol gabungan 1-elemen scr harfiah) sudah tidak relevan setelah restrukturisasi total sesi ini — ditulis ulang jadi 7 test baru (2 describe block) yg menguji struktur baru: konsistensi badge status (kata sifat, bukan kata perintah), konsistensi warna, class CSS tombol aksi yg sama antara Header & Members, arah ikon yg benar, LockBanner benar2 terhapus, dan warna 3-tema (termasuk kontras Gold). **Disanity-check 2×** dgn sengaja mengembalikan kode ke 2 kesalahan yg pernah terjadi sesi ini (ikon tertukar arah, ikon putih-di-atas-gold) sblm dikembalikan — kedua sabotase berhasil ditangkap test, baru dipulihkan.
+
+## File yang berubah (v11.7.0)
+
+| File | Perubahan |
+|------|-----------|
+| `components/layout/Header.tsx` | Toggle direstrukturisasi total: badge status + tombol aksi ikon-saja terpisah |
+| `components/features/members/MembersView.tsx` | Sama, konsisten dgn Header (class CSS `header-lock-action-btn` yg SAMA) |
+| `components/features/members/MemberCard.tsx` | Field tanggal: `disabled` saat `autoDate=true`; `key` diperkuat dgn nilai tanggal |
+| `components/layout/LockBanner.tsx` | **Dihapus** — redundan dgn badge status baru |
+| `components/layout/AppShell.tsx` | Import & pemanggilan `<LockBanner />` dihapus |
+| `styles/components.header.css` | +class `header-lock-action-btn` (3-tema); `.lock-banner`/`.lock-banner.show` dihapus |
+| `lib/locales/id.ts`, `lib/locales/en.ts` | +8 key baru (`*.statusLocked/Unlocked`, `*.actionAriaLocked/Unlocked` di Header & Members); `lockbanner.unlock` dihapus (orphan) |
+| `lib/__tests__/i18n-and-ui-consistency.test.ts` | Blok "Konvensi warna lock/unlock" v11.6.9 ditulis ulang total jadi 7 test baru (2 describe block) |
+| `lib/constants.ts` | Versi → v11.7.0 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **274/274 unit test lulus** (13 file, +4 test baru neto dari 270 sebelumnya: -3 lama dihapus, +7 baru ditambah) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini). **Verifikasi visual browser TIDAK dilakukan** — dicoba via Playwright, gagal krn instalasi browser binary butuh domain `deb.nodesource.com` yg di luar allowlist jaringan sandbox; verifikasi mengandalkan pembacaan JSX manual + test otomatis + sanity-check sabotase, bukan screenshot nyata. User disarankan cek tampilan langsung setelah deploy, terutama kontras & ukuran ikon di tombol aksi ketiga tema.
+
+---
+
 # WiFi Pay Next — Update v11.6.9
 
 > Permintaan user: warna tombol Buka/Kunci Member di v11.6.8 salah arah — kata "KUNCI MEMBER" tampil hijau, "BUKA MEMBER" tampil merah, berlawanan dgn kata "KUNCI"/"BUKA" di Header yg arahnya sudah benar sejak lama (KUNCI=merah, BUKA=hijau).
@@ -1187,7 +1238,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.6.9 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.7.0 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

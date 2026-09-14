@@ -26,6 +26,18 @@
 .zbtn.slk { background: rgba(249,115,22,.15); color: #F97316; border-color: rgba(249,115,22,.3); }
 .zbtn.custom { background: rgba(var(--zc-rgb),.15); color: var(--zc); border-color: rgba(var(--zc-rgb),.3); }
 
+/* ── Tombol aksi kunci/buka entry (v11.7.0) — ikon-saja, warna solid ikut aksen tema aktif
+   supaya terasa "touchable"/kontras dgn label status di sampingnya (yg flat, tanpa fill).
+   Default (dark & light) pakai --zc-krs (biru zona KRS, sudah ada di 2 tema itu).
+   Gold override ke --gold (aksen resmi tema itu — biru terasa asing di tema "hangat
+   keemasan, bukan biru dingin", lihat komentar body.gold di tokens.css). */
+.header-lock-action-btn { background: var(--zc-krs); color: #fff; transition: all var(--t-fast-smooth); }
+.header-lock-action-btn:hover  { opacity: .85; }
+.header-lock-action-btn:active { opacity: .7; transform: scale(.94); }
+/* Ikon putih di atas --gold cuma 2.69:1 kontras (di bawah 3:1 WCAG AA utk grafis) —
+   dipakai --bg (hitam hangat tema ini) sbg ikon, kontrasnya 7.36:1. */
+body.gold .header-lock-action-btn { background: var(--gold); color: var(--bg); }
+
 /* ── Sidebar nav active override ── */
 .sb-item.on { border-left: 2px solid var(--zc); padding-left: 14px; background: var(--zcdim); color: var(--zc); }
 .sb-user-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--txt2); cursor: pointer; padding: 6px 10px; border-radius: var(--r-sm); transition: all var(--t-fast-smooth); display: flex; align-items: center; justify-content: center; gap: 5px; font-family: var(--font-sans), sans-serif; font-size: 11px; font-weight: 500; min-height: 34px; }
@@ -36,8 +48,6 @@
 
 /* ── Banners ── */
 .update-banner  { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--bg2); border-bottom: 1px solid rgba(34,197,94,.3); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.lock-banner    { display: none; background: rgba(239,68,68,0.10); border-bottom: 1px solid rgba(239,68,68,.2); padding: 8px 16px; align-items: center; gap: 8px; flex-shrink: 0; }
-.lock-banner.show { display: flex; }
 .offline-banner { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-family: var(--font-sans), sans-serif; font-size: 12px; color: var(--txt3); flex-shrink: 0; }
 .offline-banner svg { flex-shrink: 0; }
 .inst-banner    { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,.2); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-xs); }

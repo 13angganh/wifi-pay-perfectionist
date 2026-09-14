@@ -129,47 +129,73 @@ describe('i18n — static key coverage (mencegah regresi seperti v11.5 bug #3)',
   });
 });
 
-// ── Konvensi warna kunci/buka (bug #2 v11.5.1, lalu diperbaiki ulang v11.6.9) ──
+// ── Konvensi warna & struktur toggle kunci/buka (v11.5.1 → v11.6.9 → v11.7.0) ──
 //
 // v11.5.1: warna awalnya terbalik total di Members (membersLocked=true tampil hijau).
-// v11.6.8: teks Members diubah dari label STATE ke label AKSI (KUNCI MEMBER/BUKA MEMBER),
-//   tapi warna waktu itu masih dikaitkan ke variabel state scr langsung (membersLocked ?
-//   merah : hijau) — TIDAK disesuaikan dgn perubahan teks, sehingga kata "KUNCI MEMBER"
-//   jadi tampil hijau & "BUKA MEMBER" jadi tampil merah. User laporkan ini scr langsung:
-//   kata yg sama ("KUNCI"/"BUKA") py warna berlawanan arah antara Header vs Members.
-// v11.6.9: FIX final — aturan warna sekarang diuji berbasis KATA yang tertulis di tombol,
-//   bukan berbasis pola ternary variabel state. Aturannya: kata "KUNCI"/"KUNCI MEMBER"
-//   SELALU pakai c-belum (merah), kata "BUKA"/"BUKA MEMBER" SELALU pakai c-lunas (hijau),
-//   di komponen manapun kata itu muncul — terlepas apakah komponen itu label-state
-//   (Header) atau label-aksi (Members), krn urutan ternary keduanya BERBEDA scr sengaja.
+// v11.6.8: teks Members diubah dari label STATE ke label AKSI, warna lupa disesuaikan.
+// v11.6.9: warna diuji berbasis KATA yang tertulis (KUNCI=merah, BUKA=hijau) — tapi ini
+//   mengasumsikan tombol gabungan 1-elemen dengan teks pendek "KUNCI"/"BUKA" yg ambigu
+//   antara status vs perintah (linter halus dari panduan UX yang diberikan user).
+// v11.7.0: RESTRUKTURISASI TOTAL — tombol gabungan dipecah jadi 2 elemen terpisah,
+//   konsisten di Header & Members: (1) badge STATUS (kata sifat "Terkunci"/"Terbuka",
+//   tak bisa diklik, warna ikut kondisi) + (2) tombol AKSI ikon-saja tanpa teks (warna
+//   solid class header-lock-action-btn, ikon menggambarkan HASIL aksi bukan status).
+//   Test v11.6.9 di atas sudah tidak relevan (menguji tombol gabungan yg sudah tidak
+//   ada) — diganti test di bawah yg menguji struktur baru.
 
-describe('Konvensi warna lock/unlock — kata KUNCI selalu merah, BUKA selalu hijau', () => {
+describe('Toggle kunci/buka v11.7.0 — badge status + tombol aksi terpisah, konsisten Header/Members', () => {
   const ROOT = path.resolve(__dirname, '../..');
+  const headerContent  = fs.readFileSync(path.join(ROOT, 'components/layout/Header.tsx'), 'utf8');
+  const membersContent = fs.readFileSync(path.join(ROOT, 'components/features/members/MembersView.tsx'), 'utf8');
 
-  it('Header (label STATE): globalLocked=true→teks KUNCI+merah, false→teks BUKA+hijau', () => {
-    const content = fs.readFileSync(path.join(ROOT, 'components/layout/Header.tsx'), 'utf8');
-    // Header: color:globalLocked?merah:hijau DAN teks:globalLocked?'header.lock'(KUNCI):'header.unlock'(BUKA)
-    // → urutan warna & urutan teks SAMA (keduanya ikut globalLocked langsung) → KUNCI=merah, BUKA=hijau. Benar.
-    expect(content).toMatch(/globalLocked\s*\?\s*'var\(--c-belum\)'\s*:\s*'var\(--c-lunas\)'/);
-    expect(content).toMatch(/globalLocked\s*\?\s*t\('header\.lock'\)\s*:\s*t\('header\.unlock'\)/);
+  it('Header & Members: badge status pakai kata sifat (statusLocked/statusUnlocked), BUKAN kata perintah lock/unlock', () => {
+    // Badge status HARUS pakai key .statusLocked/.statusUnlocked (kata sifat "Terkunci"/
+    // "Terbuka") — bukan .lock/.unlock (kata perintah "KUNCI"/"BUKA") yg sekarang khusus
+    // aria-label tombol aksi. Mencampur keduanya di badge = regresi ambiguitas status-vs-
+    // perintah yg jadi alasan utama restrukturisasi ini.
+    expect(headerContent).toMatch(/globalLocked\s*\?\s*t\('header\.statusLocked'\)\s*:\s*t\('header\.statusUnlocked'\)/);
+    expect(membersContent).toMatch(/membersLocked\s*\?\s*t\('members\.statusLocked'\)\s*:\s*t\('members\.statusUnlocked'\)/);
   });
 
-  it('MembersView (label AKSI): warna harus KEBALIKAN urutan Header krn teks sudah dibalik ke aksi', () => {
-    const content = fs.readFileSync(path.join(ROOT, 'components/features/members/MembersView.tsx'), 'utf8');
-    // Members: teks membersLocked?'members.unlock'(BUKA MEMBER):'members.lock'(KUNCI MEMBER)
-    // — urutan teks SUDAH dibalik dari Header (state terkunci → tampilkan aksi "BUKA").
-    // Supaya kata "KUNCI"=merah & "BUKA"=hijau tetap konsisten dgn Header, warna WAJIB
-    // ikut urutan yg SAMA dgn teks (bukan disamakan mentah ke pola ternary Header):
-    // color:membersLocked?hijau:merah — kebalikan urutan Header, tapi HASIL kata→warna sama.
-    expect(content).toMatch(/color:membersLocked\?'var\(--c-lunas\)':'var\(--c-belum\)'/);
-    // Pastikan pola v11.6.8 (warna msh ikut state langsung, blm disesuaikan teks aksi) tidak ada lagi
-    expect(content).not.toMatch(/color:membersLocked\?'var\(--c-belum\)':'var\(--c-lunas\)'/);
+  it('Header & Members: badge status — merah saat terkunci, hijau saat terbuka (konsisten satu sama lain)', () => {
+    expect(headerContent).toMatch(/globalLocked\s*\?\s*'var\(--c-belum\)'\s*:\s*'var\(--c-lunas\)'/);
+    expect(membersContent).toMatch(/membersLocked\s*\?\s*'var\(--c-belum\)'\s*:\s*'var\(--c-lunas\)'/);
   });
 
-  it('MembersView: ikon Lock (tertutup) menyertai teks KUNCI MEMBER, LockOpen menyertai BUKA MEMBER', () => {
-    const content = fs.readFileSync(path.join(ROOT, 'components/features/members/MembersView.tsx'), 'utf8');
-    // Pola JSX: membersLocked ? <LockOpen.../>+unlock-text : <Lock.../>+lock-text
-    expect(content).toMatch(/membersLocked\s*\?\s*<><LockOpen[^/]*\/>\s*\{t\('members\.unlock'\)\}<\/>\s*:\s*<><Lock[^O][^/]*\/>\s*\{t\('members\.lock'\)\}<\/>/);
+  it('Header & Members: tombol aksi pakai class header-lock-action-btn yang SAMA (bukan style ad-hoc terpisah)', () => {
+    // Nama class tetap "header-" meski dipakai jg di Members — disengaja, supaya kedua
+    // toggle "lock" di app ini benar2 pakai 1 sumber styling, bukan cuma warna yg kebetulan
+    // sama. Lihat styles/components.header.css untuk definisi + override 3-tema.
+    expect(headerContent).toContain('className="header-lock-action-btn"');
+    expect(membersContent).toContain('className="header-lock-action-btn"');
+  });
+
+  it('Header & Members: ikon tombol aksi = HASIL aksi (LockOpen saat status terkunci, Lock saat status terbuka)', () => {
+    // Tombol aksi saat status TERKUNCI menawarkan aksi "buka" → ikon LockOpen.
+    // Tombol aksi saat status TERBUKA menawarkan aksi "kunci" → ikon Lock.
+    expect(headerContent).toMatch(/globalLocked\s*\n?\s*\?\s*<LockOpen[^/]*\/>\s*\n?\s*:\s*<Lock[^O][^/]*\/>/);
+    expect(membersContent).toMatch(/membersLocked\s*\n?\s*\?\s*<LockOpen[^/]*\/>\s*\n?\s*:\s*<Lock[^O][^/]*\/>/);
+  });
+
+  it('LockBanner sudah dihapus — tidak ada import atau pemakaian tersisa di AppShell', () => {
+    const appShellContent = fs.readFileSync(path.join(ROOT, 'components/layout/AppShell.tsx'), 'utf8');
+    expect(appShellContent).not.toMatch(/import LockBanner/);
+    expect(appShellContent).not.toMatch(/<LockBanner\s*\/>/);
+    expect(fs.existsSync(path.join(ROOT, 'components/layout/LockBanner.tsx'))).toBe(false);
+  });
+});
+
+describe('3-tema warna tombol aksi kunci/buka (header-lock-action-btn)', () => {
+  const ROOT = path.resolve(__dirname, '../..');
+  const cssContent = fs.readFileSync(path.join(ROOT, 'styles/components.header.css'), 'utf8');
+
+  it('Dark & Light (default): pakai --zc-krs (bukan hex biru literal, supaya ikut tema)', () => {
+    expect(cssContent).toMatch(/\.header-lock-action-btn\s*\{[^}]*background:\s*var\(--zc-krs\)/);
+  });
+
+  it('Gold: override ke --gold dengan ikon --bg (bukan putih — kontras putih-di-atas-gold cuma 2.69:1, di bawah WCAG AA 3:1)', () => {
+    expect(cssContent).toMatch(/body\.gold\s+\.header-lock-action-btn\s*\{[^}]*background:\s*var\(--gold\)/);
+    expect(cssContent).toMatch(/body\.gold\s+\.header-lock-action-btn\s*\{[^}]*color:\s*var\(--bg\)/);
   });
 });
 

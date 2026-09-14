@@ -653,16 +653,30 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
                   <span className="mc-label" style={{ display:'flex', alignItems:'center', gap:4 }}>
                     <Clock size={10} />{t('membercard.payDate').toUpperCase()}
                   </span>
-                  {/* v11.5.9: key sama seperti input NOMINAL — defaultValue di sini juga
-                      tidak pernah terbaca ulang tanpa key saat cardYear/cardMonth berubah
-                      dari luar (bug identik dengan field NOMINAL). */}
+                  {/* v11.5.9: key cardYear-cardMonth spy defaultValue terbaca ulang saat
+                      tahun/bulan berubah dari luar (sama spt field NOMINAL di atas).
+                      v11.7.0 FIX: key ditambah nilai tanggal itu sendiri
+                      (date_${cardYear}_${cardMonth}) — sebelumnya field ini SELALU bisa
+                      diedit manual walau settings.autoDate=true (doQuickPay MemberCard
+                      sudah benar isi tanggal otomatis ke appData, tapi field date INI tidak
+                      pernah dicek ke autoDate sama sekali). Ditambah `disabled` berbasis
+                      autoDate: true → field terkunci (tanggal sudah terisi sistem, tidak
+                      perlu/boleh diedit manual); false → tetap seperti semula (aktif, hanya
+                      disabled saat isSaving). Value tanggal dimasukkan ke key supaya begitu
+                      doQuickPay mengisi tanggal otomatis (dalam tahun/bulan YANG SAMA, jadi
+                      key lama tidak berubah tanpa ini), field remount & defaultValue terbaca
+                      ulang — kalau tidak, field disabled akan nampilkan tanggal basi/kosong
+                      meski appData sudah py nilai terbaru. Aman dari gangguan mengetik:
+                      remount hanya terpicu stlh saveDate's onBlur (user sudah selesai
+                      mengetik) atau dari doQuickPay (aksi terpisah, bukan sedang mengetik
+                      di field tanggal ini). */}
                   <input
-                    key={`${cardYear}-${cardMonth}`}
+                    key={`${cardYear}-${cardMonth}-${(info[`date_${cardYear}_${cardMonth}`] as string) || ''}`}
                     className="mc-date"
                     type="date"
                     defaultValue={(info[`date_${cardYear}_${cardMonth}`] as string) || ''}
                     onBlur={e => saveDate(e.target.value)}
-                    disabled={isSaving}
+                    disabled={isSaving || settings?.autoDate === true}
                   />
                 </div>
 

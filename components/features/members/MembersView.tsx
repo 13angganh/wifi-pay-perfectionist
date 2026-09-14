@@ -277,23 +277,46 @@ export default function MembersView() {
             });
           })()}
         </div>
-        {/* v11.6.9: FIX — warna sblmnya (v11.6.8) msh ikut variabel STATE (membersLocked),
-            padahal teks sudah diubah jadi label AKSI di v11.6.8. Akibatnya kata "KUNCI
-            MEMBER" tampil HIJAU & "BUKA MEMBER" tampil MERAH — terbalik dari Header.tsx
-            (di sana kata "KUNCI" = merah, "BUKA" = hijau, krn Header msh label state
-            dgn urutan berbeda). User laporkan langsung: dua kata yg sama ("KUNCI"/"BUKA")
-            py warna berlawanan arah di 2 tempat = inkonsisten & membingungkan.
-            FIX: warna skrg eksplisit ikut KATA yg tertulis, bukan variabel state secara
-            langsung — KUNCI selalu merah (c-belum), BUKA selalu hijau (c-lunas), di mana pun
-            kata itu muncul. Utk Members yg teksnya label-aksi, ini berarti urutan ternary
-            KEBALIKAN dari v11.6.8: membersLocked=false (state terbuka, tombol tawarkan aksi
-            "KUNCI") → merah; membersLocked=true (state terkunci, tombol tawarkan aksi
-            "BUKA") → hijau. */}
-        <button onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
-          aria-label={membersLocked ? 'Buka kunci daftar member' : 'Kunci daftar member'}
-          style={{ background:membersLocked?'rgba(34,197,94,0.06)':'rgba(239,68,68,0.06)', border:`1px solid ${membersLocked?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)'}`, color:membersLocked?'var(--c-lunas)':'var(--c-belum)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
-          {membersLocked ? <><LockOpen size={12} strokeWidth={1.5} /> {t('members.unlock')}</> : <><Lock size={12} strokeWidth={1.5} /> {t('members.lock')}</>}
-        </button>
+        {/* v11.7.0: dipecah jadi 2 elemen sesuai panduan UX, konsisten persis dgn pola
+            Header.tsx (lihat komentar detail di sana) — indikator STATUS (kata sifat
+            "Terkunci"/"Terbuka") + tombol AKSI ikon-saja (warna solid header-lock-action-btn,
+            sama class CSS dgn Header supaya kedua toggle "lock" di app ini benar2 seragam
+            secara visual, bukan cuma seragam secara warna spt v11.6.9). */}
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <div
+            aria-hidden="true"
+            style={{
+              display:'flex', alignItems:'center', gap:5,
+              background: membersLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
+              color: membersLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
+              padding:'5px 9px', borderRadius:'var(--r-sm)',
+              fontSize:'var(--fs-caption)', whiteSpace:'nowrap',
+            }}
+          >
+            {membersLocked
+              ? <Lock size={12} strokeWidth={1.5} />
+              : <LockOpen size={12} strokeWidth={1.5} />
+            }
+            {membersLocked ? t('members.statusLocked') : t('members.statusUnlocked')}
+          </div>
+          <button
+            className="header-lock-action-btn"
+            onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
+            aria-label={membersLocked ? t('members.actionAriaLocked') : t('members.actionAriaUnlocked')}
+            title={membersLocked ? t('members.unlock') : t('members.lock')}
+            style={{
+              width:34, height:34, minWidth:34, minHeight:34,
+              border:'none', borderRadius:'50%',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              cursor:'pointer', flexShrink:0,
+            }}
+          >
+            {membersLocked
+              ? <LockOpen size={15} strokeWidth={1.5} />
+              : <Lock size={15} strokeWidth={1.5} />
+            }
+          </button>
+        </div>
       </div>
 
       {/* Active / Deleted tabs */}

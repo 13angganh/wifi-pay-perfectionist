@@ -15,7 +15,6 @@ import { useOfflineDetect } from '@/hooks/useOfflineDetect';
 import AppErrorBoundary from './AppErrorBoundary';
 import Header        from './Header';
 import Sidebar       from './Sidebar';
-import LockBanner    from './LockBanner';
 import Toast         from '@/components/ui/Toast';
 import Confirm       from '@/components/ui/Confirm';
 import PinLock       from '@/components/ui/PinLock';
@@ -165,8 +164,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <Sidebar onNavigate={navigate} />
         </div>
         <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
+          {/* v11.7.0: LockBanner DIHAPUS — redundan setelah Header.tsx punya indikator
+              status "Terkunci"/"Terbuka" sendiri di toolbar (lihat komentar Header.tsx).
+              Sebelumnya banner ini + status baru di Header sama2 tampil saat globalLocked,
+              menampilkan info identik 2x. User: "hilangkan saja... sudah bisa diketahui
+              dari statusnya". Import LockBanner & file komponennya jg dihapus. */}
           <Header onToggleSidebar={() => setSidebar(!sidebarOpen)} />
-          <LockBanner />
           <OfflineBanner />
           <div style={{ flex:1, position:'relative', display:'flex', flexDirection:'column', minHeight:0 }}>
             <div

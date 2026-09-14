@@ -424,9 +424,27 @@ const id: Record<string, string> = {
   // Header entry lock
   'header.entryLocked'           : 'Entry dikunci',
   'header.entryUnlocked'         : 'Entry dibuka',
+  // v11.7.0: label indikator STATUS (badge kecil di Header) — terpisah dari header.lock/
+  // unlock yg sekarang khusus aria-label tombol AKSI ("KUNCI"/"BUKA", kata perintah).
+  // Badge ini pakai kata sifat ("Terkunci"/"Terbuka") supaya tidak ambigu status vs perintah.
+  'header.statusLocked'          : 'Terkunci',
+  'header.statusUnlocked'        : 'Terbuka',
+  // v11.7.0: aria-label tombol AKSI — badge status di sampingnya aria-hidden (murni visual
+  // utk pengguna yg bisa melihat), jadi tombol ini WAJIB menyampaikan status+aksi sekaligus
+  // dalam satu kalimat, supaya screen reader tidak kehilangan konteks status sama sekali.
+  'header.actionAriaLocked'      : 'Entry sedang terkunci. Ketuk untuk membuka.',
+  'header.actionAriaUnlocked'    : 'Entry sedang terbuka. Ketuk untuk mengunci.',
   // v11.5: toast spesifik untuk toggle kunci di menu Member
   'members.locked'               : 'Daftar member dikunci',
   'members.unlocked'             : 'Daftar member dibuka',
+  // v11.7.0: label indikator STATUS badge kecil (sama motif dgn header.statusLocked/
+  // Unlocked) — 'members.locked'/'unlocked' di atas terlalu panjang untuk badge toolbar.
+  'members.statusLocked'         : 'Terkunci',
+  'members.statusUnlocked'       : 'Terbuka',
+  // v11.7.0: aria-label tombol AKSI — sama alasan dgn header.actionAriaLocked/Unlocked di
+  // atas (badge status di sampingnya aria-hidden, tombol ini yg wajib bawa konteks penuh).
+  'members.actionAriaLocked'     : 'Daftar member sedang terkunci. Ketuk untuk membuka.',
+  'members.actionAriaUnlocked'   : 'Daftar member sedang terbuka. Ketuk untuk mengunci.',
   // v11.5.1: key untuk SettingsIPSection — sebelumnya TIDAK ADA di file ini, sehingga
   // t() mengembalikan raw key string (mis. "settings.ip.zoneLabel") karena fallback "||"
   // di kode tidak pernah tercapai (t() tidak mengembalikan falsy untuk key yang hilang).
@@ -486,7 +504,6 @@ const id: Record<string, string> = {
 
   // ─── Added keys ───
   'lockbanner.message': 'Entry terkunci — ketuk untuk membuka',
-  'lockbanner.unlock': 'Buka',
   'membercard.payDate': 'Tgl Bayar',
   'membercard.history': 'Riwayat',
   'membercard.acm': 'Akm',

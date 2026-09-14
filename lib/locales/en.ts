@@ -420,9 +420,23 @@ const en: Record<string, string> = {
   // Header entry lock
   'header.entryLocked'           : 'Entry locked',
   'header.entryUnlocked'         : 'Entry unlocked',
+  // v11.7.0: status indicator label (small badge in Header) — separate from header.lock/
+  // unlock which is now dedicated to the ACTION button's aria-label (imperative verb).
+  'header.statusLocked'          : 'Locked',
+  'header.statusUnlocked'        : 'Unlocked',
+  // v11.7.0: action button aria-label — status badge next to it is aria-hidden (visual-only
+  // for sighted users), so this button MUST convey status+action together in one sentence.
+  'header.actionAriaLocked'      : 'Entry is currently locked. Tap to unlock.',
+  'header.actionAriaUnlocked'    : 'Entry is currently unlocked. Tap to lock.',
   // v11.5: toast spesifik untuk toggle kunci di menu Member
   'members.locked'               : 'Member list locked',
   'members.unlocked'             : 'Member list unlocked',
+  // v11.7.0: status indicator badge label (short form, distinct from the toast text above)
+  'members.statusLocked'         : 'Locked',
+  'members.statusUnlocked'       : 'Unlocked',
+  // v11.7.0: action button aria-label — same reasoning as header.actionAriaLocked/Unlocked
+  'members.actionAriaLocked'     : 'Member list is currently locked. Tap to unlock.',
+  'members.actionAriaUnlocked'   : 'Member list is currently unlocked. Tap to lock.',
   // v11.5.1: key untuk SettingsIPSection
   'settings.ip.zoneLabel'        : 'ZONE',
   'settings.ip.findLabel'        : 'FIND (IP/text portion to replace)',
@@ -476,7 +490,6 @@ const en: Record<string, string> = {
 
   // ─── Added keys ───
   'lockbanner.message': 'Entry locked — tap to unlock',
-  'lockbanner.unlock': 'Unlock',
   'membercard.payDate': 'Pay Date',
   'membercard.history': 'History',
   'membercard.acm': 'Acc.',

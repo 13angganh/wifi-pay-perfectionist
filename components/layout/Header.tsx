@@ -175,24 +175,50 @@ export default function Header({ onToggleSidebar }: Props) {
 
           <span style={{ flex:1 }} />
 
-          {/* Kunci/Buka entry */}
-          <button
-            className="hbtn"
-            style={{
-              color: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
-              display:'flex', alignItems:'center', gap:4,
-              minWidth:40, minHeight:40,
-            }}
-            onClick={toggleGlobalLock}
-            aria-label={globalLocked ? 'Buka kunci entry' : 'Kunci entry'}
-            title={globalLocked ? 'Buka kunci entry' : 'Kunci entry'}
-          >
-            {globalLocked
-              ? <Lock size={14} strokeWidth={1.5} />
-              : <LockOpen size={14} strokeWidth={1.5} />
-            }
-            <span style={{ fontSize:'var(--fs-micro)' }}>{globalLocked ? t('header.lock') : t('header.unlock')}</span>
-          </button>
+          {/* v11.7.0: dipecah jadi 2 elemen terpisah sesuai panduan UX — indikator STATUS
+              (kiri, tidak bisa diklik, teks+ikon+warna mengikuti kondisi globalLocked saat
+              ini) dan tombol AKSI (kanan, ikon-saja tanpa teks, warna solid ikut tema aktif
+              via CSS body.gold override — lihat header-lock-action-btn di
+              styles/components.header.css). Sebelumnya 1 tombol gabungan dgn teks pendek
+              "KUNCI"/"BUKA" yg ambigu antara status vs perintah (linter halus: kata kerja
+              imperatif dipakai utk menampilkan status, bukan utk memicu aksi eksplisit).
+              LockBanner (pesan panjang duplikat di bawah Header) DIHAPUS — redundan setelah
+              status ini ada, lihat AppShell.tsx & LockBanner.tsx (dihapus). */}
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                display:'flex', alignItems:'center', gap:5,
+                background: globalLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
+                color: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
+                padding:'5px 9px', borderRadius:'var(--r-sm)',
+                fontSize:'var(--fs-micro)', whiteSpace:'nowrap',
+              }}
+            >
+              {globalLocked
+                ? <Lock size={12} strokeWidth={1.5} />
+                : <LockOpen size={12} strokeWidth={1.5} />
+              }
+              {globalLocked ? t('header.statusLocked') : t('header.statusUnlocked')}
+            </div>
+            <button
+              className="header-lock-action-btn"
+              onClick={toggleGlobalLock}
+              aria-label={globalLocked ? t('header.actionAriaLocked') : t('header.actionAriaUnlocked')}
+              title={globalLocked ? t('header.unlock') : t('header.lock')}
+              style={{
+                width:36, height:36, minWidth:36, minHeight:36,
+                border:'none', borderRadius:'50%',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                cursor:'pointer', flexShrink:0,
+              }}
+            >
+              {globalLocked
+                ? <LockOpen size={16} strokeWidth={1.5} />
+                : <Lock size={16} strokeWidth={1.5} />
+              }
+            </button>
+          </div>
 
           {/* Pencarian */}
           <button

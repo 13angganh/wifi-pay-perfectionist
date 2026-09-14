@@ -150,6 +150,26 @@ describe('Konvensi warna lock/unlock — Header vs Members harus konsisten', () 
   });
 });
 
+// ── Konsistensi tampilan label versi (bug v11.6.7→v11.6.8: Sidebar lebih redup dr Header) ──
+
+describe('Label versi APP_VERSION_FULL — Sidebar vs Header harus pakai fontSize+warna sama', () => {
+  const ROOT = path.resolve(__dirname, '../..');
+
+  it('Sidebar: label versi harus pakai var(--fs-micro) + var(--txt4), BUKAN fontSize:8 + txt5', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'components/layout/Sidebar.tsx'), 'utf8');
+    // Sebelum fix v11.6.8, ini fontSize:8 (literal) + color:'var(--txt5)' — txt5 lebih redup
+    // dari txt4 yang dipakai Header, menyebabkan versi Sidebar tampak lebih gelap meski teks
+    // (APP_VERSION_FULL) sudah identik sejak awal — murni gap styling, bukan gap teks.
+    expect(content).toMatch(/fontSize:\s*'var\(--fs-micro\)'\s*,\s*color:\s*'var\(--txt4\)'\s*\}\}>\{APP_VERSION_FULL\}/);
+    expect(content).not.toMatch(/fontSize:\s*8\s*,\s*color:\s*'var\(--txt5\)'/);
+  });
+
+  it('Header: label versi tetap var(--fs-micro) + var(--txt4) (acuan yang disalin Sidebar)', () => {
+    const content = fs.readFileSync(path.join(ROOT, 'components/layout/Header.tsx'), 'utf8');
+    expect(content).toMatch(/fontSize:\s*'var\(--fs-micro\)'\s*,\s*color:\s*'var\(--txt4\)'\s*\}\}>\{APP_VERSION_FULL\}/);
+  });
+});
+
 // ── Badge status di Settings — semua harus konsisten hijau saat "aktif" ────
 
 describe('Settings badge — semua badge status harus hijau (var(--c-lunas)) saat aktif', () => {

@@ -53,7 +53,12 @@ export default function Sidebar({ onNavigate }: Props) {
         </div>
         <div>
           <div className="sb-app-name">{APP_NAME}</div>
-          <div style={{ fontSize:8, color:'var(--txt5)', letterSpacing:'.06em' }}>{APP_VERSION_FULL}</div>
+          {/* v11.6.8: disamakan dgn Header.tsx (fs-micro + txt4) — sebelumnya fontSize:8 literal
+              + txt5 (lebih redup dari txt4) menyebabkan label versi Sidebar tampak lebih
+              gelap drpd Header meski teksnya identik (keduanya sudah pakai APP_VERSION_FULL
+              yg sama sejak awal, murni gap styling). letterSpacing dibuang krn Header tak
+              punya, agar keduanya benar2 seragam. */}
+          <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
         </div>
       </div>
 

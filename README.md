@@ -1,3 +1,39 @@
+# WiFi Pay Next — Update v11.6.8
+
+> Permintaan user: dua laporan dari screenshot — (1) tombol Buka/Kunci Member terasa "aneh dan membingungkan", (2) label versi APP_VERSION_FULL tampil beda kecerahan antara Sidebar dan menu lain padahal teksnya sama.
+
+## Fix #1: Tombol Buka/Kunci Member — label diubah dari STATE ke AKSI
+
+Sebelum fix ini, teks tombol di menu Member (`components/features/members/MembersView.tsx`) menampilkan label **state saat ini** — sama seperti pola toggle Entry di `Header.tsx` (`globalLocked`). Secara logika kode itu sudah konsisten satu sama lain, tapi user tetap merasa membingungkan: tombol seolah menunjukkan kondisi sekarang, bukan apa yang terjadi kalau diklik.
+
+Riset UX (NN/G, "State-Switch Controls: The Case of the 'Mute' Button") mengonfirmasi pola satu-tombol-dua-fungsi (indikator state + pemicu aksi sekaligus) ini memang dikenal rawan bingung, dan merekomendasikan label berorientasi **aksi**. Diputuskan bersama user:
+
+- Teks & ikon: dibalik jadi label AKSI — tombol tertulis **"KUNCI MEMBER"** (ikon gembok tertutup) saat member masih terbuka/bisa diedit, dan **"BUKA MEMBER"** (ikon gembok terbuka) saat sudah terkunci/read-only.
+- Warna: **TIDAK diubah** dari semula — tetap ikut STATE, merah saat `membersLocked=true` (terkunci), hijau saat `false` (terbuka). Ini konvensi universal access-control (smart lock, browser HTTPS: merah=terkunci, hijau=terbuka) yang sudah dipakai `Header.tsx` sejak v11.5.1 dan dikawal test regresi (`i18n-and-ui-consistency.test.ts`) — sempat salah dibalik ke arah lain di draft awal sesi ini (dicoba diberi makna "hijau=mode protektif" mengikuti pola badge Aktif PIN/Biometric), tapi ditolak balik krn bertentangan dgn preseden v11.5.1 & justru menciptakan dua sistem warna berbeda utk dua toggle "lock" yg sama-sama ada di app ini — tidak sejalan dgn prinsip konsistensi yg diminta user.
+
+`aria-label` dan pesan toast tidak diubah — keduanya sudah sejak awal mendeskripsikan aksi/hasil aksi dengan benar, bukan state, jadi tidak ada yang perlu dibalik di situ.
+
+## Fix #2: Label versi Sidebar disamakan dengan Header
+
+`components/layout/Sidebar.tsx` dan `components/layout/Header.tsx` sudah lama memakai `APP_VERSION_FULL` yang identik (bukan gap teks) — tapi styling-nya berbeda: Sidebar pakai `fontSize:8` (angka literal) + `color:'var(--txt5)'` (token warna paling redup di palet), sementara Header pakai `fontSize:'var(--fs-micro)'` (9px, token resmi) + `color:'var(--txt4)'` (satu tingkat lebih terang dari txt5). Akibatnya label versi di Sidebar tampak lebih gelap/redup dari Header meski teksnya sama persis — inilah yang dilaporkan user sebagai "ada yang lebih terang ada yang lebih redup".
+
+Sidebar disamakan persis ke pola Header (`var(--fs-micro)` + `var(--txt4)`), termasuk membuang `letterSpacing:'.06em'` yang hanya ada di Sidebar dan tidak ada padanannya di Header. `SettingsAppSection.tsx` dan `LoadingScreen.tsx` (2 lokasi lain yang juga menampilkan `APP_VERSION_FULL`) dicek dan sudah konsisten memakai `var(--fs-caption)` + `var(--txt4)` — beda ukuran dari Header/Sidebar itu wajar karena konteksnya beda (kartu info & splash screen, bukan label kecil di samping logo), tapi warnanya (`txt4`) sudah seragam sejak awal sehingga tidak disentuh.
+
+**Verifikasi:** 2 test regresi baru ditambahkan ke `i18n-and-ui-consistency.test.ts` (describe block baru "Label versi APP_VERSION_FULL — Sidebar vs Header harus pakai fontSize+warna sama") — memastikan pola lama (`fontSize:8` + `txt5`) benar-benar hilang dari Sidebar, dan Sidebar+Header sama-sama match pola `fs-micro`+`txt4`, mengikuti gaya test regresi warna lock/unlock v11.5.1 yang sudah ada di file yang sama.
+
+## File yang berubah (v11.6.8)
+
+| File | Perubahan |
+|------|-----------|
+| `components/features/members/MembersView.tsx` | Tombol Buka/Kunci Member: teks+ikon dibalik jadi label aksi; warna tidak berubah |
+| `components/layout/Sidebar.tsx` | Label versi: `fontSize:8`+`txt5` → `var(--fs-micro)`+`var(--txt4)`, `letterSpacing` dibuang |
+| `lib/__tests__/i18n-and-ui-consistency.test.ts` | +2 test regresi baru: konsistensi styling label versi Sidebar vs Header |
+| `lib/constants.ts` | Versi → v11.6.8 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **269/269 unit test lulus** (13 file, +2 test baru) · `next build` production gagal seperti biasa karena sandbox tidak bisa akses `fonts.googleapis.com` (keterbatasan lingkungan yang sudah tercatat sebelumnya, bukan regresi dari perubahan sesi ini).
+
+---
+
 # WiFi Pay Next — Update v11.6.7
 
 > Permintaan user: update Next.js & eslint-config-next ke versi stable terbaru.
@@ -1125,7 +1161,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.6.2 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.6.8 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

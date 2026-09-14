@@ -277,10 +277,18 @@ export default function MembersView() {
             });
           })()}
         </div>
+        {/* v11.6.8: label tombol diubah dari STATE ke AKSI — "KUNCI MEMBER" saat member
+            masih terbuka (mengajak mengunci), "BUKA MEMBER" saat sudah terkunci (mengajak
+            membuka). Sebelumnya label = state saat ini, membingungkan krn terbaca seolah
+            tombol menunjukkan kondisi sekarang, bukan apa yg terjadi jika diklik.
+            Warna TETAP ikut STATE spt semula & spt Header.tsx globalLocked (konvensi
+            universal access-control: merah=terkunci, hijau=terbuka — dikunci via test
+            i18n-and-ui-consistency.test.ts sejak v11.5.1, JANGAN dibalik lagi). Hanya
+            teks+ikon yg berubah arah, warna tidak. */}
         <button onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
           aria-label={membersLocked ? 'Buka kunci daftar member' : 'Kunci daftar member'}
           style={{ background:membersLocked?'rgba(239,68,68,0.06)':'rgba(34,197,94,0.06)', border:`1px solid ${membersLocked?'rgba(239,68,68,0.25)':'rgba(34,197,94,0.25)'}`, color:membersLocked?'var(--c-belum)':'var(--c-lunas)', padding:'6px 14px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:34, display:'flex', alignItems:'center', gap:5 }}>
-          {membersLocked ? <><Lock size={12} strokeWidth={1.5} /> {t('members.lock')}</> : <><LockOpen size={12} strokeWidth={1.5} /> {t('members.unlock')}</>}
+          {membersLocked ? <><LockOpen size={12} strokeWidth={1.5} /> {t('members.unlock')}</> : <><Lock size={12} strokeWidth={1.5} /> {t('members.lock')}</>}
         </button>
       </div>
 

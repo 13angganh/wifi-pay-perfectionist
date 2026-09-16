@@ -116,7 +116,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
   const cs: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)',
     color:'var(--txt)', padding:'7px 10px', borderRadius:'var(--r-sm)',
-    fontSize:12, flex:1,
+    fontSize:'var(--fs-body)', flex:1,
   };
 
   return (
@@ -166,7 +166,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
         </div>
 
         {/* Toggle selamanya */}
-        <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--txt2)', cursor:'pointer', marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:'var(--r-sm)', border:'1px solid var(--border)' }}>
+        <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:'var(--fs-body)', color:'var(--txt2)', cursor:'pointer', marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:'var(--r-sm)', border:'1px solid var(--border)' }}>
           <input
             type="checkbox" checked={noEnd}
             onChange={e => setNoEnd(e.target.checked)}
@@ -208,7 +208,7 @@ export default function FreeMemberModal({ open, zone, name, onClose }: Props) {
           )}
           <button
             onClick={onClose}
-            style={{ width:'100%', background:'none', border:'1px solid var(--border)', color:'var(--txt4)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12, transition:'all var(--t-fast)' }}
+            style={{ width:'100%', background:'none', border:'1px solid var(--border)', color:'var(--txt4)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}
           >
             {t('action.cancel')}
           </button>

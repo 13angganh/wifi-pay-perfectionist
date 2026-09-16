@@ -29,7 +29,7 @@ import type React from 'react';
 
 const inputStyle: React.CSSProperties = {
   width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
-  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:20,
+  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-display)',
   letterSpacing:8, textAlign:'center', outline:'none', marginBottom:10,
   fontFamily:"var(--font-mono),monospace",
 };
@@ -156,7 +156,7 @@ export default function SettingsPinSection() {
                       border:`1px solid ${settings.pinTimeoutMinutes===opt.value ? 'var(--zc)' : 'var(--border)'}`,
                       background: settings.pinTimeoutMinutes===opt.value ? 'var(--zcdim)' : 'var(--bg3)',
                       color: settings.pinTimeoutMinutes===opt.value ? 'var(--zc)' : 'var(--txt2)',
-                      cursor:'pointer', fontSize:12, transition:'all var(--t-fast)',
+                      cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)',
                     }}>
                     <span>{t(opt.key)}</span>
                     {settings.pinTimeoutMinutes===opt.value && <Check size={12} />}

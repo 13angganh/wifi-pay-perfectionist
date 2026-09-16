@@ -143,11 +143,11 @@ export default function DashboardStats(p: Props) {
         borderColor: p.krsBelum + p.slkBelum > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
       }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:'var(--txt)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)' }}>
             <Clock size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.unpaidTitle')} {p.bulanLbl}
           </div>
           <div style={{
-            fontSize:12, color:'var(--c-belum)', fontWeight:700,
+            fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700,
             background: p.krsBelum + p.slkBelum > 0 ? 'var(--c-belum-tint)' : 'transparent',
             padding: '2px 8px', borderRadius: 'var(--r-full)',
           }}>
@@ -162,7 +162,7 @@ export default function DashboardStats(p: Props) {
           ].map(([label, val, color]) => (
             <div key={String(label)} style={{ flex:1, background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center', border:'1px solid var(--border)' }}>
               <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:2 }}>{label}</div>
-              <div style={{ fontSize:20, fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: String(color), lineHeight:1 }}>{val}</div>
+              <div style={{ fontSize:'var(--fs-display)', fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: String(color), lineHeight:1 }}>{val}</div>
             </div>
           ))}
         </div>
@@ -171,7 +171,7 @@ export default function DashboardStats(p: Props) {
             <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>
               <Gift size={12} /> {t('status.free')} {p.bulanLbl}
             </span>
-            <span style={{ fontSize:12, fontWeight:700, color:'var(--c-free)' }}>
+            <span style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--c-free)' }}>
               {p.totalFree} {t('common.members')} <span style={{ fontSize:'var(--fs-micro)', opacity:.7 }}>(KRS:{p.krsFree} SLK:{p.slkFree})</span>
             </span>
           </div>

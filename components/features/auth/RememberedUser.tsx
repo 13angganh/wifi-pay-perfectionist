@@ -23,6 +23,7 @@ export default function RememberedUser({ greeterName, loading, error, onContinue
         <div style={{ width:56, height:56, borderRadius:14, overflow:'hidden', margin:'0 auto 14px', boxShadow:'0 4px 16px rgba(201,149,42,0.25)' }}>
           <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         </div>
+        {/* v11.7.1: 22px literal disengaja — sama kelas ukuran dgn LoadingScreen.tsx, lihat penjelasan lengkap di sana */}
         <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:22, color:'var(--txt)', letterSpacing:'-0.02em', lineHeight:1.2, marginBottom:6 }}>
           {greeterName ? <>{t('login.greeting')}, {greeterName}</> : <>{t('login.greetingNew')}</>}
         </div>
@@ -31,7 +32,7 @@ export default function RememberedUser({ greeterName, loading, error, onContinue
         {loading ? t('common.loading') : t('login.continue')}
       </button>
       <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-caption)', color:'var(--txt4)' }}>{t('login.or')}</div>
-      <button className="lf-btn secondary" onClick={onSwitch} style={{ fontSize:12 }}>
+      <button className="lf-btn secondary" onClick={onSwitch} style={{ fontSize:'var(--fs-body)' }}>
         {t('login.changeAccount')}
       </button>
       {error && <div className="lf-err">{error}</div>}

@@ -122,7 +122,7 @@ export default function SettingsIPSection() {
             onClick={() => setZone(z)}
             style={{
               padding:'6px 14px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer',
-              fontSize:12, fontWeight: zone===z ? 700 : 500, minHeight:32,
+              fontSize:'var(--fs-body)', fontWeight: zone===z ? 700 : 500, minHeight:32,
               background: zone===z ? 'var(--zc)' : 'var(--bg3)',
               color: zone===z ? '#fff' : 'var(--txt3)',
               transition:'all var(--t-fast)',

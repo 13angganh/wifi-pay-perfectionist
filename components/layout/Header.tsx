@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 // components/layout/Header.tsx — Fase 4: sync pill + Lucide + 3-mode theme cycle
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { saveDB } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
@@ -30,6 +30,31 @@ export default function Header({ onToggleSidebar }: Props) {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const t = useT();
+
+  // v11.7.1 FIX: --header-h (styles/tokens.css) statis 56px, sudah lama tidak akurat —
+  // Header ini sudah 2 baris (Row 1 logo+zone, Row 2 sync/status/aksi) sejak sebelum sesi
+  // ini, tinggi asli jauh lebih dari 56px. Toast.tsx & komponen lain pakai --header-h utk
+  // menempatkan diri tepat di bawah Header — dgn token basi, toast (top: header-h + 8px)
+  // muncul menimpa Row 2 (badge status "Terkunci/Terbuka" + tombol aksi), bukan di bawahnya.
+  // FIX: ukur tinggi ASLI via ResizeObserver (pola sama dgn EntryView.tsx sheetHeight —
+  // "menghindari duplikasi konstanta layout/px yang gampang basi") & tulis ke CSS var
+  // --header-h di document.documentElement scr langsung, krn Toast.tsx berada di node
+  // terpisah dlm pohon komponen (bukan child Header) — tidak bisa dioper via React state/
+  // props biasa, harus lewat CSS custom property global spy kedua sisi tetap sinkron
+  // otomatis kapan pun Header berubah tinggi (termasuk di masa depan), bukan angka statis
+  // yg gampang basi lagi.
+  const headerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height;
+      if (h !== undefined) document.documentElement.style.setProperty('--header-h', `${Math.ceil(h)}px`);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Cycle: dark → light → gold → dark
   function cycleTheme() {
@@ -103,7 +128,7 @@ export default function Header({ onToggleSidebar }: Props) {
 
   return (
     <>
-      <div id="header">
+      <div id="header" ref={headerRef}>
         {/* Row 1: hamburger + logo + zone switch */}
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
           <button
@@ -125,7 +150,7 @@ export default function Header({ onToggleSidebar }: Props) {
               <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             </div>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, letterSpacing:'-.02em' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', letterSpacing:'-.02em' }}>
                 {APP_NAME}
               </div>
               <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
@@ -191,8 +216,14 @@ export default function Header({ onToggleSidebar }: Props) {
                 display:'flex', alignItems:'center', gap:5,
                 background: globalLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
                 color: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
-                padding:'5px 9px', borderRadius:'var(--r-sm)',
-                fontSize:'var(--fs-micro)', whiteSpace:'nowrap',
+                // v11.7.1: FIX — disamakan ke ukuran badge "Tersimpan" (.sync-pill,
+                // styles/components.header.css) yg sebelumnya lebih besar (padding
+                // 4px 10px + font 11px/fs-caption + min-height 28px vs badge status
+                // sblmnya padding 5px 9px + font 9px/fs-micro tanpa min-height).
+                // Naik ke fs-caption (bukan sync-pill turun ke fs-micro) krn 11px
+                // sudah persis cocok token resmi & sync-pill lbh dulu established.
+                padding:'4px 10px', borderRadius:'var(--r-full)', minHeight:28,
+                fontSize:'var(--fs-caption)', whiteSpace:'nowrap',
               }}
             >
               {globalLocked
@@ -207,15 +238,15 @@ export default function Header({ onToggleSidebar }: Props) {
               aria-label={globalLocked ? t('header.actionAriaLocked') : t('header.actionAriaUnlocked')}
               title={globalLocked ? t('header.unlock') : t('header.lock')}
               style={{
-                width:36, height:36, minWidth:36, minHeight:36,
+                width:34, height:34, minWidth:34, minHeight:34,
                 border:'none', borderRadius:'50%',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 cursor:'pointer', flexShrink:0,
               }}
             >
               {globalLocked
-                ? <LockOpen size={16} strokeWidth={1.5} />
-                : <Lock size={16} strokeWidth={1.5} />
+                ? <LockOpen size={15} strokeWidth={1.5} />
+                : <Lock size={15} strokeWidth={1.5} />
               }
             </button>
           </div>

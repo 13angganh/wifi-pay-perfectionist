@@ -222,16 +222,16 @@ export default function SettingsZoneSection() {
                 </div>
               </div>
               <div style={{ display:'flex', gap:6 }}>
-                <button onClick={addZona} style={{ flex:1, background:'var(--zc)', color:'#fff', border:'none', borderRadius:'var(--r-sm)', padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                <button onClick={addZona} style={{ flex:1, background:'var(--zc)', color:'#fff', border:'none', borderRadius:'var(--r-sm)', padding:'8px', fontSize:'var(--fs-body)', fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
                   <Check size={13} /> {t('settings.addZone')}
                 </button>
-                <button onClick={() => { setAddZonaOpen(false); setNewZonaKey(''); }} style={{ background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt3)', borderRadius:'var(--r-sm)', padding:'8px 14px', fontSize:12, cursor:'pointer' }}>
+                <button onClick={() => { setAddZonaOpen(false); setNewZonaKey(''); }} style={{ background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt3)', borderRadius:'var(--r-sm)', padding:'8px 14px', fontSize:'var(--fs-body)', cursor:'pointer' }}>
                   {t('action.cancel')}
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setAddZonaOpen(true)} style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', borderRadius:'var(--r-sm)', padding:'9px', fontSize:12, cursor:'pointer', marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <button onClick={() => setAddZonaOpen(true)} style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', borderRadius:'var(--r-sm)', padding:'9px', fontSize:'var(--fs-body)', cursor:'pointer', marginTop:8, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <Plus size={13} strokeWidth={1.5} /> {t('settings.addZone')}
             </button>
           )}

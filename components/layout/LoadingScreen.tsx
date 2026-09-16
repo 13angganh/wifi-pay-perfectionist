@@ -39,6 +39,10 @@ export default function LoadingScreen() {
       <div style={{
         fontFamily:'var(--font-sans),sans-serif',
         fontWeight:800,
+        // v11.7.1: sengaja TIDAK dipetakan ke --fs-display (18px) — selisih 4px terlalu
+        // jauh utk dianggap "sama". 22px ini konsisten dipakai di 3 tempat serupa (splash
+        // screen, PinLock, RememberedUser "Selamat Datang Kembali") — kelas ukuran khusus
+        // utk nama/judul besar di layar full-screen standalone, bukan konten biasa.
         fontSize:22,
         color:'var(--txt)',
         letterSpacing:'.02em',

@@ -81,7 +81,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
           onClose();
         }}>
         <div>
-          <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName} {riwayatYear}</div>
+          <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName} {riwayatYear}</div>
           {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
         </div>
         {statusEl}
@@ -178,7 +178,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>{riwayatYear}</span>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{riwayatYear}</span>
           <button
             onClick={() => riwayatYear < maxYear && setRiwayatYear(riwayatYear + 1)}
             disabled={riwayatYear >= maxYear}

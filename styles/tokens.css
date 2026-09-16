@@ -34,7 +34,12 @@
   --card2: #1E2235;
 
   --sidebar-w: 250px;
-  --header-h : 56px;
+  /* v11.7.1: fallback awal sblm ResizeObserver Header.tsx sempat mengukur tinggi asli
+     (render pertama). Sebelumnya 56px (cuma ~setinggi 1 baris) — Header sudah 2 baris
+     (Row 1 logo+zone ~10+40+8=58px, Row 2 sync/status/aksi ~36+10=46px) jadi total real
+     ~104px; nilai ini cuma perkiraan render-pertama, ResizeObserver yg jadi sumber
+     kebenaran final & auto-sinkron kapan pun Header berubah tinggi. */
+  --header-h : 104px;
 
   --fs-display: 18px;
   --fs-heading: 15px;

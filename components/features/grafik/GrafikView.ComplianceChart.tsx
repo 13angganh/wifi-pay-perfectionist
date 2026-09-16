@@ -67,7 +67,7 @@ export default function ComplianceChart({ appData, activeZone, selYear, MONTH_NA
           { label: t('status.free'),  val: free,  color:'var(--c-free)' },
         ].map(d => (
           <div key={d.label} style={{ flex:1, textAlign:'center', background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 4px', border:`1px solid ${d.color}22` }}>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:d.color }}>{d.val}</div>
             <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
           </div>
         ))}

@@ -219,7 +219,7 @@ export default function EntryView() {
               <X size={18} />
             </button>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:14, color:'var(--txt)' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
                 {batchSelected.length} {t('nav.members')}
               </div>
               <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>
@@ -275,7 +275,7 @@ export default function EntryView() {
         }}>
           <div>
             <div style={{ fontSize:'var(--fs-micro)', color:'rgba(239,68,68,0.6)', letterSpacing:'.06em', textTransform:'uppercase' }}>{t('entry.potentialUnpaid')}</div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:16, fontWeight:800, color:'var(--c-belum)' }}>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--c-belum)' }}>
               {rp(potensiUnpaid)}
             </div>
           </div>
@@ -398,7 +398,7 @@ export default function EntryView() {
                 padding:'8px 0', borderBottom:'1px solid var(--border2)',
               }}>
                 <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</span>
-                <span style={{ fontSize:12, fontWeight:600, color: tarif ? 'var(--c-lunas)' : 'var(--txt4)' }}>
+                <span style={{ fontSize:'var(--fs-body)', fontWeight:600, color: tarif ? 'var(--c-lunas)' : 'var(--txt4)' }}>
                   {tarif ? rp(tarif) : <span style={{ fontSize:'var(--fs-label)' }}>{t('entry.noTarifShort')}</span>}
                 </span>
               </div>
@@ -406,7 +406,7 @@ export default function EntryView() {
           </div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, marginBottom:16 }}>
             <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>Total</span>
-            <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>
+            <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)' }}>
               {rp(batchPreview.reduce((s, { tarif }) => s + (tarif || 0), 0))}
             </span>
           </div>

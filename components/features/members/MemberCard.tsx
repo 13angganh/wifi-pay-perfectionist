@@ -539,7 +539,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
           )}
           {!isSaving && tagEl}
           {!batchMode && (
-            <span style={{ color:'var(--txt4)', fontSize:12, marginLeft:2, display:'flex', alignItems:'center' }}>
+            <span style={{ color:'var(--txt4)', fontSize:'var(--fs-body)', marginLeft:2, display:'flex', alignItems:'center' }}>
               {isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </span>
           )}

@@ -74,7 +74,7 @@ export default function Toast() {
   return (
     <div style={{
       position:  'fixed',
-      top:       'calc(var(--header-h, 88px) + 8px)',
+      top:       'calc(var(--header-h, 104px) + 8px)',
       left:      '50%',
       transform: 'translateX(-50%)',
       zIndex:    9000,
@@ -96,7 +96,7 @@ export default function Toast() {
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: 'var(--shadow-md)',
             color: 'var(--txt)',
-            fontSize: 13,
+            fontSize: 'var(--fs-body)',
             fontFamily: 'var(--font-sans),sans-serif',
             whiteSpace: 'nowrap',
             maxWidth: '90vw',
@@ -127,7 +127,7 @@ export default function Toast() {
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 'var(--r-sm)',
                 color: 'var(--txt)',
-                fontSize: 11,
+                fontSize: 'var(--fs-caption)',
                 fontWeight: 600,
                 padding: '4px 10px',
                 cursor: 'pointer',

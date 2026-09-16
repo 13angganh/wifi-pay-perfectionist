@@ -36,17 +36,17 @@ export default function RekapMonthGrid({
   return (
     <>
       {/* Header */}
-      <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
+      <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
       <div style={{ fontSize:'var(--fs-label)', color:'var(--zc)', marginTop:2 }}>{activeZone} · {monthLabel} {selYear}</div>
 
       {/* Body */}
       <div style={{ marginTop:12 }}>
         {entryFree ? (
-          <div style={{ textAlign:'center', fontSize:12, color:'var(--c-free)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-free)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             <Gift size={14} /> {t('rekap.freeMember')}
           </div>
         ) : locked ? (
-          <div style={{ textAlign:'center', fontSize:12, color:'var(--c-belum)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+          <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-belum)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
             <Lock size={12} strokeWidth={1.5} />
             {t('rekap.dataLocked')}
           </div>

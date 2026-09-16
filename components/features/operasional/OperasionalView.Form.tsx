@@ -28,7 +28,7 @@ export default function OperasionalForm({ items, onAdd, onUpdate, onDelete }: Pr
     color: 'var(--txt)',
     borderRadius: 'var(--r-sm)',
     padding: '8px 10px',
-    fontSize: 12,
+    fontSize:'var(--fs-body)',
     fontFamily: FONT,
     outline: 'none',
     transition: 'border-color var(--t-fast)',
@@ -62,7 +62,7 @@ export default function OperasionalForm({ items, onAdd, onUpdate, onDelete }: Pr
           <button
             onClick={() => onDelete(i)}
             aria-label={`Hapus item ${it.label || i + 1}`}
-            style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'var(--c-belum)', padding:'7px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12, flexShrink:0, fontFamily:FONT, display:'flex', alignItems:'center', justifyContent:'center', minWidth:34, minHeight:34 }}
+            style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'var(--c-belum)', padding:'7px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', flexShrink:0, fontFamily:FONT, display:'flex', alignItems:'center', justifyContent:'center', minWidth:34, minHeight:34 }}
           >
             <X size={13} strokeWidth={1.5} />
           </button>
@@ -71,7 +71,7 @@ export default function OperasionalForm({ items, onAdd, onUpdate, onDelete }: Pr
 
       <button
         onClick={onAdd}
-        style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', padding:9, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12, marginTop:6, fontFamily:FONT }}
+        style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', padding:9, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', marginTop:6, fontFamily:FONT }}
       >
         {t('ops.addItem')}
       </button>

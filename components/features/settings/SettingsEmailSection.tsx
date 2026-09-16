@@ -56,7 +56,7 @@ export default function SettingsEmailSection() {
         <div style={{
           display:'flex', alignItems:'center', gap:8, padding:'10px 12px',
           background:'rgba(34,197,94,0.07)', border:'1px solid rgba(34,197,94,0.2)',
-          borderRadius:'var(--r-sm)', fontSize:12, color:'var(--c-lunas)',
+          borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', color:'var(--c-lunas)',
         }}>
           <CheckCircle2 size={14} />
           <span>{t('emailSection.verifySentDesc')}</span>
@@ -125,7 +125,7 @@ export default function SettingsEmailSection() {
               width:'100%', padding:'9px 14px', borderRadius:'var(--r-sm)',
               background:'var(--bg3)', border:'1px solid var(--border)',
               color:'var(--txt2)', cursor: resetLoad ? 'not-allowed' : 'pointer',
-              fontSize:12, fontWeight:600, fontFamily:"var(--font-sans),sans-serif",
+              fontSize:'var(--fs-body)', fontWeight:600, fontFamily:"var(--font-sans),sans-serif",
               transition:'all var(--t-fast)', opacity: resetLoad ? 0.6 : 1,
             }}
           >

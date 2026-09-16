@@ -65,7 +65,7 @@ export default function Confirm() {
 
         {/* description — plain text opsional */}
         {description && (
-          <div style={{ fontSize: 11, color: 'var(--txt3)', textAlign: 'center', marginTop: 4, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--txt3)', textAlign: 'center', marginTop: 4, lineHeight: 1.5 }}>
             {description}
           </div>
         )}
@@ -73,7 +73,7 @@ export default function Confirm() {
         {/* highlight — teks penting (nama member, dll) */}
         {highlight && (
           <div style={{
-            fontSize: 12,
+            fontSize: 'var(--fs-body)',
             fontWeight: 700,
             color: highlightColor || 'var(--txt)',
             textAlign: 'center',

@@ -22,7 +22,7 @@ export default function PinSetup({ onSave }: Props) {
     onSave(pin1);
   }
 
-  const inputStyle: React.CSSProperties = { width:100, letterSpacing:8, textAlign:'center', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'10px', borderRadius:'var(--r-sm)', fontSize:20, fontFamily:"var(--font-mono),monospace" };
+  const inputStyle: React.CSSProperties = { width:100, letterSpacing:8, textAlign:'center', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-display)', fontFamily:"var(--font-mono),monospace" };
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>

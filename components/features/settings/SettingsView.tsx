@@ -8,7 +8,7 @@
 'use client';
 
 import {
-  Settings, User, KeySquare, SlidersHorizontal, Database, Palette,
+  User, KeySquare, SlidersHorizontal, Database, Palette,
   Shield, Fingerprint, Mail, Map, ArrowUpDown, MessageCircle, Zap, Sun, Globe, Calendar, Network, UserPlus,
 } from 'lucide-react';
 import { useT } from '@/hooks/useT';
@@ -30,9 +30,10 @@ export default function SettingsView() {
 
   return (
     <div>
-      <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', marginBottom:16, color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
-        <Settings size={18} strokeWidth={1.5} /> {t('settings.pageTitle')}
-      </div>
+      {/* v11.7.1: judul "Pengaturan" + ikon Settings DIHAPUS — pola sama dgn DashboardView.tsx
+          (duplikat dgn label menu yg sama di Sidebar). Beda dgn Dashboard, Settings tidak
+          py dropdown/filter yg perlu direstrukturisasi — cukup hapus blok judulnya saja,
+          konten grup langsung mulai dari sini. */}
 
       {/* ═══ Grup 1: Akun ═══ */}
       <CollapsibleGroup title={t('settings.group.account')} icon={<User size={18} strokeWidth={1.5} />}>

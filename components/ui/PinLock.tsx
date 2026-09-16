@@ -138,6 +138,7 @@ export default function PinLock() {
       {/* Title */}
       <div style={{
         fontFamily:"var(--font-sans),sans-serif", fontWeight:800,
+        // v11.7.1: 22px literal disengaja — lihat penjelasan lengkap di LoadingScreen.tsx
         fontSize:22, color:'var(--txt)',
         letterSpacing:'-0.02em', marginBottom:6,
       }}>
@@ -210,6 +211,8 @@ export default function PinLock() {
                 cursor:'pointer',
                 transition:'all var(--t-fast) var(--ease-smooth)',
                 fontFamily: isDel ? undefined : "var(--font-mono),monospace",
+                // v11.7.1: 22px literal disengaja (tombol keypad PIN, butuh besar) — sama
+                // kelas ukuran dgn LoadingScreen.tsx, lihat penjelasan lengkap di sana
                 fontWeight:600, fontSize:22,
                 boxShadow:'var(--shadow-xs)',
                 WebkitTapHighlightColor:'transparent',
@@ -238,7 +241,7 @@ export default function PinLock() {
             padding:'10px 24px',
             display:'flex', alignItems:'center', gap:8,
             color:'var(--txt3)', cursor:'pointer',
-            fontSize:12, fontFamily:"var(--font-sans),sans-serif",
+            fontSize:'var(--fs-body)', fontFamily:"var(--font-sans),sans-serif",
             transition:'all var(--t-fast)',
             opacity: bioLoading ? 0.5 : 1,
           }}

@@ -128,7 +128,7 @@ export default function SettingsBiometricSection() {
 
       {/* Loading state */}
       {supported === null && (
-        <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--txt4)', fontSize:12, padding:'8px 0' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--txt4)', fontSize:'var(--fs-body)', padding:'8px 0' }}>
           <Loader2 size={14} className="spin" /> {t('biometric.checkingDevice')}
         </div>
       )}

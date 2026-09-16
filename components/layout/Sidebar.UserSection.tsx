@@ -42,7 +42,7 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
         {/* Nama */}
         <div style={{ flex:1, overflow:'hidden' }}>
           <div style={{
-            fontSize:12, fontWeight:600, color:'var(--txt)',
+            fontSize:'var(--fs-body)', fontWeight:600, color:'var(--txt)',
             fontFamily:"var(--font-sans),sans-serif",
             whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
           }}>

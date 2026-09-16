@@ -216,7 +216,7 @@ export default function SettingsTenantSection() {
 
         <button onClick={copyCreds} style={{
           width:'100%', background:'var(--zc)', color:'#fff', border:'none',
-          borderRadius:'var(--r-sm)', padding:'10px', fontSize:12, fontWeight:600,
+          borderRadius:'var(--r-sm)', padding:'10px', fontSize:'var(--fs-body)', fontWeight:600,
           cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6,
           marginBottom:8,
         }}>
@@ -225,7 +225,7 @@ export default function SettingsTenantSection() {
 
         <button onClick={resetForm} style={{
           width:'100%', background:'var(--bg4)', border:'1px solid var(--border)', color:'var(--txt3)',
-          borderRadius:'var(--r-sm)', padding:'9px', fontSize:12, cursor:'pointer',
+          borderRadius:'var(--r-sm)', padding:'9px', fontSize:'var(--fs-body)', cursor:'pointer',
         }}>
           {t('settings.tenant.createAnother')}
         </button>
@@ -375,7 +375,7 @@ export default function SettingsTenantSection() {
                   {isChecked && <Check size={11} color="#fff" strokeWidth={3} />}
                 </div>
                 <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', fontFamily:"var(--font-mono),monospace", flexShrink:0 }}>{zone}</span>
-                <span style={{ fontSize:12, color:'var(--txt)', flex:1 }}>{name}</span>
+                <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', flex:1 }}>{name}</span>
               </label>
             );
           })}
@@ -385,7 +385,7 @@ export default function SettingsTenantSection() {
       <button onClick={handleSubmit} disabled={submitting} style={{
         width:'100%', background: submitting ? 'var(--bg4)' : 'var(--zc)',
         color: submitting ? 'var(--txt4)' : '#fff', border:'none',
-        borderRadius:'var(--r-sm)', padding:'10px', fontSize:12, fontWeight:600,
+        borderRadius:'var(--r-sm)', padding:'10px', fontSize:'var(--fs-body)', fontWeight:600,
         cursor: submitting ? 'default' : 'pointer',
         display:'flex', alignItems:'center', justifyContent:'center', gap:6,
       }}>

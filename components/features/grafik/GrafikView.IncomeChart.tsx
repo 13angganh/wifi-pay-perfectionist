@@ -118,7 +118,7 @@ export default function IncomeChart({ mData, yData, mTotal, mAvg, proyeksi, prev
           <div style={{ fontSize:'var(--fs-micro)', color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
               <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>{nextMonthLabel} {selYear}</div>
             </div>
             <div style={{ textAlign:'right' }}>

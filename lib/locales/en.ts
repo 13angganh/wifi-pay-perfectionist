@@ -106,7 +106,6 @@ const en: Record<string, string> = {
   'ops.net'                  : 'Net',
 
   // Settings
-  'settings.title'           : 'Settings',
   'settings.pin'             : 'PIN Security',
   'settings.zones'           : 'Zone Management',
   'settings.language'        : 'Language',
@@ -371,8 +370,7 @@ const en: Record<string, string> = {
   'settings.export.fileDownloaded': 'File downloaded (share not supported)',
   'settings.export.fileError'    : 'Failed to generate file',
 
-  // Settings page title
-  'settings.pageTitle'           : 'Settings',
+  // v11.7.1: settings.pageTitle removed (orphan) — see id.ts for context
 
   // Settings JSON Backup
   'settings.jsonBackup'          : 'JSON Backup',
@@ -420,6 +418,7 @@ const en: Record<string, string> = {
   // Header entry lock
   'header.entryLocked'           : 'Entry locked',
   'header.entryUnlocked'         : 'Entry unlocked',
+  // (English already uses adjective form on both sides — no change needed here, only id.ts had the mismatch)
   // v11.7.0: status indicator label (small badge in Header) — separate from header.lock/
   // unlock which is now dedicated to the ACTION button's aria-label (imperative verb).
   'header.statusLocked'          : 'Locked',

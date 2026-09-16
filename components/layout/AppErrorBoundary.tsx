@@ -67,7 +67,7 @@ export default class AppErrorBoundary extends Component<{ children: React.ReactN
           }}>
             <RotateCcw size={24} color="var(--c-belum)" strokeWidth={1.5} />
           </div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:17, color:'var(--txt)' }}>
+          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)' }}>
             {tStatic('app.errorTitle')}
           </div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-body)', color:'var(--txt2)', maxWidth:280, lineHeight:1.55 }}>

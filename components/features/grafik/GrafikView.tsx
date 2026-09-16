@@ -369,7 +369,7 @@ export default function GrafikView() {
             { label: t('status.free'),  val: donutStat.free,  color:'var(--c-free)' },
           ].map(d => (
             <div key={d.label} style={{ flex:1, textAlign:'center', background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 4px', border:`1px solid ${d.color}22` }}>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:d.color }}>{d.val}</div>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:d.color }}>{d.val}</div>
               <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{d.label}</div>
             </div>
           ))}
@@ -393,7 +393,7 @@ export default function GrafikView() {
           <div style={{ fontSize:'var(--fs-micro)', color:'rgba(34,197,94,0.7)', letterSpacing:'.07em', marginBottom:6, fontFamily:"var(--font-sans),sans-serif" }}>{t('grafik.projection').toUpperCase()}</div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--c-lunas)' }}>{rp(proyeksi)}</div>
               <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>{nextMonthLabel} {selYear}</div>
             </div>
             <div style={{ textAlign:'right' }}>
@@ -418,7 +418,7 @@ export default function GrafikView() {
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
           </div>
           <div>
             <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
@@ -430,11 +430,11 @@ export default function GrafikView() {
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
           </div>
         </div>
         {mperiodPct !== null && (
-          <div style={{ textAlign:'center', padding:'6px 0', marginBottom:10, fontSize:12, fontWeight:700, color: mperiodPct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          <div style={{ textAlign:'center', padding:'6px 0', marginBottom:10, fontSize:'var(--fs-body)', fontWeight:700, color: mperiodPct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             {mperiodPct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
             {Math.abs(mperiodPct)}% {t('grafik.diff')}
           </div>

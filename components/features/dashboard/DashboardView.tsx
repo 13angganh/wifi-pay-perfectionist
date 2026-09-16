@@ -11,7 +11,7 @@ import { doJSONBackup, doJSONShare, isShareSupported, doWASummary } from '@/lib/
 import type { ViewName } from '@/types';
 import { SkeletonStat, SkeletonCard } from '@/components/ui/Skeleton';
 import {
-  LayoutDashboard, ChevronRight,
+  ChevronRight,
   TrendingUp, TrendingDown,
   CheckCircle2, Clock, Gift,
   AlertTriangle, Database,
@@ -130,22 +130,23 @@ export default function DashboardView() {
 
   return (
     <div>
-      {/* Header + Period selector */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <LayoutDashboard size={16} style={{ color:'var(--txt3)' }} />
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--txt)' }}>Dashboard</span>
-        </div>
-        <div style={{ display:'flex', gap:5 }}>
-          <select className="cs" style={{ fontSize:'var(--fs-caption)', padding:'5px 8px' }} value={dm} onChange={e => setSelMonth(+e.target.value)}>
-            {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-          </select>
-          <select className="cs" style={{ fontSize:'var(--fs-caption)', padding:'5px 8px' }} value={dy} onChange={e => setSelYear(+e.target.value)}>
-            {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
+      {/* v11.7.1: judul "Dashboard" + ikon LayoutDashboard DIHAPUS — duplikat dgn label
+          menu yg sama di Sidebar (lihat components/layout/Sidebar.tsx), dan 7 dari 9 menu
+          lain (Entry, Rekap, Tunggakan, Grafik, Log, Member, Operasional) memang sudah
+          TIDAK punya judul semacam ini sejak awal — pola mayoritas itulah yg jadi standar
+          konsistensi di seluruh app, bukan sebaliknya. Struktur period-selector disamakan
+          persis ke pola OperasionalView.tsx (class ctrl-row, dropdown rata kiri + label
+          ringkas di sampingnya) supaya benar2 konsisten antar menu, bukan cuma "judulnya
+          hilang" tapi sisanya masih struktur unik sendiri. */}
+      <div className="ctrl-row">
+        <select className="cs" value={dm} onChange={e => setSelMonth(+e.target.value)}>
+          {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        </select>
+        <select className="cs" value={dy} onChange={e => setSelYear(+e.target.value)}>
+          {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', alignSelf:'center', fontFamily:"var(--font-sans),sans-serif" }}>{bulanLbl}</span>
       </div>
-      <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', letterSpacing:'.07em', marginBottom:12, textTransform:'uppercase' }}>{bulanLbl}</div>
 
       {/* Skeleton saat pertama kali load */}
       {syncStatus === 'loading' && appData.krsMembers.length === 0 ? (
@@ -173,6 +174,9 @@ export default function DashboardView() {
         </div>
         <div style={{
           fontFamily:"var(--font-sans),sans-serif",
+          // v11.7.1: sengaja TIDAK dipetakan ke token — ini "hero number" satu-satunya di
+          // seluruh Dashboard, lebih besar dari token terbesar (--fs-display, 18px) yg
+          // memang tidak dirancang utk kasus ini. Dipertahankan sbg literal responsive.
           fontSize:'clamp(22px,6vw,32px)',
           fontWeight:800,
           color:'var(--c-lunas)',
@@ -204,7 +208,7 @@ export default function DashboardView() {
           <div>
             <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3 }}>{t('dashboard.insightTunggakan')}</div>
             <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
-              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color: totalBelumNow > 0 ? 'var(--c-belum)' : 'var(--c-lunas)' }}>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color: totalBelumNow > 0 ? 'var(--c-belum)' : 'var(--c-lunas)' }}>
                 {totalBelumNow}
               </span>
               <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('common.members')}</span>
@@ -219,7 +223,7 @@ export default function DashboardView() {
           <div>
             <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3 }}>{t('dashboard.insightLunasRatio')}</div>
             <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
-              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:20, fontWeight:800, color:'var(--c-lunas)' }}>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--c-lunas)' }}>
                 {lunasPctNow}%
               </span>
             </div>
@@ -252,7 +256,12 @@ export default function DashboardView() {
             </div>
             <div style={{
               fontFamily:"var(--font-sans),sans-serif",
-              fontSize:'clamp(12px,3.8vw,15px)',
+              // v11.7.1: batas atas disamakan ke token (15px = persis var(--fs-heading)).
+              // Batas bawah 12px TETAP literal — menaikkannya ke fs-body (13px) mengubah
+              // perilaku responsive scr nyata (risiko overflow lebih tinggi di layar
+              // sangat sempit utk angka Rupiah panjang), tidak aman diubah tanpa pengujian
+              // ekstensif di banyak ukuran layar.
+              fontSize:'clamp(12px,3.8vw,var(--fs-heading))',
               fontWeight:800,
               color: color as string,
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
@@ -278,10 +287,10 @@ export default function DashboardView() {
       {/* Belum bayar */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:'var(--txt)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)' }}>
             <Clock size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.unpaidTitle')} {bulanLbl}
           </div>
-          <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{krsBelum + slkBelum} {t('common.members')}</div>
+          <div style={{ fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700 }}>{krsBelum + slkBelum} {t('common.members')}</div>
         </div>
         <div style={{ display:'flex', gap:8, marginBottom: totalFree > 0 ? 8 : 0 }}>
           {([
@@ -291,7 +300,7 @@ export default function DashboardView() {
           ] as const).map(([label, val, color]) => (
             <div key={label} style={{ flex:1, background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
               <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{label}</div>
-              <div style={{ fontSize:20, fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: color as string }}>{val}</div>
+              <div style={{ fontSize:'var(--fs-display)', fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: color as string }}>{val}</div>
             </div>
           ))}
         </div>
@@ -304,7 +313,7 @@ export default function DashboardView() {
             <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>
               <Gift size={12} /> {t('status.free')} {bulanLbl}
             </span>
-            <span style={{ fontSize:12, fontWeight:700, color:'var(--c-free)' }}>
+            <span style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--c-free)' }}>
               {totalFree} {t('common.members')} <span style={{ fontSize:'var(--fs-micro)', opacity:.7 }}>(KRS:{krsFree} SLK:{slkFree})</span>
             </span>
           </div>
@@ -318,7 +327,7 @@ export default function DashboardView() {
               background:'rgba(239,68,68,0.07)',
               border:'1px solid rgba(239,68,68,0.2)',
               color:'var(--c-belum)', borderRadius:'var(--r-sm)',
-              padding:'9px 12px', cursor:'pointer', fontSize:12,
+              padding:'9px 12px', cursor:'pointer', fontSize:'var(--fs-body)',
               fontWeight:700, fontFamily:"var(--font-sans),sans-serif",
               transition:'all var(--t-fast)',
             }}
@@ -331,13 +340,13 @@ export default function DashboardView() {
 
       {/* Top tunggakan — tanpa aging widget */}
       <div style={card}>
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:'var(--txt)', marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', marginBottom:10 }}>
           <AlertTriangle size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.topArrears')}
         </div>
         {top5.length === 0 ? (
           <div style={{ textAlign:'center', padding:'16px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
             <CheckCircle2 size={24} style={{ color:'var(--c-lunas)' }} />
-            <span style={{ color:'var(--c-lunas)', fontSize:12 }}>{t('dashboard.allPaid')}</span>
+            <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-body)' }}>{t('dashboard.allPaid')}</span>
           </div>
         ) : (
           top5.map((t2, i) => (
@@ -365,7 +374,7 @@ export default function DashboardView() {
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                 <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{t2.count} {t('common.months')}</div>
+                  <div style={{ fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700 }}>{t2.count} {t('common.months')}</div>
                   <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{t('common.since')} {t2.oldest}</div>
                 </div>
                 <ChevronRight size={14} style={{ color:'var(--txt4)', flexShrink:0 }} />
@@ -396,7 +405,7 @@ export default function DashboardView() {
         aria-label={t('nav.operasional')}
       >
         <div>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Wallet size={14} style={{ color:'var(--txt3)' }} /> {t('nav.operasional')} {bulanLbl}
           </div>
           <div style={{ fontSize:'var(--fs-caption)', color: totalOps > 0 ? 'var(--c-belum)' : 'var(--txt4)', marginTop:3 }}>
@@ -409,7 +418,7 @@ export default function DashboardView() {
       {/* Backup — 2 pilihan: Download + Share */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Database size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.lastBackup')}
           </div>
           <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{backupLbl}</div>
@@ -441,7 +450,7 @@ export default function DashboardView() {
       {/* WA Summary — label dinamis sesuai selector bulan */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Share2 size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.waSummary')}
           </div>
           <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{bulanLbl}</div>

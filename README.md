@@ -1,3 +1,73 @@
+# WiFi Pay Next — Update v11.7.1
+
+> Permintaan user, 3 pesan terpisah: (1) badge "Tersimpan" beda ukuran dgn "Terkunci"/"Terbuka", toast "Entry dikunci/dibuka" menimpa status+tombol & kata "dibuka" harusnya "terbuka"; (2) audit ukuran teks lintas SEMUA menu (bukan cuma Dashboard/Pengaturan) agar konsisten spt app profesional, plus temuan tambahan: judul "Dashboard" duplikat dgn Sidebar, harus dihapus & pola disamakan ke menu lain yg tidak py judul.
+
+## Fix #1: Badge status disamakan ukuran ke .sync-pill, toast direposisi, kata toast disamakan
+
+**Badge "Tersimpan" vs badge status (Terkunci/Terbuka):** ternyata dua pola berbeda — badge "Tersimpan" pakai class CSS `.sync-pill` (`padding:4px 10px`, `font-size:11px`/persis `--fs-caption`, `min-height:28px`, `border-radius:var(--r-full)` = bentuk pil penuh), sementara badge status (dibuat sesi sebelumnya) pakai inline style beda (`padding:5px 9px`, `font-size:var(--fs-micro)`/9px, tanpa min-height, `border-radius:var(--r-sm)` = kotak sudut tumpul). Badge status di Header.tsx & MembersView.tsx disamakan persis ke ukuran/bentuk `.sync-pill` (naik ke `--fs-caption`, bukan sync-pill turun — krn 11px sudah persis cocok token resmi). Tombol aksi ikon (lingkaran solid) yg sebelumnya beda ukuran antara Header (36px) & Member (34px) disamakan ke 34px di keduanya, ikon di dalamnya jg disamakan (15px).
+
+**Toast menimpa Header:** root cause — token `--header-h` (`styles/tokens.css`) statis `56px`, sudah lama tidak akurat krn Header sekarang 2 baris (sejak sblm sesi ini), tinggi asli jauh lebih dr itu. `Toast.tsx` memposisikan diri via `top: calc(var(--header-h) + 8px)` — dgn token basi, toast selalu terlalu tinggi & menimpa Row 2 Header (badge status + tombol aksi). FIX: `Header.tsx` sekarang mengukur tinggi ASLI via `ResizeObserver` (pola sama dgn `EntryView.tsx` sheetHeight yg sudah ada) & menulis ke `--header-h` scr dinamis — otomatis akurat kapan pun Header berubah tinggi lagi di masa depan, bukan angka statis yg gampang basi. Fallback awal (sblm ResizeObserver sempat mengukur) dinaikkan dr 56px→104px (perkiraan manual dari padding+tinggi elemen Header) di `tokens.css` & `Toast.tsx`.
+
+**Konsistensi kata toast:** "Entry dikunci"/"Entry dibuka" (id.ts) diubah jadi "Entry terkunci"/"Entry terbuka" — simetris di KEDUA kata (bukan cuma "dibuka"→"terbuka" sendirian), konsisten dgn badge status yg sudah pakai kata sifat "Terkunci"/"Terbuka".
+
+## Fix #2: Audit konsistensi ukuran teks — SELURUH aplikasi, bukan cuma Dashboard/Settings
+
+User awalnya minta pilih standar antara Dashboard vs Pengaturan sbg acuan — setelah dihitung menyeluruh (termasuk sub-komponen, bukan cuma file induk), ternyata **Settings justru py penyimpangan literal terbanyak kedua** (34 titik, hampir menyamai Dashboard 24 titik) — tidak ada satu menu pun yg bersih 100% utk dijadikan acuan mutlak. Jawaban yg benar: **semua menu diaudit ulang mengikuti token resmi yg sudah ada** (`tokens.css`: `--fs-micro` 9px s/d `--fs-display` 18px, 7 tingkat), bukan menu-A-ikut-menu-B.
+
+Audit diperluas ke **seluruh `components/`**, bukan cuma 9 menu utama yg disebut eksplisit user — elemen shared (Sidebar, Header, AppShell, Toast, modal Riwayat/FreeMember/GlobalSearch, Confirm, OnboardingHint, halaman auth Login/Register/RememberedUser) jg diaudit krn memengaruhi semua menu sekaligus. Total ~100 titik literal fontSize diperiksa satu per satu berdasarkan PERAN visualnya (judul/label vs nama/teks-data vs angka-besar), bukan disamaratakan asal:
+- `11px` → `--fs-caption` (persis cocok token, cuma lupa pakai `var()`)
+- `12px`, `13px`, `14px` (kebanyakan) → `--fs-body` — judul card/section, nama member, label teks biasa
+- `16px`, `17px`, `20px` → `--fs-display` — angka statistik/Rupiah besar, judul overlay, input PIN (selisih ≤2px dari token, dianggap "sama")
+- `22px` (splash screen, PIN lock title, "Selamat Datang Kembali") → **sengaja TIDAK dipetakan**, selisih 4px dari `--fs-display` dinilai terlalu jauh; dipertahankan literal dgn komentar penjelasan eksplisit di tiap titik
+- `clamp()` responsive (2 titik di Dashboard, angka Rupiah highlight) → ujung yg kebetulan persis cocok token disambungkan via `var()` di dalam `clamp()` (didukung luas semua browser modern); ujung yg mengubah perilaku responsif scr nyata (risiko overflow) TETAP literal
+- Ditemukan & diperbaiki jg: `fontSize: 12` (dgn spasi setelah titik dua) di 2 file sempat lolos dari regex batch pertama krn beda gaya spasi dr mayoritas file (`fontSize:12` tanpa spasi) — ketahuan dari re-scan menyeluruh dgn regex yg lebih toleran, bukan diasumsikan aman
+- Ditemukan jg 1 inkonsistensi baru yg tidak diminta user: nama app "WiFi Pay" di Header (14px literal) vs Sidebar (`.sb-app-name`, 15px literal) — disamakan ke `--fs-heading` (=15px) di kedua tempat, termasuk `.sb-app-name` sendiri diubah dr literal ke `var(--fs-heading)`
+
+## Fix #3: Judul halaman duplikat (Dashboard & Settings) dihapus
+
+User laporkan Dashboard py teks+ikon judul "Dashboard" yg duplikat dgn label sidebar, minta dihapus & disamakan ke pola menu lain yg tidak py judul. Diverifikasi dulu: 7 dari 9 menu (Entry, Rekap, Tunggakan, Grafik, Log, Member, Operasional) memang SUDAH tanpa judul sejak awal — pola mayoritas ini yg jadi standar. Ditemukan tambahan: **Settings jg py pola sama** (judul "⚙ Pengaturan" + ikon, tidak disebut eksplisit oleh user) — user beri pilihan "kalau mau pola menu lain jg boleh, yg penting konsisten", diputuskan ikut mayoritas (dihapus jg, bukan ditambah ke 7 menu lain — lebih kecil scope perubahannya).
+
+`DashboardView.tsx`: blok judul+ikon `LayoutDashboard` dihapus, struktur period-selector (dropdown bulan/tahun) direstrukturisasi mengikuti pola `ctrl-row` yg sudah dipakai `OperasionalView.tsx` persis (dropdown rata kiri + label ringkas di sampingnya) — bukan cuma "judul hilang" tapi strukturnya jg diseragamkan. `SettingsView.tsx`: blok judul+ikon `Settings` dihapus (lbh simpel, tidak py dropdown yg perlu direstrukturisasi). 2 key i18n yg jadi orphan setelahnya (`settings.title`, `settings.pageTitle`) dibersihkan di kedua bahasa. Import ikon yg jadi tidak terpakai (`LayoutDashboard`, `Settings`) dihapus dari kedua file.
+
+## Verifikasi visual — metodologi (catatan proses penting)
+
+Sesi sebelumnya sempat melaporkan tidak bisa verifikasi visual krn sandbox tidak bisa akses `fonts.googleapis.com`. Kali ini user beri solusi: ganti font sementara utk verifikasi, kembalikan setelah selesai. Root cause sebenarnya lebih dalam dari font — Firebase Auth (`getAuth`) jg gagal krn kredensial asli memang sengaja tidak ada di ZIP (`auth/invalid-api-key`), menghalangi akses ke halaman manapun stlh login. Solusi lengkap yg dipakai (SEMUANYA sementara, sudah dikembalikan/dihapus sblm ZIP ini dibuat):
+1. `app/layout.tsx` — Google Fonts (`next/font/google`) diganti sementara ke font sistem (`system-ui`), dikembalikan persis via backup file sblm build final
+2. `.env.local` — dibuat dgn kredensial Firebase DUMMY (bukan asli) berformat valid spy SDK tidak reject di level format-check, dihapus total setelahnya (`.env.local` TIDAK pernah ada di ZIP manapun, tdk terkecuali)
+3. `app/preview-temp/page.tsx` — halaman sementara yg langsung set Zustand store (`setUser`, `setAuthChecked`, `setAppData` dgn data dummy) utk melewati Firebase Auth sepenuhnya tanpa mengubah kode produksi apa pun, dihapus total setelahnya
+
+Playwright (Python) dipakai utk screenshot nyata dari browser Chromium headless — sempat dikira binary tidak terinstall (2 sesi lalu), ternyata sudah ada sejak awal di `/opt/pw-browsers` (lokasi custom via env var `PLAYWRIGHT_BROWSERS_PATH`, bukan default `~/.cache`), masalah sebenarnya cuma soal `--with-deps` yg butuh domain diblokir (`deb.nodesource.com`) — Chromium sendiri jalan tanpa masalah tanpa perlu install dependency sistem tambahan. Ketahuan jg: proses background (`next dev &`) TIDAK bertahan lintas panggilan tool terpisah (sandbox mengisolasi tiap panggilan) — server dev & screenshot harus dijalankan dlm SATU panggilan bash yg sama.
+
+Seluruh 8 menu (Dashboard, Settings, Entry, Rekap, Tunggakan, Grafik, Log, Member, Operasional) discreenshot & dicek scr visual — bukan cuma diverifikasi lewat tsc/eslint/test. `.next` build cache dibersihkan berulang kali stlh tiap sesi dev-server krn Next.js men-generate file tipe (`validator.ts`) berdasarkan route yg ada saat itu (termasuk `preview-temp`), jd basi & bikin tsc gagal palsu stlh preview-temp dihapus — bukan bug nyata, murni cache stale yg perlu dibersihkan manual.
+
+## File yang berubah (v11.7.1)
+
+| File | Perubahan |
+|------|-----------|
+| `components/layout/Header.tsx` | Badge status disamakan ke `.sync-pill`; tombol aksi 36px→34px; ResizeObserver utk `--header-h` dinamis; nama app 14px→`--fs-heading` |
+| `components/features/members/MembersView.tsx` | Badge status disamakan ke `.sync-pill` (padding/shape/min-height) |
+| `components/features/members/MemberCard.tsx`, `MembersView.tsx` | Literal fontSize → token (`--fs-body`) |
+| `components/features/dashboard/DashboardView.tsx` | Judul+ikon dihapus, `ctrl-row` diterapkan, semua literal → token, `clamp()` disambungkan ke token yg aman |
+| `components/features/dashboard/DashboardView.RecentActivity.tsx`, `.Stats.tsx` | Literal fontSize → token |
+| `components/features/settings/SettingsView.tsx` | Judul+ikon dihapus |
+| `components/features/settings/Settings*.tsx` (13 file) | Literal fontSize → token |
+| `components/features/rekap/RekapView.tsx`, `RekapModal*.tsx` | Literal fontSize → token |
+| `components/features/grafik/GrafikView*.tsx` (4 file) | Literal fontSize → token |
+| `components/features/entry/EntryView.tsx`, `.QuickPay.tsx` | Literal fontSize → token |
+| `components/features/operasional/OperasionalView.Form.tsx` | Literal fontSize → token |
+| `components/layout/AppShell.tsx`, `Sidebar.UserSection.tsx` | Literal fontSize → token |
+| `components/layout/LoadingScreen.tsx`, `components/ui/PinLock.tsx`, `components/features/auth/RememberedUser.tsx` | 22px literal dipertahankan + komentar penjelasan eksplisit |
+| `components/modals/*.tsx` (6 file), `components/ui/Confirm.tsx`, `OnboardingHint.tsx`, `Toast.tsx` | Literal fontSize → token |
+| `components/features/auth/LoginForm.tsx`, `RegisterForm.tsx` | Literal fontSize → token |
+| `styles/tokens.css` | `--header-h` 56px→104px (fallback), komentar penjelasan |
+| `styles/layout.css` | `.sb-app-name` font-size literal→`var(--fs-heading)` |
+| `lib/locales/id.ts`, `lib/locales/en.ts` | Toast "dikunci/dibuka"→"terkunci/terbuka"; `settings.title`/`settings.pageTitle` dihapus (orphan) |
+| `lib/constants.ts` | Versi → v11.7.1 |
+
+**Hasil validasi:** `tsc --noEmit` bersih · `eslint .` (seluruh proyek) 0 error/warning · **274/274 unit test lulus** (13 file) · **8/8 menu diverifikasi visual via screenshot Playwright nyata** (bukan cuma pembacaan kode) · **`next build` production BERHASIL 100% end-to-end** (dgn font+kredensial dummy sementara, sudah dikembalikan/dihapus) — "Compiled successfully", TypeScript check lulus, **16/16 halaman ter-generate** termasuk semua 8 menu yg diubah — semua file sementara (font, `.env.local`, `preview-temp`, `.next` build output) dikonfirmasi bersih via `diff`/`ls`/`ps` sblm ZIP ini dibuat.
+
+---
+
 # WiFi Pay Next — Update v11.7.0
 
 > Permintaan user, 3 hal: (1) toggle Buka/Kunci Member masih "terbalik" menurut panduan UX yang diberikan user (State-Driven vs Action-Driven pattern) — solusinya: pisah jadi indikator status + tombol aksi terpisah, sama untuk toggle Entry di Header; (2) warna tombol aksi disesuaikan per 3 tema (dark/light/gold), terasa "kontras dan touchable"; (3) bug terpisah: field tanggal di kartu member selalu bisa diedit manual meski Pengaturan sudah "Otomatis".
@@ -1238,7 +1308,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.7.0 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.7.1 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

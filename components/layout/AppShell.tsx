@@ -53,7 +53,7 @@ function OfflineBanner() {
     >
       <WifiOff size={13} strokeWidth={1.5} color={offline ? 'var(--c-belum)' : 'var(--c-lunas)'} />
       <span style={{
-        fontFamily:"var(--font-sans),sans-serif", fontSize:12,
+        fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-body)',
         color: offline ? 'var(--c-belum)' : 'var(--c-lunas)',
         fontWeight:500,
       }}>
@@ -142,7 +142,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {showUpdateBanner && (
         <div className="update-banner">
-          <span style={{ fontSize:12, color:'var(--c-lunas)' }}>{t('app.updateAvailable')}</span>
+          <span style={{ fontSize:'var(--fs-body)', color:'var(--c-lunas)' }}>{t('app.updateAvailable')}</span>
           <button
             onClick={() => navigator.serviceWorker.getRegistration().then(r => {
               r?.waiting?.postMessage({ type:'SKIP_WAITING' }); window.location.reload();
@@ -247,7 +247,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 : 'var(--zc)',
               color: theme === 'gold' ? '#0C0A06' : '#fff',
               border:'none', padding:'8px 16px',
-              borderRadius:'var(--r-sm)', fontSize:12, fontWeight:700,
+              borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', fontWeight:700,
               cursor:'pointer', flexShrink:0,
               boxShadow: theme === 'gold' ? '0 2px 8px rgba(201,149,42,0.4)' : 'none',
             }}

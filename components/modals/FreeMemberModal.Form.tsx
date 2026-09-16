@@ -30,7 +30,7 @@ interface Props {
 const cs: React.CSSProperties = {
   background: 'var(--bg3)', border: '1px solid var(--border)',
   color: 'var(--txt)', padding: '7px 10px', borderRadius: 'var(--r-sm)',
-  fontSize: 12, flex: 1,
+  fontSize: 'var(--fs-body)', flex: 1,
 };
 
 export default function FreeMemberForm(p: Props) {
@@ -51,7 +51,7 @@ export default function FreeMemberForm(p: Props) {
       </div>
 
       {/* Toggle selamanya */}
-      <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'var(--txt2)', cursor:'pointer', marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:'var(--r-sm)', border:'1px solid var(--border)' }}>
+      <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:'var(--fs-body)', color:'var(--txt2)', cursor:'pointer', marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:'var(--r-sm)', border:'1px solid var(--border)' }}>
         <input type="checkbox" checked={p.noEnd} onChange={e => p.onNoEnd(e.target.checked)} style={{ accentColor:'var(--c-free)', width:14, height:14 }} />
         {t('freemodal.forever')}
       </label>
@@ -81,7 +81,7 @@ export default function FreeMemberForm(p: Props) {
             <CreditCard size={14} /> {t('freemodal.remove')}
           </button>
         )}
-        <button onClick={p.onCancel} style={{ width:'100%', background:'none', border:'1px solid var(--border)', color:'var(--txt4)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12 }}>
+        <button onClick={p.onCancel} style={{ width:'100%', background:'none', border:'1px solid var(--border)', color:'var(--txt4)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)' }}>
           {t('action.cancel')}
         </button>
       </div>

@@ -52,12 +52,12 @@ const Row = memo(function Row({
   return (
     <tr data-name={name}>
       <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:'var(--fs-label)', color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{index + 1}</td>
-      <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:12, textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
+      <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:'var(--fs-body)', textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
       {cells.map(c => {
         const cls  = c.v! > 0 ? 'cv' : c.v === 0 && !c.free ? 'cz' : 'cn';
         const disp = c.free
           ? <span style={{ display:'inline-block', width:'100%', textAlign:'right' }}><Gift size={9} style={{ opacity:0.6, verticalAlign:'middle' }} /></span>
-          : c.v === 0 ? <span style={{ fontSize:8, opacity:0.8 }}>Akm</span>
+          : c.v === 0 ? <span style={{ fontSize:'var(--fs-micro)', opacity:0.8 }}>Akm</span>
           : c.v !== null ? (c.v * 1000).toLocaleString('id-ID') : '—';
 
         return (
@@ -377,7 +377,7 @@ export default function RekapView() {
           </div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)' }}>
+              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
                 {batchSelected.length} {t('rekap.batchSelected')}
               </div>
               <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>{MONTH_NAMES[mi]} {selYear} · {activeZone}</div>
@@ -392,7 +392,7 @@ export default function RekapView() {
                 <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', color:'var(--txt)' }}>{name}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   {!hasTarif && <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:'var(--r-xs)' }}>default</span>}
-                  <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:12, fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
+                  <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
                 </div>
               </div>
             ))}
@@ -400,7 +400,7 @@ export default function RekapView() {
           <div style={{ padding:'12px 16px 20px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
               <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>{t('common.total')}</span>
-              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:16, color:'var(--zc)' }}>{rp(total)}</span>
+              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--zc)' }}>{rp(total)}</span>
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button onClick={exitBatch} style={{ flex:1, padding:'10px', borderRadius:'var(--r-sm)', border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}>
@@ -454,7 +454,7 @@ export default function RekapView() {
       {/* Batch hint bar */}
       {batchColIdx !== null && (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--zcdim)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10 }}>
-          <div style={{ fontSize:12, color:'var(--zc)' }}>
+          <div style={{ fontSize:'var(--fs-body)', color:'var(--zc)' }}>
             <strong>{MONTH_NAMES[batchColIdx]}</strong> — {t('rekap.batchHint')}
           </div>
           <button onClick={exitBatch} style={{ background:'none', border:'none', color:'var(--txt3)', cursor:'pointer', padding:4, display:'flex' }}>
@@ -638,7 +638,7 @@ export default function RekapView() {
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:14, color:'var(--txt)', fontVariantNumeric:'tabular-nums', textAlign:'center' }}>
+          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)', fontVariantNumeric:'tabular-nums', textAlign:'center' }}>
             {t('rekap.page')} {clampedPage} / {totalPages}
           </span>
           <button

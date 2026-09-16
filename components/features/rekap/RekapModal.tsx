@@ -226,7 +226,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div>
-            <div style={{ fontSize:14, fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
+            <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
             <div style={{ fontSize:'var(--fs-label)', color:'var(--zc)', marginTop:2 }}>{activeZone} · {MONTH_NAMES[month]} {selYear}</div>
           </div>
           <button onClick={() => onClose()} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -235,11 +235,11 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         </div>
         <div style={{ padding:'14px 16px 16px' }}>
           {entryFree ? (
-            <div style={{ textAlign:'center', fontSize:12, color:'var(--c-free)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-free)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <Gift size={14} /> {t('rekap.freeMember')}
             </div>
           ) : locked ? (
-            <div style={{ textAlign:'center', fontSize:12, color:'var(--c-belum)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+            <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-belum)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
               <Lock size={12} strokeWidth={1.5} />
               {t('rekap.dataLocked')}
             </div>

@@ -145,7 +145,7 @@ export default function OnboardingHint({ forceShow }: Props) {
           <div style={{ marginBottom:14 }}>{hint.icon}</div>
           <div style={{
             fontFamily:"var(--font-sans),sans-serif", fontWeight:800,
-            fontSize:16, color:'var(--txt)', marginBottom:8,
+            fontSize:'var(--fs-display)', color:'var(--txt)', marginBottom:8,
           }}>
             {hint.title}
           </div>

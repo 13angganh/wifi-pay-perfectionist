@@ -49,7 +49,7 @@ export default function RiwayatMonthRow({ displayName, tgl, value, isFree, onCli
   return (
     <div className="rw-month-row" style={{ cursor:'pointer' }} onClick={onClick}>
       <div>
-        <div style={{ fontSize:12, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName}</div>
+        <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName}</div>
         {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
       </div>
       {statusEl}

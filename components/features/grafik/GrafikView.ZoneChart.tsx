@@ -102,7 +102,7 @@ export default function ZoneChart({ appData, activeZone, selYear, MONTH_NAMES, c
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--zc)', marginTop:6 }}>{rp(p1Total)}</div>
           </div>
           <div>
             <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:6 }}>{t('grafik.period2').toUpperCase()}</div>
@@ -114,11 +114,11 @@ export default function ZoneChart({ appData, activeZone, selYear, MONTH_NAMES, c
                 {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m.slice(0, 3)}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:14, fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
+            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--txt3)', marginTop:6 }}>{rp(p2Total)}</div>
           </div>
         </div>
         {mperiodPct !== null && (
-          <div style={{ textAlign:'center', padding:'6px 0', marginBottom:10, fontSize:12, fontWeight:700, color: mperiodPct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          <div style={{ textAlign:'center', padding:'6px 0', marginBottom:10, fontSize:'var(--fs-body)', fontWeight:700, color: mperiodPct >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             {mperiodPct >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
             {Math.abs(mperiodPct)}% {t('grafik.diff')}
           </div>

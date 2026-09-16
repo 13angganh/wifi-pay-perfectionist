@@ -34,7 +34,7 @@ export default function PinChange({ currentHash, onSave, onDeactivate }: Props) 
     onSave(pin1);
   }
 
-  const inputStyle: React.CSSProperties = { width:100, letterSpacing:8, textAlign:'center', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'10px', borderRadius:'var(--r-sm)', fontSize:20, fontFamily:"var(--font-mono),monospace" };
+  const inputStyle: React.CSSProperties = { width:100, letterSpacing:8, textAlign:'center', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-display)', fontFamily:"var(--font-mono),monospace" };
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -52,7 +52,7 @@ export default function PinChange({ currentHash, onSave, onDeactivate }: Props) 
       <button onClick={handleChange} style={{ display:'flex', alignItems:'center', gap:6, background:'var(--zc)', color:'#fff', border:'none', padding:'11px 18px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600 }}>
         <RefreshCw size={14} /> {t('settings.pin.change')}
       </button>
-      <button onClick={onDeactivate} style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:12 }}>
+      <button onClick={onDeactivate} style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', color:'var(--c-belum)', padding:'9px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)' }}>
         {t('settings.pin.deactivate')}
       </button>
     </div>

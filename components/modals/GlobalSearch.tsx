@@ -64,7 +64,7 @@ export default function GlobalSearch({ open, onClose }: Props) {
               width:'100%', background:'rgba(24,28,39,0.95)', backdropFilter:'blur(16px)',
               border:'1px solid rgba(255,255,255,0.1)', color:'var(--txt)',
               padding:'12px 16px 12px 38px', borderRadius:'var(--r-md)',
-              fontSize:14, fontFamily:"var(--font-mono),monospace", outline:'none',
+              fontSize:'var(--fs-body)', fontFamily:"var(--font-mono),monospace", outline:'none',
               transition:'border-color var(--t-fast)', boxShadow:'var(--shadow-md)',
             }}
             placeholder={t("globalsearch.placeholder")}

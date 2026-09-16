@@ -44,13 +44,13 @@ export default function DashboardRecentActivity(p: Props) {
     <>
       {/* Top tunggakan */}
       <div style={card}>
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:'var(--txt)', marginBottom:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', marginBottom:10 }}>
           <AlertTriangle size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.topArrears')}
         </div>
         {p.top5.length === 0 ? (
           <div style={{ textAlign:'center', padding:'16px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
             <CheckCircle2 size={24} style={{ color:'var(--c-lunas)' }} />
-            <span style={{ color:'var(--c-lunas)', fontSize:12 }}>{t('dashboard.allPaid')}</span>
+            <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-body)' }}>{t('dashboard.allPaid')}</span>
           </div>
         ) : (
           p.top5.map((item, i) => (
@@ -60,7 +60,7 @@ export default function DashboardRecentActivity(p: Props) {
                 <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginLeft:6 }}>{item.z}</span>
               </div>
               <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:12, color:'var(--c-belum)', fontWeight:700 }}>{item.count} {t('common.months')}</div>
+                <div style={{ fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700 }}>{item.count} {t('common.months')}</div>
                 <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{t('common.since')} {item.oldest}</div>
               </div>
             </div>
@@ -81,7 +81,7 @@ export default function DashboardRecentActivity(p: Props) {
       {/* Operasional */}
       <div style={{ ...card, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer' }} onClick={p.onNavOperasional} role="button" aria-label={t('nav.operasional')}>
         <div>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Wallet size={14} style={{ color:'var(--txt3)' }} /> {t('nav.operasional')} {p.bulanLbl}
           </div>
           <div style={{ fontSize:'var(--fs-caption)', color: p.totalOps > 0 ? 'var(--c-belum)' : 'var(--txt4)', marginTop:3 }}>
@@ -94,7 +94,7 @@ export default function DashboardRecentActivity(p: Props) {
       {/* Backup — 2 pilihan: Download + Share */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Database size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.lastBackup')}
           </div>
           <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.backupLbl}</div>
@@ -124,7 +124,7 @@ export default function DashboardRecentActivity(p: Props) {
       {/* WA Summary */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
             <Share2 size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.waSummary')}
           </div>
           <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.bulanLbl}</div>

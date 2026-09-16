@@ -24,7 +24,7 @@
 .sidebar-overlay.show { opacity: .5; pointer-events: auto; }
 .sb-header { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
 .sb-logo { width: 34px; height: 34px; border-radius: 10px; background: var(--bg3); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; box-shadow: var(--shadow-z); }
-.sb-app-name { font-family: var(--font-sans), sans-serif; font-weight: 800; font-size: 15px; letter-spacing: -.02em; color: var(--txt); }
+.sb-app-name { font-family: var(--font-sans), sans-serif; font-weight: 800; font-size: var(--fs-heading); letter-spacing: -.02em; color: var(--txt); }
 .sb-app-ver { font-family: var(--font-mono), monospace; font-size: 9px; color: var(--txt4); letter-spacing: .04em; }
 .sb-nav { flex: 1; overflow-y: auto; padding: 8px; }
 .sb-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: var(--r-md); border: none; background: none; color: var(--txt2); cursor: pointer; width: 100%; font-family: var(--font-sans), sans-serif; font-size: 13px; transition: background var(--t-fast-smooth), color var(--t-fast-smooth); text-align: left; margin-bottom: 2px; position: relative; }

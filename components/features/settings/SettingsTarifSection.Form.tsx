@@ -11,7 +11,7 @@ import { useT } from '@/hooks/useT';
 
 export function ToggleChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ flex:1, padding:'8px', borderRadius:'var(--r-sm)', border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`, background: active ? 'var(--zcdim)' : 'var(--bg3)', color: active ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+    <button onClick={onClick} style={{ flex:1, padding:'8px', borderRadius:'var(--r-sm)', border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`, background: active ? 'var(--zcdim)' : 'var(--bg3)', color: active ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight: active ? 600 : 400, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
       {active && <Check size={11} />}{label}
     </button>
   );
@@ -26,7 +26,7 @@ interface ExportSelectorsProps {
   lang?: string;
 }
 
-const selStyle: React.CSSProperties = { background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'7px 10px', borderRadius:'var(--r-sm)', fontSize:12, flex:1 };
+const selStyle: React.CSSProperties = { background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', padding:'7px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', flex:1 };
 
 export function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, setMonth, showAll, lang = 'id' }: ExportSelectorsProps) {
   const t = useT();

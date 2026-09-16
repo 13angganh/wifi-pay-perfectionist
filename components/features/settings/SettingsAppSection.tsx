@@ -18,7 +18,7 @@ function ToggleChip({ label, active, onClick }: { label:string; active:boolean; 
       border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
       background: active ? 'var(--zcdim)' : 'var(--bg3)',
       color: active ? 'var(--zc)' : 'var(--txt2)',
-      cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
+      cursor:'pointer', fontSize:'var(--fs-body)', fontWeight: active ? 600 : 400,
       transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
     }}>
       {active && <Check size={11} />}

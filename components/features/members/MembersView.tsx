@@ -289,7 +289,9 @@ export default function MembersView() {
               display:'flex', alignItems:'center', gap:5,
               background: membersLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
               color: membersLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
-              padding:'5px 9px', borderRadius:'var(--r-sm)',
+              // v11.7.1: disamakan persis ke Header.tsx (yg baru disamakan ke .sync-pill)
+              // — sebelumnya sudah pakai fs-caption tapi padding+shape beda dr Header.
+              padding:'4px 10px', borderRadius:'var(--r-full)', minHeight:28,
               fontSize:'var(--fs-caption)', whiteSpace:'nowrap',
             }}
           >
@@ -424,7 +426,7 @@ export default function MembersView() {
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: (!membersLocked || ipStr) ? 5 : 0 }}>
                       <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', width:18, flexShrink:0 }}>{i+1}</span>
                       <span style={{ ...badgeStyle, background:'var(--zcdim)', border:'1px solid var(--border)', color: info.id ? 'var(--zc)' : 'var(--txt4)' }}>{idStr}</span>
-                      <span style={{ fontSize:12, flex:1, cursor:'pointer', color:'var(--txt)', fontWeight:500 }} onClick={() => openRiwayat(zone, name)}>{name}</span>
+                      <span style={{ fontSize:'var(--fs-body)', flex:1, cursor:'pointer', color:'var(--txt)', fontWeight:500 }} onClick={() => openRiwayat(zone, name)}>{name}</span>
                       {isFreeNow && <span style={{ ...badgeStyle, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} strokeWidth={1.5} />Free</span>}
                       {info.tarif && <span style={{ ...badgeStyle, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)' }}>{rp(info.tarif as number)}</span>}
                       {/* v11.5.2: indikator catatan — ikon kecil saja, isi catatan hanya terlihat saat Edit dibuka */}

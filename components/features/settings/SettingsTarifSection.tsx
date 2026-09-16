@@ -23,7 +23,7 @@ function ToggleChip({ label, active, onClick }: { label: string; active: boolean
       border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
       background: active ? 'var(--zcdim)' : 'var(--bg3)',
       color: active ? 'var(--zc)' : 'var(--txt2)',
-      cursor:'pointer', fontSize:12, fontWeight: active ? 600 : 400,
+      cursor:'pointer', fontSize:'var(--fs-body)', fontWeight: active ? 600 : 400,
       transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
     }}>
       {active && <Check size={11} />}
@@ -34,7 +34,7 @@ function ToggleChip({ label, active, onClick }: { label: string; active: boolean
 
 const selStyleBase: React.CSSProperties = {
   background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-  padding:'8px 10px', borderRadius:'var(--r-sm)', fontSize:12, flex:1,
+  padding:'8px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', flex:1,
 };
 
 function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, setMonth, showAll, monthNames }: {
@@ -158,7 +158,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
 
   const selStyle: React.CSSProperties = {
     background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    padding:'7px 10px', borderRadius:'var(--r-sm)', fontSize:12, flex:1,
+    padding:'7px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', flex:1,
   };
   const cardStyle: React.CSSProperties = {
     background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)',
@@ -176,7 +176,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
 
         <button
           onClick={() => { doJSONBackup(appData); showToast(t('settings.jsonBackupDone')); }}
-          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}
+          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}
         >
           <span style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Download size={13} /> {t('settings.jsonBackup')}
@@ -186,7 +186,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
 
         <button
           onClick={() => setExpOpen(v => !v)}
-          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${expOpen ? 'var(--zc)' : 'var(--border)'}`, background: expOpen ? 'var(--zcdim)' : 'var(--bg3)', color: expOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}
+          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${expOpen ? 'var(--zc)' : 'var(--border)'}`, background: expOpen ? 'var(--zcdim)' : 'var(--bg3)', color: expOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}
         >
           <span style={{ display:'flex', alignItems:'center', gap:8 }}><FileText size={13} /> PDF / Excel</span>
           {expOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -195,10 +195,10 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
           <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
             <ExportSelectors monthNames={MONTH_NAMES} zone={expZone} setZone={setExpZone} type={expType} setType={setExpType} year={expYear} setYear={setExpYear} month={expMonth} setMonth={setExpMonth} showAll />
             <div style={{ display:'flex', gap:6, marginTop:10 }}>
-              <button onClick={handleDownloadPDF} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+              <button onClick={handleDownloadPDF} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
                 <FileText size={12} /> PDF
               </button>
-              <button onClick={handleDownloadExcel} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#1d6f42', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+              <button onClick={handleDownloadExcel} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#1d6f42', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
                 <Table2 size={12} /> Excel
               </button>
             </div>
@@ -214,7 +214,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
         <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
           <button
             onClick={triggerImport}
-            style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:12, transition:'all var(--t-fast)' }}
+            style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}
           >
             <span style={{ display:'flex', alignItems:'center', gap:8 }}>
               <Upload size={13} /> {t('settings.importData')}
@@ -232,7 +232,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
         </div>
 
-        <button onClick={() => setWaOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${waOpen ? 'var(--zc)' : 'var(--border)'}`, background: waOpen ? 'var(--zcdim)' : 'var(--bg3)', color: waOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}>
+        <button onClick={() => setWaOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${waOpen ? 'var(--zc)' : 'var(--border)'}`, background: waOpen ? 'var(--zcdim)' : 'var(--bg3)', color: waOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}>
           <span style={{ display:'flex', alignItems:'center', gap:8 }}><MessageCircle size={13} /> {t('dashboard.sendWA')}</span>
           {waOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -247,13 +247,13 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
                 {MONTH_NAMES.map((m,i) => <option key={i} value={i}>{m}</option>)}
               </select>
             </div>
-            <button onClick={handleWASummary} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#25D366', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <button onClick={handleWASummary} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#25D366', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <MessageCircle size={13} /> {t('settings.sendToWA')}
             </button>
           </div>
         )}
 
-        <button onClick={() => setSfOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${sfOpen ? 'var(--zc)' : 'var(--border)'}`, background: sfOpen ? 'var(--zcdim)' : 'var(--bg3)', color: sfOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:12, marginBottom:6, transition:'all var(--t-fast)' }}>
+        <button onClick={() => setSfOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${sfOpen ? 'var(--zc)' : 'var(--border)'}`, background: sfOpen ? 'var(--zcdim)' : 'var(--bg3)', color: sfOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}>
           <span style={{ display:'flex', alignItems:'center', gap:8 }}><Share2 size={13} /> {t('settings.sharePdfExcel')}</span>
           {sfOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -265,7 +265,7 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
               <ToggleChip label="Excel" active={sfFmt==='excel'} onClick={() => setSfFmt('excel')} />
             </div>
             <ExportSelectors monthNames={MONTH_NAMES} zone={sfZone} setZone={setSfZone} type={sfType} setType={setSfType} year={sfYear} setYear={setSfYear} month={sfMonth} setMonth={setSfMonth} showAll={sfFmt==='pdf'} />
-            <button onClick={handleShareFile} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <button onClick={handleShareFile} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               <Share2 size={13} /> {t('settings.generateShare')}
             </button>
           </div>

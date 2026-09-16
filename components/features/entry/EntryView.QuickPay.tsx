@@ -19,7 +19,7 @@ export default function EntryQuickPay() {
       </div>
       <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
         {(settings?.quickAmounts || [50,80,90,100,150,200]).map(amt => (
-          <button key={amt} className="sbtn primary" style={{ padding:'8px 14px', fontSize:12 }}>
+          <button key={amt} className="sbtn primary" style={{ padding:'8px 14px', fontSize:'var(--fs-body)' }}>
             {rp(amt)}
           </button>
         ))}

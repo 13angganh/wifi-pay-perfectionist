@@ -21,7 +21,7 @@ interface Props {
 
 const inputStyle: React.CSSProperties = {
   width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
-  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:14,
+  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
   marginBottom:14, fontFamily:"var(--font-mono),monospace", outline:'none',
   transition:'border .2s', boxSizing:'border-box',
 };
@@ -37,7 +37,7 @@ export default function RegisterForm({ rEmail, rPass, rName, rErr, rLoading, onR
   return (
     <div>
       <div style={{ textAlign:'center', marginBottom:20 }}>
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:20, color:'var(--txt)', letterSpacing:'-0.02em' }}>
+        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)', letterSpacing:'-0.02em' }}>
           {t('login.createAccount')}
         </div>
       </div>

@@ -37,7 +37,7 @@ export default function FreeMemberList({ appData, zone, MONTH_NAMES, onSelect }:
         >
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
             <Gift size={12} color="var(--c-free)" />
-            <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:12 }}>{name}</span>
+            <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)' }}>{name}</span>
           </div>
           <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>
             {MONTH_NAMES[fm.fromMonth]} {fm.fromYear}

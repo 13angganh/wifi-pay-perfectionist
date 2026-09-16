@@ -108,7 +108,6 @@ const id: Record<string, string> = {
   'ops.net'                  : 'Net',
 
   // Settings
-  'settings.title'           : 'Pengaturan',
   'settings.pin'             : 'Keamanan PIN',
   'settings.zones'           : 'Manajemen Zona',
   'settings.language'        : 'Bahasa',
@@ -375,8 +374,8 @@ const id: Record<string, string> = {
   'settings.export.fileDownloaded': 'File didownload (share tidak didukung)',
   'settings.export.fileError'    : 'Gagal membuat file',
 
-  // Settings page title
-  'settings.pageTitle'           : 'Pengaturan',
+  // v11.7.1: settings.pageTitle DIHAPUS (orphan) — dulu dipakai judul halaman Pengaturan
+  // yg sekarang sudah dihapus (duplikat dgn Sidebar), key jadi tidak terpakai lagi.
 
   // Settings JSON Backup
   'settings.jsonBackup'          : 'JSON Backup',
@@ -422,8 +421,13 @@ const id: Record<string, string> = {
   'pwa.installBtn'               : 'Pasang',
 
   // Header entry lock
-  'header.entryLocked'           : 'Entry dikunci',
-  'header.entryUnlocked'         : 'Entry dibuka',
+  // v11.7.1: FIX konsistensi kata — sebelumnya "Entry dikunci"/"Entry dibuka" (campur
+  // bentuk pasif), sementara badge status (header.statusLocked/Unlocked di bawah) sudah
+  // pakai kata sifat "Terkunci"/"Terbuka". User: "harusnya Entry terbuka bukan Entry
+  // dibuka agar konsisten" — diterapkan simetris ke KEDUA kata (bukan cuma "dibuka"→
+  // "terbuka" sendirian), supaya toast & badge status satu keluarga kata yg sama.
+  'header.entryLocked'           : 'Entry terkunci',
+  'header.entryUnlocked'         : 'Entry terbuka',
   // v11.7.0: label indikator STATUS (badge kecil di Header) — terpisah dari header.lock/
   // unlock yg sekarang khusus aria-label tombol AKSI ("KUNCI"/"BUKA", kata perintah).
   // Badge ini pakai kata sifat ("Terkunci"/"Terbuka") supaya tidak ambigu status vs perintah.

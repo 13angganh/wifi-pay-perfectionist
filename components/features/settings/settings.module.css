@@ -1,0 +1,70 @@
+/* components/features/settings/settings.module.css — layar Pengaturan (REDESAIN T10, prototype T5)
+   Padanan kelas prototype T5: .sg5 .pg .cc5 .chd .field .okn5 .warn5 .tzh .tmr .cred5 .ibox. Hanya token. */
+
+.root { display: flex; flex-direction: column; gap: var(--sp-h); }
+.groups { display: flex; flex-direction: column; gap: var(--sp-h); }
+
+/* halaman isi (drill-down) */
+.page { display: flex; flex-direction: column; gap: var(--sp-h); }
+.pageHead { display: flex; align-items: center; gap: var(--sp-h); }
+.pageTitle { margin: 0; font-size: var(--fs-display); font-weight: var(--fw-title); letter-spacing: -.01em; min-width: 0; }
+.pageBody { display: flex; flex-direction: column; gap: var(--sp-h); }
+
+/* kartu isi + kepala kartu */
+.card { display: flex; flex-direction: column; gap: var(--sp-h); }
+.chd { display: flex; align-items: center; gap: var(--sp-h); }
+.chd > div { min-width: 0; flex: 1; }
+.chd b { display: block; font-weight: var(--fw-strong); }
+.cap { color: var(--txt3); font-size: var(--fs-caption); line-height: 1.5; }
+.capSm { color: var(--txt4); font-size: var(--fs-label); line-height: 1.6; }
+.mono { font-family: var(--font-mono); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.rowBtns { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.rowBtns > * { flex: 1; min-width: 120px; }
+.hr { height: 1px; background: var(--border2); border: 0; margin: 0; }
+.sectionLabel { color: var(--txt3); font-size: var(--fs-label); font-weight: var(--fw-strong); letter-spacing: .06em; text-transform: uppercase; }
+.tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.swatches { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.colorPick { width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: var(--r-full); background: none; cursor: pointer; }
+
+/* info aplikasi */
+.ibox { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ibh { display: flex; align-items: center; gap: var(--sp-h); }
+.ibr { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-h); color: var(--txt3); font-size: var(--fs-caption); }
+.ibr b { color: var(--txt2); font-family: var(--font-mono); font-weight: var(--fw-strong); }
+
+/* kredensial Akun Penagih (sekali tampil) */
+.cred { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-h); border-radius: var(--r-md); background: var(--bg3); border: 1px solid var(--border2); }
+.cred span { display: block; color: var(--txt3); font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase; }
+.cred b { display: block; font-family: var(--font-mono); word-break: break-all; }
+
+/* checklist member */
+.tml { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; border: 1px solid var(--border2); border-radius: var(--r-md); }
+.tzh { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-h); background: var(--bg3); font-weight: var(--fw-strong); }
+.tzh .cap { margin-left: auto; }
+.tsh { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+
+/* daftar (Akun Penagih, Zona) */
+.list { display: flex; flex-direction: column; border: 1px solid var(--border2); border-radius: var(--r-md); overflow: hidden; }
+.li { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-h); border-bottom: 1px solid var(--border2); }
+.li:last-child { border-bottom: 0; }
+.liTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.liTx b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-strong); }
+.liTx small { color: var(--txt3); font-size: var(--fs-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.liAct { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+/* PIN */
+.pinBox { display: flex; flex-direction: column; align-items: center; gap: var(--sp-h); padding: var(--sp-h) 0; }
+.pinMsg { color: var(--c-belum); font-size: var(--fs-caption); min-height: 18px; text-align: center; }
+.pinInput { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.timeouts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* Export / Import */
+.fileInput { display: none; }
+.panel { display: flex; flex-direction: column; gap: var(--sp-h); padding: var(--sp-h); border-radius: var(--r-md); background: var(--bg3); border: 1px solid var(--border2); }
+.pill { display: inline-flex; align-items: center; gap: 6px; }
+
+.group { display: flex; flex-direction: column; }

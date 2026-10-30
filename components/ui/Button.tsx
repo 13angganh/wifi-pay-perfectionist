@@ -1,42 +1,38 @@
-// components/ui/Button.tsx — Primitive button dengan CVA variants
+// components/ui/Button.tsx — Primitive button (REDESAIN T6, CORE BLOCK v3 .btn)
+// Gaya ada di styles/ui.css (.wp-btn*). API varian dipertahankan dari versi sebelumnya.
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { Spinner } from './Spinner';
 
-const buttonVariants = cva(
-  [
-    'inline-flex items-center justify-center gap-2',
-    'font-medium cursor-pointer',
-    'transition-all duration-[var(--t-fast)] ease-[var(--ease-out)]',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--zc)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg)]',
-    'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
-    'select-none',
-  ].join(' '),
-  {
-    variants: {
-      variant: {
-        primary:   'bg-[var(--zc)] text-white hover:opacity-90 active:scale-[0.97] shadow-[var(--shadow-xs)]',
-        secondary: 'bg-[var(--bg3)] text-[var(--txt)] border border-[var(--border)] hover:bg-[var(--bg4)] active:scale-[0.97]',
-        ghost:     'bg-transparent text-[var(--txt2)] hover:bg-[var(--bg3)] hover:text-[var(--txt)] active:scale-[0.97]',
-        danger:    'bg-[var(--c-belum)] text-white hover:opacity-90 active:scale-[0.97] shadow-[var(--shadow-xs)]',
-        success:   'bg-[var(--c-lunas)] text-white hover:opacity-90 active:scale-[0.97] shadow-[var(--shadow-xs)]',
-        icon:      'bg-transparent text-[var(--txt2)] hover:bg-[var(--bg3)] hover:text-[var(--txt)] rounded-[var(--r-sm)]',
-      },
-      size: {
-        xs:       'h-7 px-2 text-[var(--fs-caption)] rounded-[var(--r-xs)]',
-        sm:       'h-8 px-3 text-[var(--fs-body)] rounded-[var(--r-sm)]',
-        md:       'h-9 px-4 text-[var(--fs-body)] rounded-[var(--r-md)]',
-        lg:       'h-10 px-5 text-[var(--fs-heading)] rounded-[var(--r-md)]',
-        icon:     'h-8 w-8 rounded-[var(--r-sm)]',
-        'icon-sm':'h-7 w-7 rounded-[var(--r-xs)]',
-        'icon-lg':'h-10 w-10 rounded-[var(--r-md)]',
-      },
+const buttonVariants = cva('wp-btn', {
+  variants: {
+    variant: {
+      primary:   'wp-btn--primary',
+      secondary: 'wp-btn--secondary',
+      ghost:     'wp-btn--ghost',
+      danger:    'wp-btn--danger',
+      success:   'wp-btn--success',
+      icon:      'wp-btn--ghost',
     },
-    defaultVariants: { variant: 'secondary', size: 'md' },
-  }
-);
+    size: {
+      xs:        'wp-btn--xs',
+      sm:        'wp-btn--sm',
+      md:        '',
+      lg:        'wp-btn--lg',
+      icon:      'wp-btn--sm wp-btn--sq',
+      'icon-sm': 'wp-btn--xs wp-btn--sq',
+      'icon-lg': 'wp-btn--sq',
+    },
+    block: {
+      true:  'wp-btn--block',
+      false: '',
+    },
+  },
+  defaultVariants: { variant: 'secondary', size: 'md', block: false },
+});
 
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
@@ -46,19 +42,16 @@ export interface ButtonProps
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading, disabled, children, ...props }, ref) => (
+  ({ className, variant, size, block, loading, disabled, children, type = 'button', ...props }, ref) => (
     <button
       ref={ref}
-      className={clsx(buttonVariants({ variant, size }), className)}
+      type={type}
+      className={clsx(buttonVariants({ variant, size, block }), className)}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {loading ? (
-        <>
-          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent opacity-70" aria-hidden="true" />
-          {children}
-        </>
-      ) : children}
+      {loading ? (<><Spinner />{children}</>) : children}
     </button>
   )
 );

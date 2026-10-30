@@ -1,74 +1,87 @@
-// components/features/operasional/OperasionalView.tsx — Fase 4: cleanup
+// ══════════════════════════════════════════
+// components/features/operasional/OperasionalView.tsx — layar Operasional (REDESAIN T10, prototype T5, keputusan D5/D6)
+//
+// Logika zip yang DIPERTAHANKAN: edit langsung di baris (label + nominal), simpan saat blur, persist lewat
+// persistPayment + rollback SELEKTIF (selectiveRollback, v11.5.7) bila gagal + toast, hapus lewat Confirm,
+// tahun >= 2026, nominal dalam ribuan rupiah, log "[OPS] Update operasional".
+// Yang BERUBAH (disetujui): Tambah Item = bottom sheet (bukan baris kosong yang langsung tersimpan), menu titik
+// tiga (Edit lewat sheet, Hapus lewat Confirm), simpan hanya bila nilai benar-benar berubah, toast hapus sukses
+// berwarna hijau, dan PERBAIKAN ZONA KUSTOM: ringkasan satu baris per zona aktif (operasional.logic.ts).
+// ══════════════════════════════════════════
 'use client';
 
+import { CardFilter, Vis } from '@/components/ui/CardFilter';
+import { useEffect, useRef, useState } from 'react';
+import {
+  DotsThreeVertical, PencilSimple, Receipt, Trash, Warning,
+} from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { getZoneTotal, rp } from '@/lib/helpers'
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
+import { rp } from '@/lib/helpers';
+import { getAllActiveZones, getMembersForZone } from '@/lib/member';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
+import { zoneCssColor } from '@/lib/design-tokens';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
-import { X } from 'lucide-react';
-import type { OpsItem } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { GhostInput, NominalWrap } from '@/components/ui/GhostInput';
+import { IconButton } from '@/components/ui/IconButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { Select } from '@/components/ui/Select';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import type { AppData, OpsItem } from '@/types';
+import { ICONS } from './OperasionalView.Icons';
+import { Fab, FabSpace } from '@/components/ui/Fab';
+import OperasionalSheet from './OperasionalView.Sheet';
+import {
+  buildOpsSummary, isItemChanged, itemFromForm, resolveOpsIcon, validateOpsForm, withUpdatedItem,
+  type OpsFormValue,
+} from './operasional.logic';
+import o from './operasional.module.css';
 
-// Font dan ukuran konsisten untuk semua elemen
-const FONT    = "var(--font-mono),monospace";
-const FS_BODY = 12;  // font size semua input dan label
-const FS_VAL  = 12;  // font size semua nilai result — SAMA semua
-const FS_LBL  = 11;  // font size label result
+const MIN_YEAR = 2026;
 
-// ── ResultRow top-level (task 4.11) ──
-function ResultRow({ label, value, color, highlight }: { label:string; value:string; color:string; highlight?:boolean }) {
-  return (
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
-      padding: highlight ? '10px 12px' : '8px 0',
-      borderBottom: highlight ? 'none' : '1px solid var(--border)',
-      background: highlight ? 'rgba(34,197,94,0.06)' : 'transparent',
-      borderRadius: highlight ? 'var(--r-sm)' : 0,
-      marginTop: highlight ? 6 : 0,
-      border: highlight ? '1px solid rgba(34,197,94,0.2)' : undefined,
-    }}>
-      <span style={{ fontSize:FS_LBL, color: highlight ? 'var(--c-lunas)' : 'var(--txt3)', fontFamily:FONT, fontWeight: highlight ? 700 : 400 }}>
-        {label}
-      </span>
-      {/* FIX: minWidth memastikan kolom nilai rata kanan lurus di semua baris */}
-      <span style={{ fontSize:FS_VAL, color, fontFamily:FONT, fontWeight:600, textAlign:'right', minWidth:110 }}>
-        {value}
-      </span>
-    </div>
-  );
-}
+type SheetState = { mode: 'add' } | { mode: 'edit'; index: number; initial: OpsFormValue };
 
 export default function OperasionalView() {
-  const { appData, setAppData, uid, userEmail, opsYear, opsMonth, setOpsYear, setOpsMonth, setSyncStatus } = useAppStore();
-
-  const opsKey  = `${opsYear}_${opsMonth}`;
+  const { appData, setAppData, uid, userEmail, opsYear, opsMonth, setOpsYear, setOpsMonth, setSyncStatus, syncStatus, settings } = useAppStore();
   const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
+  const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
-  const opsData = appData.operasional?.[opsKey] || { items: [] };
-  const items   = opsData.items || [];
+  const opsKey = `${opsYear}_${opsMonth}`;
+  const items: OpsItem[] = appData.operasional?.[opsKey]?.items || [];
+  const summary = buildOpsSummary(appData, settings, opsYear, opsMonth, items);
 
-  const krsTotal    = getZoneTotal(appData, 'KRS', opsYear, opsMonth);
-  const slkTotal    = getZoneTotal(appData, 'SLK', opsYear, opsMonth);
-  const grossIncome = krsTotal + slkTotal;
-  const totalOps    = items.reduce((s, it) => s + (+it.nominal || 0), 0);
-  const netIncome   = grossIncome - totalOps;
+  const [sheet, setSheet] = useState<SheetState | null>(null);
+  const [labelError, setLabelError] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
+  const [menuIdx, setMenuIdx] = useState<number | null>(null);
+  const isSavingRef = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — bukan replace total ke
-  // prevData, yang bisa menghapus payment/data operasional bulan lain yang berhasil
-  // tersimpan concurrent selagi network request ini masih berjalan. Lihat penjelasan
-  // lengkap di persist() MemberCard.tsx.
-  async function persist(newData: typeof appData): Promise<boolean> {
-    const prevData = appData;
+  // Menu titik tiga: tutup dengan Esc atau klik di luar.
+  useEffect(() => {
+    if (menuIdx === null) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuIdx(null); };
+    const onDown = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuIdx(null); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
+  }, [menuIdx]);
+
+  // FIX v11.5.7 (dipertahankan): rollback via selectiveRollback, bukan replace total ke prevData.
+  async function persist(newData: AppData, prevData: AppData): Promise<boolean> {
     setAppData(newData);
     if (!uid) return true;
     setSyncStatus('loading');
     try {
-      await persistPayment(uid, newData, { action:`[OPS] ${tLog('log.action.updateOps')}`, detail:`${MONTH_NAMES[opsMonth]} ${opsYear}` }, userEmail || '', () => ({
+      await persistPayment(uid, newData, { action: `[OPS] ${tLog('log.action.updateOps')}`, detail: `${MONTH_NAMES[opsMonth]} ${opsYear}` }, userEmail || '', () => ({
         globalLocked: useAppStore.getState().globalLocked,
         lockedEntries: useAppStore.getState().lockedEntries,
       }));
@@ -83,110 +96,147 @@ export default function OperasionalView() {
     }
   }
 
-  function updatedData(newItems: OpsItem[]) {
-    return { ...appData, operasional: { ...appData.operasional, [opsKey]: { items: newItems } } };
+  /** Terapkan perubahan daftar item pada data TERKINI (bukan salinan render) lalu simpan. */
+  async function commit(build: (current: OpsItem[]) => OpsItem[]): Promise<boolean> {
+    const prev = useAppStore.getState().appData;
+    const current = prev.operasional?.[opsKey]?.items || [];
+    const next: AppData = { ...prev, operasional: { ...prev.operasional, [opsKey]: { items: build(current) } } };
+    return persist(next, prev);
   }
 
-  async function addItem() {
-    const ok = await persist(updatedData([...items, { label:'', nominal:0 }]));
+  async function onInlineBlur(index: number, field: 'label' | 'nominal', raw: string) {
+    if (!isItemChanged(items[index], field, raw)) return;
+    const ok = await commit(cur => withUpdatedItem(cur, index, field, raw));
     if (!ok) showToast(t('common.saveFailed'), 'err');
   }
 
-  async function updateItem(i: number, field: 'label' | 'nominal', val: string) {
-    const newItems = items.map((it, idx) =>
-      idx === i ? { ...it, [field]: field === 'nominal' ? (+val || 0) : val } : it
-    );
-    const ok = await persist(updatedData(newItems));
-    if (!ok) showToast(t('common.saveFailed'), 'err');
+  async function submitSheet(value: OpsFormValue) {
+    if (!sheet || isSavingRef.current) return;
+    if (validateOpsForm(value)) { setLabelError(t('ops.labelRequired')); return; }
+    isSavingRef.current = true; setSaving(true);
+    const item = itemFromForm(value);
+    const editing = sheet.mode === 'edit' ? sheet.index : -1;
+    const ok = await commit(cur => (editing >= 0 ? cur.map((it, i) => (i === editing ? item : it)) : [...cur, item]));
+    isSavingRef.current = false; setSaving(false);
+    if (ok) { setSheet(null); showToast(editing >= 0 ? t('ops.itemSaved') : t('ops.itemAdded'), 'ok'); }
+    else showToast(t('common.saveFailed'), 'err'); // sheet tetap terbuka, data sudah di-rollback
   }
 
-  function deleteItem(i: number) {
-    const item = items[i];
-    showConfirm('🗑️', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.confirm'), async () => {
-      const ok = await persist(updatedData(items.filter((_, idx) => idx !== i)));
-      showToast(ok ? t('common.deleted') : t('common.saveFailed'), 'err');
-    });
+  function askDelete(index: number) {
+    const item = items[index];
+    setMenuIdx(null);
+    showConfirm('trash', `${t('action.delete')} ${item?.label || 'item'}?`, t('action.delete'), async () => {
+      const ok = await commit(cur => cur.filter((_, i) => i !== index));
+      showToast(ok ? t('ops.itemDeleted') : t('common.saveFailed'), ok ? 'ok' : 'err');
+    }, { description: t('ops.deleteHint') });
   }
 
-  const minYear = 2026;
-  const filteredYears = getYears().filter(y => y >= minYear);
-
-  // Style konsisten untuk semua input
-  const inputBaseStyle: React.CSSProperties = {
-    background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    borderRadius:6, padding:'8px 10px', fontSize:FS_BODY, fontFamily:FONT,
-    outline:'none',
-  };
-
-  // Style konsisten untuk semua baris result — ResultRow dipindah ke top-level
+  // "Belum ada data sama sekali" = tidak ada member di zona aktif mana pun (daftar lewat getMembersForZone)
+  const hasMembers = getAllActiveZones(settings).some(z => getMembersForZone(z, appData).length > 0);
+  const loading = syncStatus === 'loading' && !hasMembers && items.length === 0;
+  const failed = syncStatus === 'err' && !hasMembers && items.length === 0 && !appData.operasional;
+  const years = getYears().filter(y => y >= MIN_YEAR);
+  const netNeg = summary.net < 0;
 
   return (
-    <div>
-      {/* Period selector */}
-      <div className="ctrl-row" style={{ marginBottom:10 }}>
-        <select className="cs" value={opsYear} onChange={e => { const y=+e.target.value; setOpsYear(y); if(y===minYear&&opsMonth<0) setOpsMonth(0); }}>
-          {filteredYears.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <select className="cs" value={opsMonth} onChange={e => setOpsMonth(+e.target.value)}>
-          {MONTH_NAMES.map((m, i) => <option key={i} value={i} disabled={opsYear===minYear&&i<0}>{m}</option>)}
-        </select>
-        <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', alignSelf:'center', fontFamily:FONT }}>{MONTH_NAMES[opsMonth]} {opsYear}</span>
+    <div className={o.root}>
+      <div className="wp-pbar">
+        <Select size="sm" aria-label={t('ops.yearAria')} value={opsYear} onChange={e => setOpsYear(+e.target.value)}>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </Select>
+        <Select size="sm" aria-label={t('ops.monthAria')} value={opsMonth} onChange={e => setOpsMonth(+e.target.value)}>
+          {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        </Select>
+        <CardFilter compact screen="operasional" items={[{ id: 'zones', label: t('view.operasional.zones') }]} />
       </div>
 
-      {/* Items */}
-      <div className="ops-card">
-        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10, fontFamily:FONT }}>
-          {t('ops.expenseTitle')}
+      <div className={o.secHead}>
+        <span className={o.secTitle}>{t('ops.expenseTitle')}</span>
+      </div>
+
+      {loading ? (
+        <SkeletonList count={4} />
+      ) : failed ? (
+        <EmptyState icon={Warning} title={t('ops.loadErrorTitle')} description={t('ops.loadErrorDesc')} size="md"
+          action={<Button variant="secondary" size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</Button>} />
+      ) : items.length === 0 ? (
+        <EmptyState icon={Receipt} title={t('ops.emptyTitle')} description={t('ops.emptyDesc')} size="md"
+          action={<Button variant="primary" size="sm" onClick={() => { setLabelError(undefined); setSheet({ mode: 'add' }); }}>{t('ops.addItemBtn')}</Button>} />
+      ) : (
+        <div className={o.list} ref={menuRef}>
+          {items.map((it, i) => {
+            const meta = ICONS[resolveOpsIcon(it)];
+            return (
+              <Card key={`${opsKey}-${i}-${it.label}-${it.nominal}`} padding="none" className={o.row}>
+                <IconTile icon={meta.icon} tone={meta.tone} size="sm" />
+                <div className={o.lbl}>
+                  <GhostInput aria-label={`${t('ops.labelField')} ${i + 1}`} placeholder={t('ops.itemPlaceholder')} autoComplete="off"
+                    defaultValue={it.label} onBlur={e => onInlineBlur(i, 'label', e.target.value)} />
+                </div>
+                <div className={o.nom}>
+                  <NominalWrap prefix={<span className={o.unit}>Rp</span>} suffix={<span className={o.unit}>.000</span>}>
+                    <GhostInput numeric aria-label={`${t('ops.nominalField')} ${i + 1}`} type="number" inputMode="numeric" placeholder="0" autoComplete="off"
+                      defaultValue={it.nominal || ''} onBlur={e => onInlineBlur(i, 'nominal', e.target.value)} />
+                  </NominalWrap>
+                </div>
+                <IconButton icon={DotsThreeVertical} size="sm" label={`${t('ops.itemMenu')} ${it.label || i + 1}`}
+                  aria-haspopup="menu" aria-expanded={menuIdx === i}
+                  onClick={() => setMenuIdx(menuIdx === i ? null : i)} />
+                {menuIdx === i && (
+                  <div className={o.menu} role="menu">
+                    <button type="button" role="menuitem" className={o.menuItem}
+                      onClick={() => { setMenuIdx(null); setLabelError(undefined); setSheet({ mode: 'edit', index: i, initial: { label: it.label, nominal: it.nominal ? String(it.nominal) : '', icon: (it.icon as OpsFormValue['icon']) || '' } }); }}>
+                      <PencilSimple aria-hidden="true" /> {t('action.edit')}
+                    </button>
+                    <button type="button" role="menuitem" className={`${o.menuItem} ${o.menuItemDanger}`} onClick={() => askDelete(i)}>
+                      <Trash aria-hidden="true" /> {t('action.delete')}
+                    </button>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
+      )}
 
-        {items.map((it, i) => (
-          <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:8 }}>
-            {/* Label keterangan */}
-            <input
-              style={{ ...inputBaseStyle, flex:1 }}
-              placeholder={t('ops.itemPlaceholder')}
-              defaultValue={it.label}
-              onBlur={e => updateItem(i, 'label', e.target.value)}
-              autoComplete="off"
-            />
-            {/* Nominal — rata kanan, font sama */}
-            <input
-              style={{ ...inputBaseStyle, width:90, textAlign:'right' }}
-              type="number"
-              inputMode="numeric"
-              placeholder="0"
-              defaultValue={it.nominal || ''}
-              onBlur={e => updateItem(i, 'nominal', e.target.value)}
-              autoComplete="off"
-            />
-            <button onClick={() => deleteItem(i)}
-              aria-label={`Hapus item ${it.label || i + 1}`}
-              style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'var(--c-belum)', padding:'7px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:FS_BODY, flexShrink:0, fontFamily:FONT, display:'flex', alignItems:'center', justifyContent:'center', minWidth:34, minHeight:34 }}>
-              <X size={13} strokeWidth={1.5} />
-            </button>
+      <Card padding="none" className={o.sum} aria-label={t('ops.netIncome')}>
+        <Vis screen="operasional" id="zones">{summary.zones.map(z => (
+          <div key={z.zone} className={o.sumRow}>
+            <span className={o.sumLbl}>
+              <i className={o.dot} style={{ background: zoneCssColor(z.zone, settings.customZones ?? []) }} aria-hidden="true" />
+              {t('ops.income')} {z.zone}
+            </span>
+            <span className={o.sumVal} style={{ color: zoneCssColor(z.zone, settings.customZones ?? []) }}>{rp(z.total)}</span>
           </div>
-        ))}
+        ))}</Vis>
+        <div className={o.sumRow}>
+          <span className={o.sumLbl}>{t('ops.grossIncome')}</span>
+          <span className={`${o.sumVal} ${o.gross}`}>{rp(summary.gross)}</span>
+        </div>
+        <div className={o.sumRow}>
+          <span className={o.sumLbl}>{t('ops.totalExpense')}</span>
+          <span className={`${o.sumVal} ${o.expense}`}>{rp(summary.expense)}</span>
+        </div>
+        <div className={`${o.net} ${netNeg ? o.netNeg : ''}`} data-negative={netNeg ? 'true' : 'false'}>
+          <span className={o.netLbl}>{t('ops.netIncome')}</span>
+          <span className={o.netVal}>{rp(summary.net)}</span>
+        </div>
+      </Card>
 
-        <button onClick={addItem}
-          style={{ width:'100%', background:'var(--bg3)', border:'1px dashed var(--border)', color:'var(--zc)', padding:9, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:FS_BODY, marginTop:6, fontFamily:FONT }}>
-          {t('ops.addItem')}
-        </button>
-      </div>
-
-      {/* Result — semua font sama ukuran FS_VAL */}
-      <div style={{ background:'var(--bg)', border:'1px solid var(--border)', borderRadius:10, padding:'4px 14px', marginTop:10 }}>
-        <ResultRow label={t('ops.incomeKRS')}    value={rp(krsTotal)}    color="var(--zc-krs)" />
-        <ResultRow label={t('ops.incomeSLK')}    value={rp(slkTotal)}    color="var(--zc-slk)" />
-        <div style={{ height:1, background:'var(--border)', margin:'4px 0' }} />
-        <ResultRow label={t('ops.grossIncome')}  value={rp(grossIncome)} color="var(--c-lunas)" />
-        <ResultRow label={t('ops.totalExpense')} value={rp(totalOps)}    color="var(--c-belum)" />
-        <ResultRow
-          label={t('ops.netIncome')}
-          value={rp(netIncome)}
-          color={netIncome >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)'}
-          highlight
+      {sheet && (
+        <OperasionalSheet
+          key={sheet.mode === 'edit' ? `edit-${sheet.index}` : 'add'}
+          mode={sheet.mode}
+          initial={sheet.mode === 'edit' ? sheet.initial : { label: '', nominal: '', icon: '' }}
+          saving={saving}
+          labelError={labelError}
+          onLabelInput={() => setLabelError(undefined)}
+          onSubmit={submitSheet}
+          onClose={() => { if (!saving) setSheet(null); }}
         />
-      </div>
+      )}
+      <Fab label={t('ops.addItemBtn')} onClick={() => { setLabelError(undefined); setSheet({ mode: 'add' }); }} />
+      <FabSpace />
     </div>
   );
 }

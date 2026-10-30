@@ -1,0 +1,98 @@
+/* components/features/dashboard/dashboard.module.css — layar Dashboard (REDESAIN T7)
+   Hanya token dari styles/tokens.css. Gaya khusus satu layar (bukan primitive; kontrak T6 §2 butir 1).
+   Padanan kelas prototype T2: .pg .grid3 .stat .g2 .mini .sec .tr .note .qa .nh .ni .rise */
+
+.page { display: flex; flex-direction: column; gap: var(--sp-h); }
+
+.rise { animation: dbrise .5s var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 55ms); }
+@keyframes dbrise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+/* sapaan + pemilih periode */
+.head { display: flex; flex-direction: column; gap: var(--sp-h); }
+.greet { display: flex; align-items: baseline; gap: var(--sp-2); white-space: nowrap; min-width: 0; }
+.greetName { font-size: var(--fs-display); white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-1); }
+.period { display: flex; align-items: center; gap: var(--sp-2); }
+.period > * { min-width: 0; }
+
+/* 3 stat */
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+.stat { display: flex; align-items: center; gap: var(--sp-2); padding: 10px !important; min-width: 0; }
+.stat .statNum { font-size: var(--fs-display); font-weight: 600; line-height: 1; }
+
+/* pasangan kartu: 1 kolom di mobile, 2 kolom di layar lebar */
+.g2:empty { display: none; }
+.g2 > :only-child { grid-column: 1 / -1; }
+.filterRow { display: flex; justify-content: flex-end; margin-bottom: calc(var(--sp-1) * -1); }
+.g2 { display: flex; flex-direction: column; gap: var(--sp-3); }
+@media (min-width: 720px) { .g2 { display: grid; grid-template-columns: 1fr 1fr; align-items: start; } }
+
+/* pendapatan + grafik batang 6 bulan (A14) */
+.hero { display: flex; align-items: center; gap: var(--sp-h); }
+.heroMain { flex: 1; min-width: 0; }
+.heroVal { margin: 6px 0 4px; word-break: break-word; }
+.heroMeta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.bars { display: flex; align-items: flex-end; gap: 5px; height: 68px; width: 104px; flex-shrink: 0; }
+.bars i { flex: 1; border-radius: 4px 4px 2px 2px; background: var(--grad-a); min-height: 3px; }
+
+/* insight */
+.mini { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.miniV { font-size: var(--fs-display); font-weight: var(--fw-title); }
+
+/* kartu zona */
+.zones { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); }
+.zoneHead { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.zoneVal { font-size: var(--fs-heading); font-weight: 600; margin: 6px 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* judul seksi kartu */
+.sec { display: flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-strong); min-width: 0; }
+.sec svg { font-size: 18px; color: var(--txt3); flex-shrink: 0; }
+.secGrow { flex: 1; min-width: 0; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.badges { display: flex; gap: var(--sp-2); }
+.badges > * { flex: 1; justify-content: center; height: 30px; }
+
+/* catatan (gratis / info) */
+.note { display: flex; gap: var(--sp-2); align-items: center; padding: 10px; border-radius: var(--r-md); background: var(--bg3); color: var(--txt3); font-size: var(--fs-caption); }
+.note svg { font-size: 18px; flex-shrink: 0; }
+.noteFree { color: var(--c-free); background: color-mix(in srgb, var(--c-free) 12%, transparent); }
+
+/* tunggakan terbanyak */
+.tr { display: flex; align-items: center; gap: var(--sp-h); padding: 10px 0; border: 0; border-top: 1px solid var(--border2); width: 100%; background: none; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.tr:first-of-type { border-top: 0; }
+.tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+.trTx { flex: 1; min-width: 0; }
+.trTx b { display: block; font-weight: var(--fw-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trEnd { text-align: right; flex-shrink: 0; }
+.trEnd .wp-t-micro { display: block; }
+.moreLink { margin-top: 6px; width: 100%; text-align: center; padding: 6px; }
+
+/* baris aksi (Operasional, Backup, WA) */
+.row { display: flex; align-items: center; gap: var(--sp-h); flex-wrap: wrap; }
+.rowBtn { text-align: left; cursor: pointer; color: inherit; font: inherit; width: 100%; }
+.rowBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rowGrow { flex: 1; min-width: 120px; }
+.rowGrow b { display: block; }
+.rowActs { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+/* aksi cepat */
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); }
+.qa { padding: 12px 4px !important; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); font-size: var(--fs-caption); font-weight: var(--fw-strong); color: var(--txt); cursor: pointer; border: 1px solid var(--border); transition: transform var(--t-fast); font-family: inherit; }
+.qa:active { transform: scale(.96); }
+.qa svg { font-size: 22px; color: var(--accent); }
+.qa:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* aktivitas terbaru (A12) */
+.act { padding: 4px 0 2px !important; }
+.actHead { display: flex; align-items: center; gap: var(--sp-2); padding: 12px var(--sp-3); }
+.actHead b { flex: 1; }
+.actItem { display: flex; gap: var(--sp-h); padding: 11px var(--sp-3); border-top: 1px solid var(--border2); align-items: center; }
+.actTx { flex: 1; min-width: 0; }
+.actTx b { display: block; font-size: var(--fs-body); font-weight: var(--fw-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actTx span { display: block; font-size: var(--fs-caption); color: var(--txt3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actEnd { text-align: right; flex-shrink: 0; }
+.actEnd time { display: block; font-size: var(--fs-caption); color: var(--txt3); }
+.actEnd .wp-num { font-size: var(--fs-caption); }
+
+/* skeleton / state */
+.skRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }

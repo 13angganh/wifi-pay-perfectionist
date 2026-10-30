@@ -1,0 +1,3 @@
+/* app/(app)/boundary.module.css — layar galat rute dan 404 (REDESAIN T11). Token tema saja. */
+.wrap { min-height: 60vh; display: flex; align-items: center; justify-content: center; padding: var(--sp-5); }
+.actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }

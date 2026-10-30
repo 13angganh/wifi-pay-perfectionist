@@ -1,155 +1,164 @@
-// components/features/entry/EntryView.tsx — Fase 4: Skeleton + EmptyState
+// components/features/entry/EntryView.tsx — REDESAIN T7 (prototype T2 keputusan 2, 7, 8, 8b, 9, 10, 13)
+// Orkestrator Entry: periode + Pilih Banyak, ringkasan, Potensi Belum Masuk, chip filter, pencarian,
+// daftar kartu (EntryView.MemberList + MemberCard) dan mode pilih (EntryView.Batch + batch.ts).
+// Logika bisnis dipertahankan: persistPayment/selectiveRollback, kunci payment, lock global, search/filter di store.
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { CardFilter, Vis } from '@/components/ui/CardFilter';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { clsx } from 'clsx';
+import { useRouter } from 'next/navigation';
+import {
+  CheckCircle, ListBullets, ListChecks, Lock, MagnifyingGlass, X, XCircle, Gift,
+} from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
+import { zoneCssColor } from '@/lib/design-tokens';
 import { useT } from '@/hooks/useT';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { FilterChip, FilterChips } from '@/components/ui/Chip';
+import { Select } from '@/components/ui/Select';
 import MemberCard from '../members/MemberCard';
-import { SkeletonList } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
 import type { FilterStatus } from '@/types';
-import {
-  ClipboardList, CheckCircle2, Clock, Gift,
-  Search, X,
-  CheckCheck, XCircle, Users,
-} from 'lucide-react';
+import { buildBatchPayments, filterBatchEligible, isBatchEligible, toggleBatchSelection, toggleSelectAll } from './batch';
+import { BatchBar, BatchSheet } from './EntryView.Batch';
+import { localDateISO, resolvePayDate, setPayDates } from '@/lib/payDate';
+import { MemberList } from './EntryView.MemberList';
+import e from './entry.module.css';
+
+const rise = (i: number) => ({ ['--i' as string]: i }) as CSSProperties;
+
+// Snapshot scroll Entry. Store `entryScrollTop` direkomendasikan zip, tetapi setView() di store selalu
+// meresetnya ke 0 saat pindah menu, dan handler onScroll di zip dipasang pada <div> yang tidak scroll
+// (yang scroll adalah #content), jadi posisi tidak pernah tersimpan. Snapshot modul ini bertahan selama
+// sesi SPA dan hanya dipulihkan bila zona + periode sama (posisi hanya bermakna untuk daftar yang sama).
+let savedScroll: { top: number; key: string } | null = null;
 
 export default function EntryView() {
+  const router = useRouter();
   const {
     appData, setAppData, uid, userEmail,
     activeZone, selYear, selMonth, setSelYear, setSelMonth,
     search, setSearch,
     filterStatus, setFilter,
-    entryScrollTop, setEntryScrollTop,
+    setEntryScrollTop,
     globalLocked,
     syncStatus,
     setSyncStatus,
     batchMode, batchSelected, batchYear, batchMonth,
-    setBatchMode, setBatchPeriod, toggleBatchMember, clearBatch,
+    setBatchMode, setBatchPeriod, setBatchSelected, clearBatch,
+    setView,
   } = useAppStore();
+  const t = useT();
+  const settings = useAppStore(s => s.settings);
+  // REDESAIN T12 (F4): tanggal bayar pilihan pengguna untuk batch (mode manual). null = "hari ini" (dibaca saat dipakai).
+  const [batchPayDate, setBatchPayDate] = useState<string | null>(null);
+  const lang = settings.language ?? 'id';
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
+  const zc = zoneCssColor(activeZone, settings.customZones);
 
-  const mems = getMembersForZone(activeZone, appData); // FIX: custom zone support
+  const mems = getMembersForZone(activeZone, appData); // zona kustom ikut
 
   const freeCount = mems.filter(m => isFree(appData, activeZone, m, selYear, selMonth)).length;
   const paid      = mems.filter(m => isLunas(appData, activeZone, m, selYear, selMonth) && !isFree(appData, activeZone, m, selYear, selMonth)).length;
-  const unpaid    = mems.filter(m => getPay(appData, activeZone, m, selYear, selMonth) === null && !isFree(appData, activeZone, m, selYear, selMonth)).length;
+  const unpaid    = mems.filter(m => isBatchEligible(appData, activeZone, m, selYear, selMonth)).length;
   const total     = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, selMonth) || 0), 0);
 
   const potensiUnpaid = mems.reduce((sum, m) => {
-    const belum = getPay(appData, activeZone, m, selYear, selMonth) === null
-      && !isFree(appData, activeZone, m, selYear, selMonth);
-    if (!belum) return sum;
-    const info  = appData.memberInfo?.[activeZone + '__' + m] || {};
-    const tarif = info.tarif as number | undefined;
+    if (!isBatchEligible(appData, activeZone, m, selYear, selMonth)) return sum;
+    const tarif = appData.memberInfo?.[activeZone + '__' + m]?.tarif as number | undefined;
     return sum + (tarif ?? 0);
   }, 0);
-
-  type FilterType = FilterStatus; // alias untuk backward compat chip key type
-  const filterStatus2 = filterStatus;
 
   const filtered = mems.filter(name => {
     if (!fuzzyMatch(name, search)) return false;
     if (filterStatus === 'paid')   return isLunas(appData, activeZone, name, selYear, selMonth) && !isFree(appData, activeZone, name, selYear, selMonth);
-    if (filterStatus === 'unpaid') return getPay(appData, activeZone, name, selYear, selMonth) === null && !isFree(appData, activeZone, name, selYear, selMonth);
+    if (filterStatus === 'unpaid') return isBatchEligible(appData, activeZone, name, selYear, selMonth);
     if (filterStatus === 'free')   return isFree(appData, activeZone, name, selYear, selMonth);
     return true;
   });
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setEntryScrollTop((e.target as HTMLDivElement).scrollTop);
-  }, [setEntryScrollTop]);
-
-  // BUG FIX: bottom sheet preview batch (position:fixed, bottom:0) punya tinggi DINAMIS —
-  // tumbuh mengikuti jumlah member terpilih (tiap baris preview ~40px) sampai mentok
-  // maxHeight:180 pada area scroll-nya, ditambah header/total/tombol yang tetap. Spacer lama
-  // di akhir list ("height:300" statis) hanya kebetulan cukup untuk jumlah kecil — begitu
-  // preview tumbuh melewati 300px (makin banyak member dipilih), sheet mulai menutupi kartu
-  // paling bawah SECARA FISIK (bukan cuma visual): sheet fixed tetap menerima pointer event
-  // di area itu meski kartu di baliknya masih tampak sebagian, sehingga tap di kartu itu tidak
-  // pernah sampai ke card-nya. Inilah sebab laporan "ZAHDAN tak bisa diklik saat data 4+" —
-  // checkbox-nya persis jatuh di bawah tepi sheet yang sudah membesar. Perbaikan: ukur tinggi
-  // ASLI sheet setiap kali berubah (ResizeObserver, bukan dihitung manual dari jumlah item —
-  // menghindari duplikasi konstanta layout/typo px yang gampang basi) dan pakai itu sebagai
-  // tinggi spacer, sehingga daftar SELALU bisa di-scroll sepenuhnya melewati sheet apa pun
-  // jumlah member yang dipilih.
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const [sheetHeight, setSheetHeight] = useState(0);
-
+  // ── Posisi scroll tersimpan (Daftar Wajib-Ada: "scroll position tersimpan") ──
+  const scrollKey = `${activeZone}|${selYear}|${selMonth}`;
+  const scrollKeyRef = useRef(scrollKey);
+  useEffect(() => { scrollKeyRef.current = scrollKey; }, [scrollKey]);
   useEffect(() => {
-    const el = sheetRef.current;
-    if (!el) { setSheetHeight(0); return; }
-    // Guard: ResizeObserver tidak native tersedia di semua environment (mis. jsdom lama
-    // tanpa polyfill). Fallback ke fallback statis (300) di JSX spacer sudah menangani ini
-    // dengan aman — di sini cukup skip observasi tanpa throw, bukan mengubah fallback itu.
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(entries => {
-      const h = entries[0]?.contentRect.height;
-      if (h !== undefined) setSheetHeight(h);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [batchMode, batchSelected.length]); // re-attach saat sheet muncul/hilang atau isi berubah
-
-  // UX: restore scroll position saat kembali ke menu Entry
-  useEffect(() => {
-    if (entryScrollTop <= 0) return;
     const content = document.getElementById('content');
     if (!content) return;
-    // Delay sedikit agar DOM sudah render sebelum restore
-    const timer = setTimeout(() => { content.scrollTop = entryScrollTop; }, 60);
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Hanya saat mount — intentional, bukan setiap entryScrollTop berubah
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        // abaikan scroll yang terjadi saat rute sudah berpindah (reset ke atas oleh navigasi)
+        if (!window.location.pathname.endsWith('/entry')) return;
+        savedScroll = { top: content.scrollTop, key: scrollKeyRef.current };
+        setEntryScrollTop(content.scrollTop);
+      });
+    };
+    content.addEventListener('scroll', onScroll, { passive: true });
+    // Pulihkan saat masuk lagi — kecuali lompatan dari Dashboard ke kartu tertentu (expandedCard terisi).
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (savedScroll && savedScroll.top > 0 && savedScroll.key === scrollKeyRef.current && !useAppStore.getState().expandedCard) {
+      const top = savedScroll.top;
+      timer = setTimeout(() => { content.scrollTop = top; }, 60); // tunggu DOM daftar ter-render
+    }
+    return () => {
+      cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+      content.removeEventListener('scroll', onScroll);
+    };
+  }, [setEntryScrollTop]);
 
-  const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
-  const chips: { key: FilterType; icon: React.ReactNode; label: string; count?: number }[] = [
-    { key: 'all',    icon: <ClipboardList size={12} />, label: t('common.all') },
-    { key: 'paid',   icon: <CheckCircle2  size={12} />, label: t('status.lunas'),  count: paid },
-    { key: 'unpaid', icon: <Clock         size={12} />, label: t('status.belum'),  count: unpaid },
-    { key: 'free',   icon: <Gift          size={12} />, label: t('status.free'),   count: freeCount },
+  const chips: { key: FilterStatus; icon: typeof ListBullets; label: string; count?: number }[] = [
+    { key: 'all',    icon: ListBullets, label: t('common.all') },
+    { key: 'paid',   icon: CheckCircle, label: t('status.lunas'), count: paid },
+    { key: 'unpaid', icon: XCircle,     label: t('status.belum'), count: unpaid },
+    { key: 'free',   icon: Gift,        label: t('status.free'),  count: freeCount },
   ];
 
-  function startBatch(name: string) {
+  // ── Mode pilih (Pilih Banyak): masuk dengan pilihan kosong seperti Rekap; tekan lama dihapus (permintaan user) ──
+  function startBatchMany() {
     if (globalLocked) { showToast(t('entry.locked'), 'err'); return; }
+    if (filterBatchEligible(appData, activeZone, mems, selYear, selMonth).length === 0) return;
     setBatchMode(true);
     setBatchPeriod(selYear, selMonth);
-    toggleBatchMember(name);
+    setBatchSelected([]);
+  }
+
+  function toggleOne(name: string) {
+    if (!batchMode) return;
+    setBatchSelected(toggleBatchSelection(useAppStore.getState().batchSelected, name, appData, activeZone, batchYear, batchMonth));
+  }
+
+  function selectAllVisible() {
+    setBatchSelected(toggleSelectAll(batchSelected, filtered, appData, activeZone, batchYear, batchMonth));
   }
 
   async function executeBatch() {
     if (batchSelected.length === 0) return;
     if (globalLocked) { showToast(t('entry.locked'), 'err'); return; }
 
-    const newData = { ...appData, payments: { ...appData.payments } };
-    const details: string[] = [];
-
-    for (const name of batchSelected) {
-      const info  = appData.memberInfo?.[activeZone + '__' + name] || {};
-      const tarif = info.tarif as number | undefined;
-      if (!tarif) continue;
-      const k = `${activeZone}__${name}__${batchYear}__${batchMonth}`;
-      newData.payments[k] = tarif;
-      details.push(`${name}: ${rp(tarif)}`);
-    }
-
-    const skipped = batchSelected.filter(name => {
-      const info = appData.memberInfo?.[activeZone + '__' + name] || {};
-      return !(info.tarif as number | undefined);
-    });
+    const plan = buildBatchPayments(appData, activeZone, batchSelected, batchYear, batchMonth);
+    const details = plan.details.map(d => `${d.name}: ${rp(d.tarif)}`);
 
     if (details.length === 0) {
-      showToast(t('entry.noTarif'), 'err');
+      if (plan.noTarif.length > 0) showToast(t('entry.noTarif'), 'err');
+      else showToast(`${plan.ineligible.length} ${t('entry.batchSkippedPaid')}`, 'info');
       return;
     }
 
+    // REDESAIN T12 (F4): batch Entry kini mencatat tanggal bayar (sebelumnya tidak) lewat SATU helper (lib/payDate.ts):
+    // otomatis = tanggal LOKAL hari ini, manual = pilihan pengguna di sheet batch.
+    const newData = setPayDates(
+      { ...appData, payments: { ...appData.payments, ...plan.payments } },
+      activeZone, plan.details.map(d => d.name), batchYear, batchMonth, resolvePayDate(settings.autoDate, batchPayDate ?? localDateISO()),
+    );
     const prevData = appData; // snapshot untuk rollback jika gagal
     setAppData(newData);
     let ok = true;
@@ -167,283 +176,178 @@ export default function EntryView() {
       } catch (err) {
         logger.error('Gagal simpan batch pay Entry ke Firebase', err);
         setSyncStatus('err'); ok = false;
-        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — lihat
-        // penjelasan lengkap di persist() MemberCard.tsx. Window race di sini bisa lebih
-        // lebar (batch melibatkan banyak member, network request lebih lama), jadi risikonya
-        // lebih nyata. selectiveRollback beroperasi per-KEY payment, bukan per-field, sehingga
-        // payment member lain (di luar batch ini) yang berhasil tersimpan concurrent aman.
+        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — per-KEY payment,
+        // sehingga payment member lain yang berhasil tersimpan concurrent aman. Lihat persist() MemberCard.
         const latest = useAppStore.getState().appData;
         setAppData(selectiveRollback(latest, prevData, newData));
       }
     }
     if (ok) {
-      showToast(`✓ ${details.length} ${t('entry.batchSuccess')}`);
-      if (skipped.length > 0) {
-        setTimeout(() => showToast(`${skipped.length} ${t('entry.batchSkipped')}`, 'info'), 800);
+      showToast(`${details.length} ${t('entry.batchSuccess')}`);
+      if (plan.noTarif.length > 0) {
+        setTimeout(() => showToast(`${plan.noTarif.length} ${t('entry.batchSkipped')}`, 'info'), 800);
+      }
+      if (plan.ineligible.length > 0) {
+        setTimeout(() => showToast(`${plan.ineligible.length} ${t('entry.batchSkippedPaid')}`, 'info'), 1600);
       }
     } else {
       showToast(t('common.saveFailed'), 'err');
     }
+    exitBatch();
+  }
+
+  function exitBatch() {
     clearBatch();
+    setBatchPayDate(null);
   }
 
   useEffect(() => {
     if (!batchMode) setBatchPeriod(selYear, selMonth);
   }, [selYear, selMonth, batchMode, setBatchPeriod]);
 
-  const batchPreview = batchSelected.map(name => {
-    const info  = appData.memberInfo?.[activeZone + '__' + name] || {};
-    const tarif = info.tarif as number | undefined;
-    return { name, tarif };
-  });
+  const batchPlan = buildBatchPayments(appData, activeZone, batchSelected, batchYear, batchMonth);
+  const batchTotal = batchPlan.details.reduce((s, d) => s + d.tarif, 0);
+  const periodLabel = `${MONTH_NAMES[batchMode ? batchMonth : selMonth]} ${batchMode ? batchYear : selYear} · ${activeZone}`;
+  const loading = syncStatus === 'loading';
+  const failed  = syncStatus === 'err';
 
-  const zc = activeZone === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)';
+  // Banner terkunci (T2 keputusan 7): ketuk = buka. Membuka kunci memakai satu-satunya jalur yang sudah ada,
+  // yaitu tombol kunci Header (toggleGlobalLock + rollback selektif), supaya logika kunci tidak diduplikasi.
+  function unlockViaHeader() {
+    document.querySelector<HTMLButtonElement>('.header-lock-action-btn')?.click();
+  }
 
   return (
-    <div onScroll={handleScroll}>
+    <div className={e.page}>
+      {globalLocked && (
+        <button type="button" className={clsx(e.lkb, e.rise)} onClick={unlockViaHeader} aria-label={t('entry.lockBannerAria')}>
+          <Lock weight="fill" aria-hidden="true" />
+          <span>{t('lockbanner.message')}</span>
+        </button>
+      )}
 
-      {/* Batch mode header */}
       {batchMode ? (
-        <div style={{
-          display:'flex', alignItems:'center', justifyContent:'space-between',
-          background:'var(--bg2)', border:`1px solid ${zc}`,
-          borderRadius:'var(--r-md)', padding:'12px 16px', marginBottom:10,
-          boxShadow:`0 0 0 1px ${zc}22`,
-        }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <button
-              onClick={clearBatch}
-              style={{ background:'none', border:'none', cursor:'pointer', color:'var(--txt2)', display:'flex', padding:4, borderRadius:6 }}
-              aria-label={t('action.cancel')}
-            >
-              <X size={18} />
-            </button>
-            <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
-                {batchSelected.length} {t('nav.members')}
-              </div>
-              <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)' }}>
-                {MONTH_NAMES[batchMonth]} {batchYear} · {activeZone}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              const allNames = filtered.map(n => n);
-              const allSelected = allNames.every(n => batchSelected.includes(n));
-              useAppStore.getState().setBatchSelected(allSelected ? [] : allNames);
-            }}
-            style={{
-              background:'none', border:'1px solid var(--border)', color:'var(--txt2)',
-              padding:'6px 12px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)',
-              display:'flex', alignItems:'center', gap:6, minHeight:36,
-            }}
-          >
-            <Users size={12} />
-            {t('entry.selectAll')}
-          </button>
-        </div>
+        <BatchBar
+          count={batchSelected.length}
+          periodLabel={periodLabel}
+          zoneColor={zc}
+          onCancel={exitBatch}
+          onSelectAll={selectAllVisible}
+        />
       ) : (
-        /* Summary bar */
-        <div className="sum-bar">
-          <div>
-            <div className="sum-lbl">{MONTH_NAMES[selMonth]} {selYear} · {activeZone}</div>
-            <div className="sum-val">{rp(total)}</div>
+        <>
+          {/* Periode + Bayar Semua */}
+          <div className={clsx('wp-pbar', e.rise)} style={rise(1)} role="group" aria-label={t('entry.periodAria')}>
+            <Select size="sm" aria-label={t('common.year')} value={selYear} onChange={ev => setSelYear(+ev.target.value)}>
+              {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+            </Select>
+            <Select size="sm" aria-label={t('common.month')} value={selMonth} onChange={ev => setSelMonth(+ev.target.value)}>
+              {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            </Select>
+            <CardFilter compact screen="entry" items={[['sum', 'view.entry.sum'], ['pot', 'view.entry.pot'], ['chips', 'view.entry.chips'], ['cardinfo', 'view.entry.cardinfo']].map(([id, k]) => ({ id, label: t(k) }))} />
           </div>
-          <div style={{ display:'flex', gap:10, fontSize:'var(--fs-caption)', alignItems:'center' }}>
-            <span style={{ display:'flex', alignItems:'center', gap:4, color:'var(--c-lunas)' }}>
-              <CheckCircle2 size={12} /> {paid}
-            </span>
-            <span style={{ display:'flex', alignItems:'center', gap:4, color:'var(--c-belum)' }}>
-              <XCircle size={12} /> {unpaid}
-            </span>
-            {freeCount > 0 && (
-              <span style={{ display:'flex', alignItems:'center', gap:4, color:'var(--c-free)' }}>
-                <Gift size={12} /> {freeCount}
-              </span>
-            )}
-          </div>
-        </div>
+        </>
       )}
 
-      {/* Potensi belum lunas */}
-      {!batchMode && unpaid > 0 && potensiUnpaid > 0 && (
-        <div style={{
-          background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.15)',
-          borderRadius:'var(--r-md)', padding:'10px 16px', marginBottom:10,
-          display:'flex', justifyContent:'space-between', alignItems:'center',
-        }}>
-          <div>
-            <div style={{ fontSize:'var(--fs-micro)', color:'rgba(239,68,68,0.6)', letterSpacing:'.06em', textTransform:'uppercase' }}>{t('entry.potentialUnpaid')}</div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-display)', fontWeight:800, color:'var(--c-belum)' }}>
-              {rp(potensiUnpaid)}
-            </div>
-          </div>
-          <div style={{ textAlign:'right' }}>
-            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('entry.from')} {unpaid} {t('entry.membersUnpaid')}</div>
-            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:2 }}>{t('common.since')} tarif</div>
-          </div>
-        </div>
-      )}
-
-      {/* Period selector */}
-      {!batchMode && (
-        <div className="ctrl-row">
-          <select className="cs" value={selYear} onChange={e => setSelYear(+e.target.value)}>
-            {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <select className="cs" value={selMonth} onChange={e => setSelMonth(+e.target.value)}>
-            {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-          </select>
-          <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', alignSelf:'center' }}>{MONTH_NAMES[selMonth]} {selYear}</span>
-        </div>
-      )}
-
-      {/* Filter chips */}
-      {!batchMode && (
-        <div style={{ display:'flex', gap:5, marginBottom:10, flexWrap:'wrap' }}>
-          {chips.map(({ key, icon, label, count }) => (
-            <button
-              key={key}
-              className={`fchip ${filterStatus2 === key ? 'on' : ''}`}
-              onClick={() => setFilter(key as FilterStatus)}
-              style={{ minHeight:36, display:'flex', alignItems:'center', gap:5 }}
-            >
-              {icon}
-              {label}{count !== undefined ? ` (${count})` : ''}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Search — BUG FIX: sebelumnya dibungkus {!batchMode && (...)} sehingga search box
-          (dan tombol hapus pencarian) hilang total begitu batch mode aktif. Search state
-          TIDAK direset oleh startBatch()/setBatchMode, jadi filtered tetap terkunci ke query
-          lama tanpa cara mengubahnya — inilah sebab "masuk batch mode dari hasil pencarian
-          ZAM, lalu tak bisa lagi menambah member lain": daftar yang tampil selamanya cuma
-          hasil filter "Zam" karena user tidak punya akses untuk mengosongkan/mengubah query
-          itu. Search kini SELALU dirender terlepas dari batchMode, supaya user bisa mencari
-          member lain untuk digabung ke batch (atau menghapus query untuk melihat semua
-          member lagi) kapan pun, termasuk saat masuk batch mode lewat hasil pencarian. */}
-      <>
-        <div className="search-wrap" style={{ position:'relative' }}>
-          <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--txt4)', pointerEvents:'none' }} />
+      {/* Pencarian — selalu tampil, juga saat mode pilih (perbaikan v11.x: tanpa ini user terkunci pada
+          hasil pencarian lama dan tak bisa menambah member lain ke batch). */}
+      <div className="wp-field">
+        <div className="wp-inpw">
+          <span className="wp-inpw__ico" aria-hidden="true"><MagnifyingGlass /></span>
           <input
-            className="search-box"
+            className="wp-inp"
+            data-testid="entry-search"
+            type="text"
             placeholder={`${t('entry.searchPlaceholder')} ${activeZone}...`}
+            aria-label={t('header.searchMember')}
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft:32 }}
+            onChange={ev => setSearch(ev.target.value)}
+            autoComplete="off"
           />
           {search && (
-            <button className="search-clear" onClick={() => setSearch('')} aria-label="Hapus pencarian">
-              <X size={12} />
-            </button>
+            <span className="wp-inpw__end" style={{ pointerEvents: 'auto' }}>
+              <button type="button" aria-label={t('entry.clearSearch')} onClick={() => setSearch('')}
+                style={{ background: 'none', border: 0, color: 'inherit', display: 'flex', cursor: 'pointer' }}>
+                <X />
+              </button>
+            </span>
           )}
         </div>
-        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginBottom:8 }}>
-          {filtered.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {activeZone}
-        </div>
-      </>
+      </div>
+      {!batchMode && (
+        <>
+          {/* Chip filter */}
+<Vis screen="entry" id="chips">          <FilterChips ariaLabel={t('entry.filterAria')}>
+            {chips.map(c => (
+              <FilterChip key={c.key} active={filterStatus === c.key} count={c.count} onClick={() => setFilter(c.key)}>
+                <c.icon aria-hidden="true" /> {c.label}
+              </FilterChip>
+            ))}
+          </FilterChips></Vis>
 
-      {/* Member cards */}
-      <div id="entry-cards" className="fade-in">
-        {syncStatus === 'loading' && mems.length === 0 ? (
-          <SkeletonList count={5} />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title={search ? 'Member tidak ditemukan' : t('members.empty')}
-            description={search ? `Tidak ada hasil untuk "${search}"` : t('onboarding.step1')}
-            size="md"
-          />
-        ) : (
-          filtered.map((name, i) => (
-            <div key={name}>
-              <MemberCard
-                name={name}
-                index={i}
-                batchMode={batchMode}
-                batchSelected={batchSelected.includes(name)}
-                onLongPress={() => startBatch(name)}
-                onBatchToggle={() => {
-                  if (batchMode) toggleBatchMember(name);
-                }}
-              />
+          {/* Ringkasan periode (dipertahankan dari zip: sum-bar) */}
+<Vis screen="entry" id="sum">          <Card className={clsx(e.sum, e.rise)} style={rise(2)}>
+            <div className={e.sumMain}>
+              <div className="wp-t-label">{periodLabel}</div>
+              <b className={clsx('wp-num', e.sumVal)} aria-label={t('entry.summaryTotal')}>{rp(total)}</b>
             </div>
-          ))
-        )}
+            <Button variant="secondary" size="sm" onClick={startBatchMany} disabled={unpaid === 0 && !globalLocked}>
+              <ListChecks weight="bold" aria-hidden="true" /> {t('rekap.pickMulti')}
+            </Button>
+          </Card></Vis>
+
+          {/* Potensi Belum Masuk */}
+          <Vis screen="entry" id="pot">
+          {unpaid > 0 && potensiUnpaid > 0 && (
+            <Card className={clsx(e.pot, e.rise)} style={rise(3)}>
+              <div style={{ flex: '1 1 10rem', minWidth: 0 }}>
+                <div className="wp-t-label" style={{ color: 'var(--c-belum)' }}>{t('entry.potentialUnpaid')}</div>
+                <div className="wp-num wp-t-head" style={{ color: 'var(--c-belum)' }}>{rp(potensiUnpaid)}</div>
+              </div>
+              <div className="wp-t-cap" style={{ textAlign: 'right' }}>
+                {t('entry.from')} {unpaid} {t('entry.membersUnpaid')}
+              </div>
+            </Card>
+          )}
+          </Vis>
+        </>
+      )}
+      <div className={e.count}>
+        {filtered.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {activeZone}
       </div>
 
-      {/* Batch bottom sheet */}
-      {batchMode && batchSelected.length > 0 && (
-        <div ref={sheetRef} style={{
-          position:'fixed', bottom:0, left:0, right:0, zIndex:200,
-          background:'rgba(24,28,39,0.95)',
-          backdropFilter:'blur(16px)',
-          border:'1px solid rgba(255,255,255,0.08)',
-          borderBottom:'none',
-          borderRadius:'var(--r-lg) var(--r-lg) 0 0',
-          padding:'20px 16px',
-          boxShadow:'0 -8px 32px rgba(0,0,0,0.5)',
-        }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:'var(--bg4)', margin:'0 auto 16px' }} />
-          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginBottom:10, fontWeight:600, letterSpacing:'.05em', textTransform:'uppercase' }}>
-            Preview · {MONTH_NAMES[batchMonth]} {batchYear}
-          </div>
-          <div style={{ maxHeight:180, overflowY:'auto', marginBottom:14 }}>
-            {batchPreview.map(({ name, tarif }) => (
-              <div key={name} style={{
-                display:'flex', justifyContent:'space-between', alignItems:'center',
-                padding:'8px 0', borderBottom:'1px solid var(--border2)',
-              }}>
-                <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</span>
-                <span style={{ fontSize:'var(--fs-body)', fontWeight:600, color: tarif ? 'var(--c-lunas)' : 'var(--txt4)' }}>
-                  {tarif ? rp(tarif) : <span style={{ fontSize:'var(--fs-label)' }}>{t('entry.noTarifShort')}</span>}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, marginBottom:16 }}>
-            <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>Total</span>
-            <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)' }}>
-              {rp(batchPreview.reduce((s, { tarif }) => s + (tarif || 0), 0))}
-            </span>
-          </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <button
-              onClick={clearBatch}
-              style={{
-                flex:1, padding:'12px 0', border:'1px solid var(--border)',
-                background:'none', color:'var(--txt2)', borderRadius:'var(--r-sm)',
-                cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, minHeight:44,
-              }}
-            >
-              {t('action.cancel')}
-            </button>
-            <button
-              onClick={executeBatch}
-              style={{
-                flex:2, padding:'12px 0', border:'none',
-                background: zc, color:'#fff', borderRadius:'var(--r-sm)',
-                cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:700,
-                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                minHeight:44,
-              }}
-            >
-              <CheckCheck size={16} />
-              {t('entry.batchPay')}
-            </button>
-          </div>
-        </div>
-      )}
+      <MemberList
+        names={filtered}
+        totalInZone={mems.length}
+        loading={loading}
+        failed={failed}
+        search={search}
+        onResetSearch={() => setSearch('')}
+        onGoMembers={() => { setView('members'); router.push('/members'); }}
+        renderItem={(name, i) => (
+          <MemberCard
+            name={name}
+            index={i}
+            batchMode={batchMode}
+            batchSelected={batchSelected.includes(name)}
+            batchEligible={isBatchEligible(appData, activeZone, name, batchYear, batchMonth)}
+            onBatchToggle={() => toggleOne(name)}
+          />
+        )}
+      />
 
-      {/* Spacer dinamis — tinggi mengikuti pengukuran ResizeObserver di sheetRef (lihat
-          catatan di atas). +24px margin napas supaya kartu terakhir tidak mepet persis
-          di tepi sheet saat di-scroll penuh ke atas. Fallback 300 hanya untuk frame
-          render pertama sebelum ResizeObserver sempat mengukur (sheetHeight masih 0). */}
       {batchMode && batchSelected.length > 0 && (
-        <div style={{ height: sheetHeight > 0 ? sheetHeight + 24 : 300 }} />
+        <BatchSheet
+          count={batchSelected.length}
+          items={batchPlan.details.map(d => ({ name: d.name, amt: d.tarif }))}
+          total={batchTotal}
+          noTarif={batchPlan.noTarif.length}
+          periodLabel={periodLabel}
+          onCancel={exitBatch}
+          onPay={executeBatch}
+          payDate={settings.autoDate ? undefined : (batchPayDate ?? localDateISO())}
+          onPayDate={settings.autoDate ? undefined : setBatchPayDate}
+        />
       )}
     </div>
   );

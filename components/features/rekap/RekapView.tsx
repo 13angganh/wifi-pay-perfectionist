@@ -1,235 +1,105 @@
-// components/features/rekap/RekapView.tsx — Fase 4: Skeleton + EmptyState
+// components/features/rekap/RekapView.tsx — REDESAIN T8 (prototype T3 keputusan 1–6, 9, 15, 16)
+// Orkestrator Rekap: periode + pencarian + chip status (RekapView.FilterBar), ringkasan total tahun + Pilih Banyak,
+// tabel 12 bulan (RekapView.Table), paginasi, mode pilih (RekapView.Batch + rekap.logic) dan RekapModal/RiwayatModal.
+// Logika bisnis dipertahankan: persistPayment/selectiveRollback, kunci payment, lock global/entry, long press 500 ms,
+// kilat sukses, pagination 20 baris (v11.6.5), subtotal halaman (v11.6.6). Perubahan yang disetujui: A15 filter status,
+// A17 tombol Pilih Banyak (bulan acuan), A18 nama membuka RiwayatModal, pengaman batch (hanya sel belum bayar).
 'use client';
 
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { Vis } from '@/components/ui/CardFilter';
+import { useState, useRef, useEffect, useCallback, type CSSProperties } from 'react';
+import { clsx } from 'clsx';
+import Link from 'next/link';
+import {
+  CaretLeft, CaretRight, ChartBar, ListChecks, Lock, MagnifyingGlass, UsersThree, Warning, X,
+} from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, getYears, ROWS_PER_PAGE } from '@/lib/constants';
-import { getPay, isFree, rp, getKey, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
+import { MONTHS, MONTHS_EN, ROWS_PER_PAGE } from '@/lib/constants';
+import { getPay, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
+import { localDateISO, resolvePayDate, setPayDates } from '@/lib/payDate';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast } from '@/components/ui/Toast';
-import { Search, X, Gift, CheckCheck, LayoutList, ChevronLeft, ChevronRight } from 'lucide-react';
-import { SkeletonList } from '@/components/ui/Skeleton';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { Skeleton } from '@/components/ui/Skeleton';
+import RiwayatModal from '@/components/modals/RiwayatModal';
+import { isBatchEligible, toggleBatchSelection, toggleSelectAll } from '../entry/batch';
 import RekapModal from './RekapModal';
+import RekapFilterBar from './RekapView.FilterBar';
+import { RekapTable, type RowData } from './RekapView.Table';
+import { BatchHint, BatchSheet } from './RekapView.Batch';
+import {
+  batchAmount, buildRekapBatch, cellState, columnTotals, filterByStatus, paginate, rowTotal, statusCounts, sum,
+  type RekapFilter,
+} from './rekap.logic';
+import r from './rekap.module.css';
 
-interface CellData {
-  mi: number;
-  v: number | null;
-  free: boolean;
-  isDimmed: boolean;
-  isSelected: boolean;
-  isExp: boolean;
-  isFlashing: boolean;
-  flashKey: number;
-  monthLabel: string;
-}
-
-interface RowProps {
-  name: string;
-  index: number;
-  rowTotal: number;
-  cells: CellData[];
-  selYear: number;
-  onCellPointerDown: (name: string, mi: number) => void;
-  onCellPointerUp: () => void;
-  onCellClick: (name: string, mi: number) => void;
-}
-
-function cellDataEqual(a: CellData, b: CellData): boolean {
-  return a.v === b.v && a.free === b.free && a.isDimmed === b.isDimmed
-    && a.isSelected === b.isSelected && a.isExp === b.isExp
-    && a.isFlashing === b.isFlashing && a.flashKey === b.flashKey;
-}
-
-const Row = memo(function Row({
-  name, index, rowTotal, cells, selYear,
-  onCellPointerDown, onCellPointerUp, onCellClick,
-}: RowProps) {
-  return (
-    <tr data-name={name}>
-      <td className="stk" style={{ left:0, width:30, minWidth:30, fontSize:'var(--fs-label)', color:'var(--txt2)', textAlign:'center', padding:'7px 4px' }}>{index + 1}</td>
-      <td className="stk" style={{ left:30, minWidth:68, maxWidth:86, fontSize:'var(--fs-body)', textAlign:'left', paddingLeft:6, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{name}</td>
-      {cells.map(c => {
-        const cls  = c.v! > 0 ? 'cv' : c.v === 0 && !c.free ? 'cz' : 'cn';
-        const disp = c.free
-          ? <span style={{ display:'inline-block', width:'100%', textAlign:'right' }}><Gift size={9} style={{ opacity:0.6, verticalAlign:'middle' }} /></span>
-          : c.v === 0 ? <span style={{ fontSize:'var(--fs-micro)', opacity:0.8 }}>Akm</span>
-          : c.v !== null ? (c.v * 1000).toLocaleString('id-ID') : '—';
-
-        return (
-          <td
-            key={c.mi}
-            className={`${cls}${c.isExp ? ' rekap-exp-cell' : ''}`}
-            style={{
-              position: 'relative',
-              opacity: c.isDimmed ? 0.2 : 1,
-              pointerEvents: c.isDimmed ? 'none' : undefined,
-              outline: c.isSelected ? '2px solid var(--zc)' : undefined,
-              outlineOffset: '-2px',
-              background: c.isSelected ? 'var(--zcdim)' : undefined,
-              transition: 'opacity var(--t-base), background var(--t-fast)',
-              userSelect: 'none',
-              cursor: 'pointer',
-            }}
-            onPointerDown={() => onCellPointerDown(name, c.mi)}
-            onPointerUp={onCellPointerUp}
-            onPointerCancel={onCellPointerUp}
-            onClick={() => onCellClick(name, c.mi)}
-            title={c.free ? 'Free Member' : `${c.monthLabel} ${selYear}`}
-          >
-            <span style={{ position:'relative', zIndex:1 }}>
-              {disp}{c.isSelected && <CheckCheck size={8} style={{ color:'var(--zc)', verticalAlign:'middle', marginLeft:2 }} />}
-            </span>
-            {/* v11.5.7 FIX: overlay flash terpisah dari <td> utama — key di sini boleh
-                berubah (successKey) untuk memaksa restart animasi CSS tanpa lagi
-                mengubah key <td> induk. Sebelumnya key <td> ikut berubah setiap flash,
-                membuat React unmount+remount seluruh sel (termasuk semua pointer/click
-                handler-nya) selama window 750ms — kontributor nyata untuk render
-                glitch acak yang dilaporkan, meski sempit jendelanya. inset:0 + zIndex:0
-                membuat overlay ini menutupi persis area <td> DI BAWAH konten teks
-                (zIndex:1 di atas), sehingga hasil visualnya identik dengan animasi
-                background langsung di <td> — teks tetap terbaca selama flash. */}
-            {c.isFlashing && (
-              <span
-                key={`flash-${c.flashKey}`}
-                className="rekap-cell-paid-flash"
-                style={{ position:'absolute', inset:0, zIndex:0, pointerEvents:'none' }}
-              />
-            )}
-          </td>
-        );
-      })}
-      <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg)' }}>{rowTotal > 0 ? (rowTotal * 1000).toLocaleString('id-ID') : ''}</td>
-    </tr>
-  );
-}, (prev, next) => {
-  // Custom comparator — WAJIB, shallow-compare default React.memo tidak cukup:
-  // array `cells` selalu reference baru tiap render parent (hasil .map() ulang),
-  // jadi harus deep-compare tiap elemen satu-satu. Row skip re-render hanya jika
-  // SEMUA primitif sama DAN setiap elemen cells identik secara nilai.
-  if (prev.name !== next.name || prev.index !== next.index
-    || prev.rowTotal !== next.rowTotal || prev.selYear !== next.selYear
-    || prev.onCellPointerDown !== next.onCellPointerDown
-    || prev.onCellPointerUp !== next.onCellPointerUp
-    || prev.onCellClick !== next.onCellClick) return false;
-  if (prev.cells.length !== next.cells.length) return false;
-  for (let k = 0; k < prev.cells.length; k++) {
-    if (!cellDataEqual(prev.cells[k], next.cells[k])) return false;
-  }
-  return true;
-});
+const rise = (i: number) => ({ ['--i' as string]: i }) as CSSProperties;
 
 export default function RekapView() {
   const {
     appData, setAppData, uid, userEmail,
-    activeZone, selYear, setSelYear,
+    activeZone, selYear, selMonth, setSelYear, setSelMonth,
     search, setSearch,
     rekapExpanded, setRekapExpanded,
     globalLocked, lockedEntries,
-    syncStatus,
-    setSyncStatus,
-    settings,
+    syncStatus, setSyncStatus,
+    setView, setRiwayatZone, setRiwayatName, setRiwayatYear,
   } = useAppStore();
+  const settings = useAppStore(s => s.settings);
 
   const t = useT();
-  const lang = useAppStore(s => s.settings).language ?? 'id';
+  const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
-  const inputDirty   = useRef(false);
-  const headerScrollRef = useRef<HTMLDivElement>(null);
-  const bodyScrollRef   = useRef<HTMLDivElement>(null);
+  const inputDirty = useRef(false);
   const modalClosing = useRef(false);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [batchColIdx,   setBatchColIdx]   = useState<number | null>(null);
+  const [batchColIdx, setBatchColIdx] = useState<number | null>(null);
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
-  // v11.6.5: Pagination Rekap — currentPage 1-based (utk keterbacaan UI/kontrol),
-  // dikonversi ke index 0-based saat slicing array di bawah.
-  //
-  // Reset ke halaman 1 saat activeZone ATAU search berubah — SENGAJA TIDAK
-  // bereaksi ke selYear: keputusan eksplisit dari diskusi dengan user, halaman
-  // DIPERTAHANKAN saat ganti tahun (daftar member zona yg sama biasanya
-  // urutannya tidak berubah antar tahun, cuma data pembayarannya beda), tapi
-  // DIRESET saat ganti zona (KRS/SLK punya jumlah member yg beda, halaman N di
-  // zona lama belum tentu ada/tidak kosong di zona baru) atau search
-  // (ekspektasi wajar: hasil pencarian selalu muncul di halaman pertama,
-  // bukan halaman terakhir yg kebetulan masih aktif).
-  //
-  // Pola "adjusting state during render" — BUKAN useEffect+setState (yg
-  // ditangkap eslint react-hooks/set-state-in-effect sbg error, bukan sekadar
-  // warning: setState sinkron di useEffect memaksa render pass tambahan yg
-  // sia-sia, komponen sempat render sekali dgn currentPage basi lalu render
-  // ulang). Pola resmi dari react.dev/learn/you-might-not-need-an-effect,
-  // bagian "Adjusting some state when a prop changes": simpan nilai
-  // activeZone/search dari render SEBELUMNYA di state terpisah, bandingkan
-  // !== langsung di body komponen (bukan di effect), panggil setState
-  // langsung di situ kalau beda. React re-render KOMPONEN INI SAJA sblm
-  // children di-render/DOM di-commit — makanya anak² (Row, dst) tidak pernah
-  // sempat lihat currentPage basi, beda dari useEffect yg baru jalan SETELAH
-  // commit pertama (children akan sempat render 1x dgn nilai lama).
-  //
-  // activeZone diubah dari BANYAK titik masuk di luar file ini (Header.tsx,
-  // GlobalSearch.tsx, RiwayatModal.tsx, dst — dikonfirmasi via grep, bukan
-  // cuma dari komponen ini sendiri via setZone()) — pola ini bereaksi ke
-  // STATE, bukan ke satu onChange tertentu, jadi semua jalur masuk itu
-  // otomatis tertangkap tanpa perlu diduplikasi ke tiap titik.
+  // REDESAIN T12 (F4): tanggal bayar pilihan pengguna untuk batch (mode manual). null = "hari ini" (dibaca saat dipakai).
+  const [batchPayDate, setBatchPayDate] = useState<string | null>(null);
+  const [filter, setFilter] = useState<RekapFilter>('all');
+  const [riwOpen, setRiwOpen] = useState(false);
+
+  // v11.6.5: pagination — halaman DIRESET saat zona/pencarian berubah, DIPERTAHANKAN saat tahun berubah.
+  // Pola "adjusting state during render" (react.dev) — bukan useEffect+setState (ditangkap eslint
+  // react-hooks/set-state-in-effect). Bereaksi ke STATE, jadi semua jalur ganti zona (Header, GlobalSearch,
+  // RiwayatModal, ...) tertangkap tanpa diduplikasi. T3 keputusan 5: ganti zona juga membatalkan mode pilih.
   const [currentPage, setCurrentPage] = useState(1);
-  const [prevZoneForPage,  setPrevZoneForPage]  = useState(activeZone);
+  const [prevZoneForPage, setPrevZoneForPage] = useState(activeZone);
   const [prevSearchForPage, setPrevSearchForPage] = useState(search);
   if (activeZone !== prevZoneForPage || search !== prevSearchForPage) {
+    if (activeZone !== prevZoneForPage) { setBatchColIdx(null); setBatchSelected([]); }
     setPrevZoneForPage(activeZone);
     setPrevSearchForPage(search);
     setCurrentPage(1);
   }
-  // v11.5.2: flash minimal saat bayar sukses dari RekapModal — TIDAK dipicu saat modal
-  // ditutup tanpa aksi (X / klik luar), hanya saat quickPay/manualPay benar-benar sukses.
-  // successKey memastikan re-trigger animasi CSS meski sel yang sama dibayar dua kali
-  // berturut-turut sebelum animasi pertama selesai.
+
+  // v11.5.2: kilat minimal saat bayar sukses dari RekapModal (successKey memastikan restart animasi)
   const [flashCell, setFlashCell] = useState<{ name: string; month: number; zone: string; year: number; successKey: number } | null>(null);
   const flashKeyCounter = useRef(0);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const mems     = getMembersForZone(activeZone, appData); // FIX: custom zone support
-  const filtered  = mems.filter(m => fuzzyMatch(m, search));
-  const grand     = MONTHS.reduce((s, _, mi) =>
-    s + mems.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
+  const mems = getMembersForZone(activeZone, appData); // zona kustom ikut
+  const counts = statusCounts(appData, activeZone, mems, selYear, selMonth);
+  const filtered = filterByStatus(appData, activeZone, mems.filter(m => fuzzyMatch(m, search)), selYear, selMonth, filter);
+  const colTotals = columnTotals(appData, activeZone, mems, selYear);
+  const grand = sum(colTotals);
+  const pg = paginate(filtered, currentPage, ROWS_PER_PAGE);
+  const pageColTotals = columnTotals(appData, activeZone, pg.items, selYear);
+  const pageSubtotal = sum(pageColTotals);
+  const batching = batchColIdx !== null;
 
-  // v11.6.5: Pagination Rekap — totalPages selalu minimal 1 (bahkan saat
-  // filtered.length === 0) supaya kontrol halaman tidak menampilkan "0 dari 0"
-  // yang janggal; EmptyState di bawah sudah menangani kasus kosong secara
-  // terpisah. clampedPage adalah SAFETY-NET terpisah dari reset activeZone/
-  // search di atas: currentPage React state bisa "basi" lewat jalur LAIN yang
-  // tidak tersentuh reset itu sama sekali — mis. user hapus banyak member
-  // lewat menu Members (di luar Rekap) sementara currentPage masih tersimpan
-  // di halaman 5 dari sesi sebelumnya, sehingga total tinggal 2 halaman tanpa
-  // activeZone/search pernah berubah. Clamp di sini mencegah halaman kosong
-  // ter-render pada kondisi apapun, termasuk yang tidak tertangkap reset di
-  // atas. startIdx/endIdx 0-based utk slice; paginatedMembers inilah yang
-  // di-.map() di <tbody>, BUKAN filtered langsung.
-  const totalPages    = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
-  const clampedPage   = Math.min(Math.max(1, currentPage), totalPages);
-  const startIdx      = (clampedPage - 1) * ROWS_PER_PAGE;
-  const endIdx         = startIdx + ROWS_PER_PAGE;
-  const paginatedMembers = filtered.slice(startIdx, endIdx);
-  // v11.6.6: Subtotal khusus member yg terlihat di halaman aktif — pola
-  // identik dgn perhitungan `grand` di atas, cuma sumber data beda
-  // (paginatedMembers, bukan mems). Dipakai baris "Subtotal Halaman" baru
-  // di tfoot, ditampilkan berdampingan dgn "Total Keseluruhan" yang sudah
-  // ada agar user bisa langsung bandingkan tanpa menghitung manual.
-  const pageSubtotal = MONTHS.reduce((s, _, mi) =>
-    s + paginatedMembers.reduce((ss, m) => ss + (getPay(appData, activeZone, m, selYear, mi) || 0), 0), 0);
-
-  // FIX v11.5.5: rollback state lokal + log error asli jika Firebase gagal (lihat
-  // catatan detail di MembersView.tsx persist() — bug yang sama: tanpa rollback, retry
-  // setelah gagal bisa mencari data di state yang sudah berubah duluan secara optimis).
-  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — bukan replace total ke
-  // prevData, yang bisa menghapus payment member lain yang berhasil tersimpan concurrent
-  // selagi network request batch ini masih berjalan. Lihat penjelasan lengkap di persist()
-  // MemberCard.tsx.
+  // FIX v11.5.5/v11.5.7: rollback state lokal + log error asli jika Firebase gagal; rollback SELEKTIF (lib/rollback.ts)
+  // supaya payment member lain yang berhasil tersimpan concurrent tidak ikut terhapus. Lihat persist() MemberCard.
   async function persist(newData: typeof appData, action: string, detail: string): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
@@ -255,10 +125,8 @@ export default function RekapView() {
     return globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   }
 
-  // v11.5.2: closeModal menerima info sel yang baru dibayar (opsional) — jika diisi,
-  // trigger flash minimal pada sel itu. Dipanggil tanpa argumen untuk tutup biasa (X/klik luar).
-  // useCallback: dipanggil dari onCellPointerDown yg juga di-useCallback (utk Row memo di
-  // bawah) — tanpa ini, reference closeModal berubah tiap render & membatalkan memo Row.
+  // v11.5.2: closeModal menerima info sel yang baru dibayar (opsional) → kilat. useCallback: dipakai handler sel
+  // yang ikut di-useCallback untuk Row memo; tanpa ini referensinya berubah tiap render dan membatalkan memo.
   const closeModal = useCallback((paidCell?: { name: string; month: number }) => {
     modalClosing.current = true;
     inputDirty.current   = false;
@@ -274,388 +142,264 @@ export default function RekapView() {
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
-
   function exitBatch() {
     setBatchColIdx(null);
     setBatchSelected([]);
+    setBatchPayDate(null);
   }
 
-  const onCellPointerDown = useCallback((name: string, mi: number) => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    longPressTimer.current = setTimeout(() => {
-      if (batchColIdx === null || batchColIdx !== mi) {
-        setBatchColIdx(mi);
-        setBatchSelected([name]);
-        closeModal();
-      }
-    }, 500);
-  }, [batchColIdx, closeModal]);
-
-  const onCellPointerUp = useCallback(() => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-  }, []);
+  // Jalur (b) A17: tombol Pilih Banyak = kolom bulan acuan. Tekan lama dihapus (permintaan user): satu jalur saja.
+  function togglePick() {
+    if (batching) { exitBatch(); return; }
+    setBatchColIdx(selMonth);
+    setBatchSelected([]);
+    closeModal();
+  }
 
   const onCellClick = useCallback((name: string, mi: number) => {
-    if (batchColIdx !== null && batchColIdx === mi) {
-      setBatchSelected(prev =>
-        prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
-      );
+    if (batchColIdx !== null) {
+      if (batchColIdx === mi) {
+        const st = useAppStore.getState();
+        setBatchSelected(prev => toggleBatchSelection(prev, name, st.appData, st.activeZone, st.selYear, mi));
+      }
       return;
     }
-    if (batchColIdx === null) {
-      inputDirty.current   = false;
-      modalClosing.current = false;
-      const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
-      setRekapExpanded(isExp ? null : { name, month: mi });
-    }
-  }, [batchColIdx, rekapExpanded, setRekapExpanded]);
+    inputDirty.current   = false;
+    modalClosing.current = false;
+    const cur = useAppStore.getState().rekapExpanded;
+    const isExp = cur?.name === name && cur?.month === mi;
+    setRekapExpanded(isExp ? null : { name, month: mi });
+  }, [batchColIdx, setRekapExpanded]);
+
+  // A18: ketuk nama = RiwayatModal (komponen yang sama dengan MemberCard/Member, tanpa duplikasi)
+  const onNameClick = useCallback((name: string) => {
+    setRiwayatZone(activeZone);
+    setRiwayatName(name);
+    setRiwayatYear(selYear);
+    setRiwOpen(true);
+  }, [activeZone, selYear, setRiwayatZone, setRiwayatName, setRiwayatYear]);
+
+  const fallbackAmt = settings?.quickAmounts?.[0] ?? 100;
 
   async function handleBatchPay() {
     if (batchColIdx === null || batchSelected.length === 0) return;
     const mi = batchColIdx;
-    const entries: { name: string; amt: number }[] = [];
-    for (const name of batchSelected) {
-      if (isLocked(name)) continue;
-      const info  = appData.memberInfo?.[`${activeZone}__${name}`] || {};
-      const tarif = info.tarif as number | undefined;
-      const amt   = tarif ?? (settings?.quickAmounts?.[0] ?? 100);
-      entries.push({ name, amt });
+    const plan = buildRekapBatch(appData, activeZone, batchSelected, selYear, mi, fallbackAmt, isLocked);
+    if (plan.entries.length === 0) {
+      if (plan.locked.length > 0) showToast(t('rekap.allLocked'), 'err');
+      else showToast(`${plan.skippedPaid.length} ${t('entry.batchSkippedPaid')}`, 'info');
+      return;
     }
-    if (entries.length === 0) { showToast(t('rekap.allLocked'), 'err'); return; }
-    const newData = { ...appData, payments: { ...appData.payments } };
-    const today   = new Date().toISOString().slice(0, 10);
-    for (const { name, amt } of entries) {
-      const k = getKey(activeZone, name, selYear, mi);
-      newData.payments[k] = amt;
-      if (settings?.autoDate) {
-        const infoKey = `${activeZone}__${name}`;
-        const dateKey = `date_${selYear}_${mi}`;
-        newData.memberInfo = {
-          ...(newData.memberInfo || {}),
-          [infoKey]: { ...(newData.memberInfo?.[infoKey] || {}), [dateKey]: today },
-        };
-      }
-    }
-    const ok = await persist(newData,
-      `[PAY] ${tLog('log.action.batchPay')} Rekap ${activeZone} - ${entries.length} ${tLog('common.members')}`,
-      `${MONTH_NAMES[mi]} ${selYear}`
+    // REDESAIN T12 (F4): tanggal bayar lewat SATU helper (lib/payDate.ts) — otomatis = tanggal LOKAL, manual = pilihan pengguna.
+    const newData = setPayDates(
+      { ...appData, payments: { ...appData.payments, ...plan.payments } },
+      activeZone, plan.entries.map(e => e.name), selYear, mi, resolvePayDate(settings?.autoDate, batchPayDate ?? localDateISO()),
     );
-    showToast(ok ? `${entries.length} ${t('rekap.batchSuccess')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
+    const ok = await persist(newData,
+      `[PAY] ${tLog('log.action.batchPay')} Rekap ${activeZone} - ${plan.entries.length} ${tLog('common.members')}`,
+      `${MONTH_NAMES[mi]} ${selYear}`,
+    );
+    showToast(ok ? `${plan.entries.length} ${t('rekap.batchSuccess')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
+    if (ok && plan.skippedPaid.length > 0) {
+      setTimeout(() => showToast(`${plan.skippedPaid.length} ${t('entry.batchSkippedPaid')}`, 'info'), 800);
+    }
     exitBatch();
   }
 
-  const batchSheet = (() => {
-    if (batchColIdx === null || batchSelected.length === 0) return null;
-    const mi = batchColIdx;
-    const previewItems = batchSelected.map(name => {
-      const info  = appData.memberInfo?.[`${activeZone}__${name}`] || {};
-      const tarif = info.tarif as number | undefined;
-      const amt   = tarif ?? (settings?.quickAmounts?.[0] ?? 100);
-      return { name, amt, hasTarif: !!tarif };
-    });
-    const total = previewItems.reduce((s, p) => s + p.amt, 0);
+  // Banner terkunci: ketuk = buka lewat satu-satunya jalur yang ada (tombol kunci Header; pola T7).
+  function unlockViaHeader() {
+    document.querySelector<HTMLButtonElement>('.header-lock-action-btn')?.click();
+  }
 
-    return (
-      <div
-        style={{ position:'fixed', inset:0, zIndex:8500, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
-        onClick={exitBatch}
-      >
-        <div
-          style={{
-            background:'rgba(24,28,39,0.95)', backdropFilter:'blur(16px)',
-            border:'1px solid rgba(255,255,255,0.08)',
-            borderRadius:'var(--r-lg) var(--r-lg) 0 0',
-            width:'min(480px,100vw)', maxHeight:'60vh',
-            boxShadow:'var(--shadow-lg)',
-            animation:'slideUp var(--t-slow) var(--ease-spring)',
-            display:'flex', flexDirection:'column',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6, flexShrink:0 }}>
-            <div style={{ width:32, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
-          </div>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
-            <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>
-                {batchSelected.length} {t('rekap.batchSelected')}
-              </div>
-              <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>{MONTH_NAMES[mi]} {selYear} · {activeZone}</div>
-            </div>
-            <button onClick={exitBatch} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <X size={14} />
-            </button>
-          </div>
-          <div style={{ overflowY:'auto', flex:1, padding:'10px 16px' }}>
-            {previewItems.map(({ name, amt, hasTarif }) => (
-              <div key={name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', color:'var(--txt)' }}>{name}</div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  {!hasTarif && <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', background:'rgba(255,255,255,0.04)', padding:'2px 6px', borderRadius:'var(--r-xs)' }}>default</span>}
-                  <span style={{ fontFamily:"var(--font-mono),monospace", fontSize:'var(--fs-body)', fontWeight:600, color:'var(--zc)' }}>{rp(amt)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding:'12px 16px 20px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-              <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)' }}>{t('common.total')}</span>
-              <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--zc)' }}>{rp(total)}</span>
-            </div>
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={exitBatch} style={{ flex:1, padding:'10px', borderRadius:'var(--r-sm)', border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}>
-                {t('action.cancel')}
-              </button>
-              <button
-                onClick={handleBatchPay}
-                style={{ flex:2, padding:'10px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}
-              >
-                <CheckCheck size={14} />
-                {t('rekap.batchConfirm')}
-              </button>
-            </div>
-          </div>
-        </div>
+  const rows: RowData[] = pg.items.map((name, i) => ({
+    name,
+    index: pg.start + i,
+    rowTotal: rowTotal(appData, activeZone, name, selYear),
+    cells: MONTH_NAMES.map((monthLabel, mi) => {
+      const v = getPay(appData, activeZone, name, selYear, mi);
+      const cs = cellState(appData, activeZone, name, selYear, mi, selMonth);
+      const inBatchCol = batchColIdx === mi;
+      const eligible = inBatchCol && isBatchEligible(appData, activeZone, name, selYear, mi);
+      const isFlashing = flashCell?.name === name && flashCell?.month === mi
+        && flashCell?.zone === activeZone && flashCell?.year === selYear;
+      return {
+        mi, v, monthLabel,
+        kind: cs.kind,
+        na: cs.na,
+        isDimmed: batching && !inBatchCol,
+        isSelected: inBatchCol && batchSelected.includes(name),
+        eligible,
+        notEligible: inBatchCol && !eligible,
+        isExp: rekapExpanded?.name === name && rekapExpanded?.month === mi,
+        isFlashing,
+        flashKey: isFlashing ? flashCell!.successKey : 0,
+      };
+    }),
+  }));
+
+  // Sheet batch
+  const batchPlan = batchColIdx !== null
+    ? buildRekapBatch(appData, activeZone, batchSelected, selYear, batchColIdx, fallbackAmt, () => false)
+    : null;
+  const batchItems = (batchPlan?.entries ?? []).map(e => ({
+    name: e.name, amt: e.amt, hasTarif: batchAmount(appData, activeZone, e.name, fallbackAmt).hasTarif,
+  }));
+  const batchTotal = batchItems.reduce((s, it) => s + it.amt, 0);
+  const batchAllSelected = (() => {
+    if (batchColIdx === null) return false;
+    const next = toggleSelectAll(batchSelected, filtered, appData, activeZone, selYear, batchColIdx);
+    return next.length === 0 && batchSelected.length > 0;
+  })();
+  const batchEligibleCount = batchColIdx === null ? 0
+    : filtered.filter(n => isBatchEligible(appData, activeZone, n, selYear, batchColIdx)).length;
+
+  const loading = syncStatus === 'loading' && mems.length === 0;
+  const failed  = syncStatus === 'err' && mems.length === 0;
+
+  let body: React.ReactNode;
+  if (loading) {
+    body = (
+      <div aria-busy="true">
+        <Skeleton height="34px" rounded="lg" style={{ marginBottom: 12 }} />
+        <Skeleton height="280px" rounded="lg" />
       </div>
     );
-  })();
+  } else if (failed) {
+    body = (
+      <Card>
+        <EmptyState
+          icon={Warning}
+          title={t('rekap.loadErrorTitle')}
+          description={t('rekap.loadErrorDesc')}
+          action={<Button variant="primary" size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</Button>}
+        />
+      </Card>
+    );
+  } else if (mems.length === 0) {
+    body = (
+      <Card>
+        <EmptyState
+          icon={UsersThree}
+          title={t('common.noMember')}
+          description={t('common.addMemberHint')}
+          action={(
+            <Link href="/members" className={buttonVariants({ variant: 'primary', size: 'sm' })} onClick={() => setView('members')}>
+              {t('entry.zoneEmptyAction')}
+            </Link>
+          )}
+        />
+      </Card>
+    );
+  } else if (filtered.length === 0) {
+    body = (
+      <Card>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title={t('entry.noMatch')}
+          description={t('common.noResult')}
+          action={<Button variant="secondary" size="sm" onClick={() => { setSearch(''); setFilter('all'); }}>{t('common.resetFilter')}</Button>}
+        />
+      </Card>
+    );
+  } else {
+    body = (
+      <>
+        <div className={r.rise} style={rise(2)}>
+          <RekapTable
+            rows={rows}
+            monthNames={MONTH_NAMES}
+            selYear={selYear}
+            refMonth={selMonth}
+            batchColIdx={batchColIdx}
+            page={pg.page}
+            totalPages={pg.totalPages}
+            pageColTotals={pageColTotals}
+            pageSubtotal={pageSubtotal}
+            colTotals={colTotals}
+            grand={grand}
+            onCellClick={onCellClick}
+            onNameClick={onNameClick}
+          />
+        </div>
+        <div className={r.count}>{t('rekap.scrollHint')}</div>
+        <div className={r.count}>
+          {t('rekap.showing')} {pg.start + 1}–{pg.end} {t('rekap.of')} {filtered.length} {t('common.members')}
+        </div>
+        {pg.totalPages > 1 && (
+          <div className={r.pgn}>
+            <IconButton icon={CaretLeft} label={t('rekap.pagePrev')} disabled={pg.page <= 1}
+              onClick={() => setCurrentPage(Math.max(1, pg.page - 1))} />
+            <b className={clsx('wp-num', r.pgnTx)}>{t('rekap.page')} {pg.page} / {pg.totalPages}</b>
+            <IconButton icon={CaretRight} label={t('rekap.pageNext')} disabled={pg.page >= pg.totalPages}
+              onClick={() => setCurrentPage(Math.min(pg.totalPages, pg.page + 1))} />
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
-    <div>
-      {/* Controls */}
-      <div style={{ display:'flex', gap:8, marginBottom:10, alignItems:'center' }}>
-        <select className="cs" style={{ flex:'none', width:'auto' }} value={selYear}
-          onChange={e => { setSelYear(+e.target.value); closeModal(); exitBatch(); }}>
-          {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <div className="search-wrap" style={{ flex:1, margin:0, position:'relative', display:'flex', alignItems:'center' }}>
-          <Search size={13} style={{ position:'absolute', left:10, color:'var(--txt4)', pointerEvents:'none' }} />
-          <input
-            className="search-box"
-            style={{ margin:0, paddingLeft:30 }}
-            placeholder={t("rekap.searchPlaceholder")}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className="search-clear" onClick={() => setSearch('')} aria-label="Hapus pencarian">
-              <X size={12} />
-            </button>
-          )}
+    <div className={r.page}>
+      {globalLocked && (
+        <button type="button" className={clsx(r.lkb, r.rise)} onClick={unlockViaHeader} aria-label={t('entry.lockBannerAria')}>
+          <Lock weight="fill" aria-hidden="true" />
+          <span>{t('lockbanner.message')}</span>
+        </button>
+      )}
+
+      <RekapFilterBar
+        year={selYear}
+        month={selMonth}
+        monthNames={MONTH_NAMES}
+        // ganti tahun menutup modal dan mode pilih (zip); halaman dipertahankan
+        onYear={y => { setSelYear(y); closeModal(); exitBatch(); }}
+        onMonth={setSelMonth}
+        search={search}
+        onSearch={setSearch}
+        filter={filter}
+        counts={counts}
+        onFilter={f => { setFilter(f); setCurrentPage(1); }}
+      />
+
+<Vis screen="rekap" id="sum">      <Card className={clsx(r.sumrow, r.rise)} style={rise(1)}>
+        <IconTile icon={ChartBar} size="sm" />
+        <div className={r.sumMain}>
+          <div className="wp-t-label">{activeZone} {selYear}</div>
+          <b className={clsx('wp-num', r.sumVal)}>{rp(grand)}</b>
         </div>
-      </div>
+        <Button variant="secondary" size="sm" onClick={togglePick} disabled={mems.length === 0}>
+          {batching ? <X aria-hidden="true" /> : <ListChecks aria-hidden="true" />}
+          {batching ? t('action.cancel') : t('rekap.pickMulti')}
+        </Button>
+      </Card></Vis>
 
-      {/* Summary */}
-      <div className="sum-bar" style={{ marginBottom:10 }}>
-        <div className="sum-lbl">{activeZone} {selYear}</div>
-        <div className="sum-val">{rp(grand)}</div>
-      </div>
-
-      {/* Batch hint bar */}
       {batchColIdx !== null && (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--zcdim)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:10 }}>
-          <div style={{ fontSize:'var(--fs-body)', color:'var(--zc)' }}>
-            <strong>{MONTH_NAMES[batchColIdx]}</strong> — {t('rekap.batchHint')}
-          </div>
-          <button onClick={exitBatch} style={{ background:'none', border:'none', color:'var(--txt3)', cursor:'pointer', padding:4, display:'flex' }}>
-            <X size={14} />
-          </button>
-        </div>
-      )}
-
-      {/* Tabel rekap utama */}
-      {syncStatus === 'loading' && mems.length === 0 ? (
-        <SkeletonList count={5} className="mt-2" />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={LayoutList}
-          title={search ? 'Member tidak ditemukan' : 'Belum ada member'}
-          description={search ? `Tidak ada hasil untuk "${search}"` : 'Tambah member di menu Members'}
-          size="md"
+        <BatchHint
+          monthLabel={MONTH_NAMES[batchColIdx]}
+          canSelectAll={batchEligibleCount > 0}
+          allSelected={batchAllSelected}
+          onSelectAll={() => setBatchSelected(toggleSelectAll(batchSelected, filtered, appData, activeZone, selYear, batchColIdx))}
+          onClose={exitBatch}
         />
-      ) : (
-      <>
-      {/* Freeze header: tabel header terpisah (tidak dalam overflow-x) + tabel body (overflow-x scroll).
-          Header div mirror scroll position dari body via onScroll.
-          Ini satu-satunya cara andal freeze header + horizontal scroll di Chrome Android. */}
-
-      {/* Sticky wrapper — ::before-nya menutup celah 16px di atas header saat scroll */}
-      <div className="rekap-header-wrap">
-      {/* Tabel header — overflowX:hidden agar tidak muncul scrollbar, border visual tetap */}
-      <div
-        ref={headerScrollRef}
-        style={{ overflowX:'hidden', borderRadius:'var(--r-md) var(--r-md) 0 0',
-                 border:'1px solid var(--border)', borderBottom:'none',
-                 background:'var(--bg)' }}
-      >
-        <table className="rtable rtable-header" style={{ tableLayout:'fixed', width:'100%' }}>
-          <colgroup>
-            <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:86, minWidth:68 }} />
-            {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
-            <col style={{ width:80, minWidth:80 }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="stk" style={{ left:0, width:30, minWidth:30, textAlign:'center', borderBottom:'2px solid var(--border)' }}>#</th>
-              <th className="stk" style={{ left:30, textAlign:'left', width:86, minWidth:68, borderBottom:'2px solid var(--border)' }}>NAMA</th>
-              {MONTH_NAMES.map((m, mi) => (
-                <th key={m} style={{
-                  width:36, minWidth:36,
-                  color: batchColIdx === mi ? 'var(--zc)' : undefined,
-                  background: batchColIdx === mi ? 'var(--zcdim)' : undefined,
-                  borderBottom: batchColIdx === mi ? '2px solid var(--zc)' : '2px solid var(--border)',
-                  transition:'all var(--t-base)',
-                }}>
-                  {m.slice(0, 3)}
-                </th>
-              ))}
-              <th style={{ color:'var(--zc)', width:80, minWidth:80, borderBottom:'2px solid var(--border)' }}>{t('common.total')}</th>
-            </tr>
-          </thead>
-        </table>
-      </div>
-      </div>{/* end rekap-header-wrap */}
-
-      {/* Tabel body — bisa scroll horizontal, header di atas sudah terpisah */}
-      <div
-        ref={bodyScrollRef}
-        className="rekap-wrap"
-        style={{ borderRadius:'0 0 var(--r-md) var(--r-md)', borderTop:'none' }}
-        onScroll={e => {
-          // Assignment langsung (synchronous) — TANPA requestAnimationFrame.
-          // Event scroll browser sudah dibatasi ke refresh rate display (~60fps);
-          // membungkus operasi scrollLeft sederhana ini dengan rAF hanya menambah
-          // 1 frame delay tanpa manfaat performa, dan delay itulah yang membuat
-          // header terlihat "ketinggalan" sesaat saat scroll horizontal cepat.
-          const sl = (e.target as HTMLDivElement).scrollLeft;
-          if (headerScrollRef.current) headerScrollRef.current.scrollLeft = sl;
-        }}
-      >
-        <table className="rtable" style={{ tableLayout:'fixed', width:'100%' }}>
-          <colgroup>
-            <col style={{ width:30, minWidth:30 }} />
-            <col style={{ width:86, minWidth:68 }} />
-            {MONTHS.map((_, i) => <col key={i} style={{ width:68, minWidth:68 }} />)}
-            <col style={{ width:80, minWidth:80 }} />
-          </colgroup>
-          <tbody>
-            {paginatedMembers.map((name, i) => {
-              let rowTotal = 0;
-              const cellData: CellData[] = MONTHS.map((_, mi) => {
-                const raw  = getPay(appData, activeZone, name, selYear, mi);
-                const free = isFree(appData, activeZone, name, selYear, mi);
-                const v    = free ? 0 : raw;
-                rowTotal  += v || 0;
-
-                const isDimmed   = batchColIdx !== null && batchColIdx !== mi;
-                const isSelected = batchColIdx === mi && batchSelected.includes(name);
-                const isExp = rekapExpanded?.name === name && rekapExpanded?.month === mi;
-                const isFlashing = flashCell?.name === name && flashCell?.month === mi
-                  && flashCell?.zone === activeZone && flashCell?.year === selYear;
-
-                return {
-                  mi, v, free, isDimmed, isSelected, isExp, isFlashing,
-                  flashKey: isFlashing ? flashCell!.successKey : 0,
-                  monthLabel: MONTH_NAMES[mi],
-                };
-              });
-              return (
-                <Row
-                  key={name}
-                  name={name}
-                  index={startIdx + i}
-                  rowTotal={rowTotal}
-                  cells={cellData}
-                  selYear={selYear}
-                  onCellPointerDown={onCellPointerDown}
-                  onCellPointerUp={onCellPointerUp}
-                  onCellClick={onCellClick}
-                />
-              );
-            })}
-          </tbody>
-          <tfoot>
-            {totalPages > 1 && (
-              <tr style={{ background:'var(--bg3)', borderTop:'1px solid var(--border)' }}>
-                <td colSpan={2} className="stk" style={{ left:0, fontSize:'var(--fs-label)', color:'var(--txt3)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>
-                  {t('rekap.subtotalPage')} {clampedPage}
-                </td>
-                {MONTHS.map((_, mi) => {
-                  const pageColTotal = paginatedMembers.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
-                  return (
-                    <td key={mi} style={{
-                      color:'var(--zc)',
-                      opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 0.65,
-                      fontWeight:600,
-                      transition:'opacity var(--t-base)',
-                      background:'var(--bg3)',
-                    }}>
-                      {pageColTotal > 0 ? (pageColTotal * 1000).toLocaleString('id-ID') : ''}
-                    </td>
-                  );
-                })}
-                <td style={{ color:'var(--zc)', opacity:0.65, fontFamily:"var(--font-mono),monospace", fontWeight:700, background:'var(--bg3)' }}>{pageSubtotal > 0 ? (pageSubtotal * 1000).toLocaleString('id-ID') : ''}</td>
-              </tr>
-            )}
-            <tr style={{ background:'var(--bg3)', borderTop:'2px solid var(--border)' }}>
-              <td colSpan={2} className="stk" style={{ left:0, fontSize:'var(--fs-label)', color:'var(--txt2)', paddingLeft:8, background:'var(--bg3)', minWidth:140 }}>{t('common.total')}</td>
-              {MONTHS.map((_, mi) => {
-                const colTotal = mems.reduce((s, m) => s + (getPay(appData, activeZone, m, selYear, mi) || 0), 0);
-                return (
-                  <td key={mi} style={{
-                    color:'var(--c-lunas)', fontWeight:700,
-                    opacity: batchColIdx !== null && batchColIdx !== mi ? 0.2 : 1,
-                    transition:'opacity var(--t-base)',
-                    background:'var(--bg3)',
-                  }}>
-                    {colTotal > 0 ? (colTotal * 1000).toLocaleString('id-ID') : ''}
-                  </td>
-                );
-              })}
-              <td style={{ color:'var(--zc)', fontFamily:"var(--font-mono),monospace", fontWeight:800, background:'var(--bg3)' }}>{grand > 0 ? (grand * 1000).toLocaleString('id-ID') : ''}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', textAlign:'center', marginTop:6 }}>
-        {t('rekap.scrollHint')}
-      </div>
-
-      {/* v11.6.5: Kontrol pagination — di bawah tabel (sesuai keputusan desain).
-          Gaya visual disalin persis dari year-nav RiwayatModal.tsx (tombol
-          kotak 32x32, bg3+border, chevron tengah, disabled opacity 0.4) demi
-          konsistensi dengan kontrol navigasi serupa yang sudah ada di app.
-          Hanya dirender kalau totalPages > 1 — satu halaman saja tidak perlu
-          kontrol yang selalu disabled, itu cuma noise visual tanpa guna. */}
-      {totalPages > 1 && (
-        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:12, marginTop:12 }}>
-          <button
-            onClick={() => setCurrentPage(Math.max(1, clampedPage - 1))}
-            disabled={clampedPage <= 1}
-            aria-label={t('rekap.pagePrev')}
-            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: clampedPage <= 1 ? 0.4 : 1, transition:'all var(--t-fast)' }}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)', fontVariantNumeric:'tabular-nums', textAlign:'center' }}>
-            {t('rekap.page')} {clampedPage} / {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, clampedPage + 1))}
-            disabled={clampedPage >= totalPages}
-            aria-label={t('rekap.pageNext')}
-            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: clampedPage >= totalPages ? 0.4 : 1, transition:'all var(--t-fast)' }}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
       )}
-      </> /* end data branch fragment */
-      )} {/* end loading/empty/data conditional */}
+
+      {body}
+
+      {batchColIdx !== null && batchSelected.length > 0 && batchPlan && (
+        <BatchSheet
+          items={batchItems}
+          total={batchTotal}
+          periodLabel={`${MONTH_NAMES[batchColIdx]} ${selYear} · ${activeZone}`}
+          skippedPaid={batchPlan.skippedPaid.length}
+          onCancel={exitBatch}
+          onPay={handleBatchPay}
+          payDate={settings?.autoDate ? undefined : (batchPayDate ?? localDateISO())}
+          onPayDate={settings?.autoDate ? undefined : setBatchPayDate}
+        />
+      )}
 
       <RekapModal inputDirty={inputDirty} modalClosing={modalClosing} onClose={closeModal} />
-      {batchSheet}
+      {riwOpen && <RiwayatModal open onClose={() => setRiwOpen(false)} />}
     </div>
   );
 }

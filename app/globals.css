@@ -13,6 +13,7 @@
    styles/animations.css  → Keyframes & transitions
    styles/layout.css      → Layout utilities & structural styles
    styles/components.css  → Component-specific styles
+   styles/ui.css          → Primitive UI redesain (kelas wp-*, T6)
    ══════════════════════════════════════════════════════ */
 
 @import "../styles/tokens.css";
@@ -20,3 +21,4 @@
 @import "../styles/animations.css";
 @import "../styles/layout.css";
 @import "../styles/components.css";
+@import "../styles/ui.css";

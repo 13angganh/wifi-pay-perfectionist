@@ -9,7 +9,7 @@
 // FIX: Hapus animasi page transition — menyebabkan lag saat navigasi antar menu
 export default function Template({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
       {children}
     </div>
   );

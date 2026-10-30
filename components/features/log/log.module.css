@@ -1,0 +1,62 @@
+/* components/features/log/log.module.css — layar Log (REDESAIN T10, prototype T5)
+   Padanan kelas prototype T5: .lgsr .lgdt .lgg .lgi .lgd .stg. Hanya token. */
+
+.root { display: flex; flex-direction: column; gap: var(--sp-h); }
+
+.search { display: flex; align-items: center; gap: var(--sp-2); }
+.searchFld { flex: 1; min-width: 0; }
+.clr { background: none; border: 0; color: inherit; display: flex; cursor: pointer; padding: 0; }
+
+.dates { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--sp-2); }
+
+.count { color: var(--txt3); font-size: var(--fs-label); letter-spacing: .06em; margin-top: var(--sp-1); }
+
+.groups { display: flex; flex-direction: column; gap: var(--sp-h); }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.day { margin: 0; color: var(--txt3); font-size: var(--fs-caption); font-weight: var(--fw-strong); letter-spacing: .04em; }
+.card { overflow: hidden; }
+
+.item {
+  display: flex; align-items: center; gap: var(--sp-h); width: 100%; padding: var(--sp-h);
+  background: none; border: 0; border-bottom: 1px solid var(--border2); color: inherit; text-align: left; cursor: pointer;
+  font: inherit;
+}
+.item:last-child { border-bottom: 0; }
+.item:hover { background: var(--bg3); }
+.item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.act { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-strong); font-size: var(--fs-body); }
+.det { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--txt3); font-size: var(--fs-caption); }
+.end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; max-width: 40%; }
+.end small { color: var(--txt3); font-size: var(--fs-caption); }
+.who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; color: var(--txt4) !important; }
+.amt { font-style: normal; color: var(--c-lunas); font-size: var(--fs-caption); font-weight: var(--fw-strong); }
+
+/* sheet Detail (A28) */
+.detail { display: flex; flex-direction: column; gap: var(--sp-h); }
+.detailTitle { font-size: var(--fs-heading); font-weight: var(--fw-title); word-break: break-word; }
+.dl { display: grid; grid-template-columns: auto 1fr; gap: 10px var(--sp-h); margin: 0; }
+.dl dt { color: var(--txt3); font-size: var(--fs-caption); }
+.dl dd { margin: 0; text-align: right; font-weight: var(--fw-strong); word-break: break-word; }
+
+/* sheet Statistik (A29) */
+.stats { display: flex; flex-direction: column; gap: var(--sp-3); }
+.statGrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.statTile { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-h); border-radius: var(--r-md); background: var(--bg3); border: 1px solid var(--border2); }
+.statTile b { display: block; font-size: var(--fs-heading); font-weight: var(--fw-title); line-height: 1.1; }
+.statTile span { color: var(--txt3); font-size: var(--fs-caption); }
+.secTitle { display: block; margin-bottom: var(--sp-2); font-size: var(--fs-caption); font-weight: var(--fw-strong); color: var(--txt2); }
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 96px; padding: 4px; border-radius: var(--r-md); background: var(--bg3); }
+.bar { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: var(--accent); opacity: .9; }
+.bar[data-count="0"] { background: var(--border); opacity: .6; }
+.barAxis { display: flex; justify-content: space-between; margin-top: 4px; color: var(--txt4); font-size: var(--fs-label); font-family: var(--font-mono); }
+.recent { display: flex; flex-direction: column; border-radius: var(--r-md); border: 1px solid var(--border2); overflow: hidden; }
+.recentRow { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-2) var(--sp-h); background: none; border: 0; border-bottom: 1px solid var(--border2); color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.recentRow:last-child { border-bottom: 0; }
+.recentRow:hover { background: var(--bg3); }
+.recentTx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.recentTx b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-body); font-weight: var(--fw-strong); }
+.recentTx small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--txt3); font-size: var(--fs-caption); }
+.recentTime { display: inline-flex; align-items: center; gap: 4px; color: var(--txt3); font-size: var(--fs-caption); flex-shrink: 0; }
+.muted { margin: 0; color: var(--txt3); font-size: var(--fs-caption); }

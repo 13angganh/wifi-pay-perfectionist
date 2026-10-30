@@ -1,89 +1,102 @@
-// components/features/members/MembersView.tsx — Fase 4: Skeleton + EmptyState
+// ══════════════════════════════════════════
+// components/features/members/MembersView.tsx — layar Member (REDESAIN T9, prototype T4)
+//
+// Orkestrator: state + persist + handler. Tampilan dipecah ke MembersView.{Card,Form,Deleted,Toolbar}.tsx,
+// logika murni di members.logic.ts (teruji). Gaya satu-layar = members.module.css (hanya token).
+//
+// Logika zip yang DIPERTAHANKAN: persist() dengan penjaga klik ganda (isSavingRef) + rollback SELEKTIF via
+// selectiveRollback (v11.5.4/5/7), zona Member berdiri sendiri (newMemberZone, tidak mengikuti tab zona header),
+// KUNCI/BUKA MEMBER terpisah dari kunci global (merah = terkunci, hijau = terbuka; label aksi), Recycle Bin,
+// teks log yang tersimpan di database tidak diubah.
+// Perubahan yang DISETUJUI: A20–A23 (status + filter status, cari ID/IP, salin IP, catatan saat Tambah), Tambah
+// dan Edit = bottom sheet, dan PERBAIKAN ZONA KUSTOM (getMembersForZone/setMembersForZone di members.logic.ts).
+// ══════════════════════════════════════════
 'use client';
 
+import { FabSpace } from '@/components/ui/Fab';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Lock, LockOpen, MagnifyingGlass, Trash, UserPlus, UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { useAppStore } from '@/store/useAppStore';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
-import { useState, useRef } from 'react';
-import { useAppStore } from '@/store/useAppStore';
-
-import { isFree, rp } from '@/lib/helpers';
+import { MONTHS, MONTHS_EN } from '@/lib/constants';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
-import { hasInvalidFirebaseKeyChars } from '@/lib/firebase-key';
+import { getMembersForZone } from '@/lib/member';
+import { zoneCssColor, zoneCssVars } from '@/lib/design-tokens';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
-import FreeMemberModal from '@/components/modals/FreeMemberModal';
-import RiwayatModal    from '@/components/modals/RiwayatModal';
-import { Users, Trash2, X, Gift, Lock, LockOpen, StickyNote, Loader2 } from 'lucide-react';
-import { SkeletonList } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import type { Zone } from '@/types';
+import { Segmented } from '@/components/ui/Segmented';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import FreeMemberModal from '@/components/modals/FreeMemberModal';
+import { getMemberPeriods } from '@/lib/memberPeriods';
+import RiwayatModal from '@/components/modals/RiwayatModal';
+import { visibleZoneKeys } from '@/components/layout/Header.ZoneTabs';
+import { filterByStatus, statusCounts, refStatus, type RekapFilter } from '../rekap/rekap.logic';
+import {
+  EMPTY_FORM, buildAddMember, buildDeleteMember, buildEditMember, buildPurgeMember, buildRestoreMember,
+  deletedForZone, matchesQuery, memberInfoOf, sortMembers,
+  type MemberError, type MemberForm, type SortMode,
+} from './members.logic';
+import { MemberRow } from './MembersView.Card';
+import MemberFormSheet from './MembersView.Form';
+import DeletedMembers from './MembersView.Deleted';
+import MembersToolbar from './MembersView.Toolbar';
+import m from './members.module.css';
 
-type SortMode = 'name-asc'|'name-desc'|'id-asc'|'id-desc'|'ip-asc'|'ip-desc';
+type FormState = { mode: 'add' } | { mode: 'edit'; origName: string; initial: MemberForm };
 
 export default function MembersView() {
   const {
     appData, setAppData, uid, userEmail,
-    newMemberZone, setNewMemberZone,
+    activeZone,
     memberTab, setMemberTab,
     search, setSearch,
     membersLocked, setMembersLocked,
     selYear, selMonth,
-    syncStatus,
-    setSyncStatus,
+    syncStatus, setSyncStatus,
     setRiwayatZone, setRiwayatName, setRiwayatYear,
     settings,
   } = useAppStore();
+  const t = useT();
+  const lang = settings.language ?? 'id';
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
   const [sortMode, setSortMode] = useState<SortMode>('name-asc');
-  const [editOpen, setEditOpen] = useState(false);
-  const [editData, setEditData] = useState({ zone:'KRS' as Zone, origName:'', name:'', id:'', ip:'', tarif:'', notes:'' });
+  const [statusFilter, setStatusFilter] = useState<RekapFilter>('all');
+  const [form, setForm] = useState<FormState | null>(null);
+  const [formNonce, setFormNonce] = useState(0);
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [freeOpen, setFreeOpen] = useState(false);
   const [freeName, setFreeName] = useState('');
-  const [freeZone, setFreeZone] = useState<Zone>('KRS');
-  const [riwOpen,  setRiwOpen]  = useState(false);
-  const [addIP,    setAddIP]    = useState('');
-  // FIX v11.5.4: double-submit guard. Sebelumnya tombol Simpan/Add tidak punya proteksi
-  // sama sekali — kalau ditekan dua kali sebelum request pertama selesai (mis. koneksi
-  // lambat, atau accidental double-tap), persist() PERTAMA sudah mengubah appData.krsMembers
-  // (mis. "HAJI ZAINI" → "H.ZAINI") secara synchronous SEBELUM Firebase selesai. saveEdit()
-  // KEDUA yang berjalan di tengah-tengah itu akan mencari origName lama ("HAJI ZAINI") di
-  // list yang sudah berubah → tidak ketemu → "Member tidak ditemukan", walau prosesnya
-  // sendiri sebenarnya valid. isSavingRef mem-block semua persist() lain selagi satu
-  // proses simpan masih berjalan (pola sama dengan MemberCard.tsx Entry).
+  const [freeZone, setFreeZone] = useState('');
+  const [riwOpen, setRiwOpen] = useState(false);
+  // FIX v11.5.4 (dipertahankan): double-submit guard. Tanpa ini, tombol Simpan yang ditekan dua kali sebelum
+  // request pertama selesai membuat saveEdit() kedua mencari nama lama yang sudah berubah → "Member tidak
+  // ditemukan". isSavingRef mem-block semua persist() lain selagi satu proses simpan masih berjalan.
   const [isSaving, setIsSaving] = useState(false);
   const isSavingRef = useRef(false);
 
-  const t = useT();
-  const zone = newMemberZone;
-  const zc   = zone === 'KRS' ? 'var(--zc-krs)' : 'var(--zc-slk)';
+  // Zona Member berdiri sendiri (newMemberZone). Bila zona itu tak lagi tampil (dihapus/disembunyikan di
+  // Pengaturan), jatuh ke zona pertama yang tampil — diturunkan saat render, tanpa efek samping.
+  const customZones = settings.customZones ?? [];
+  const zones = visibleZoneKeys(customZones, settings.hiddenZones ?? []);
+  // Zona Member mengikuti tab zona Header (tab zona ganda di halaman ini dihapus atas permintaan user).
+  const zone = zones.includes(activeZone) ? activeZone : (zones[0] ?? activeZone);
+  const zoneColor = zoneCssColor(zone, customZones);
+  const zoneVars = (() => { const v = zoneCssVars(zone, customZones); return { ['--zc' as string]: v.zc, ['--zcdim' as string]: v.zcdim } as CSSProperties; })();
 
-  const nameRef  = useRef<HTMLInputElement>(null);
-  const idRef    = useRef<HTMLInputElement>(null);
-  const tarifRef = useRef<HTMLInputElement>(null);
-
-  // FIX v11.5.5 — BUG KRUSIAL: persist() sebelumnya memanggil setAppData(newData) SEBELUM
-  // tahu hasil simpan ke Firebase. Jika Firebase gagal, state lokal SUDAH TERLANJUR berubah
-  // (mis. "HAJI ZAINI" sudah jadi "H.ZAINI" di appData.krsMembers) walau server belum
-  // menyimpan apa pun. Akibatnya: percobaan SIMPAN ULANG (retry) — tanpa perlu double-tap
-  // sama sekali — akan mencari origName lama ("HAJI ZAINI") di array yang sudah berubah,
-  // tidak ketemu, dan gagal dengan "Member tidak ditemukan". Ini terjadi pada SETIAP retry
-  // setelah kegagalan pertama, bukan cuma kasus tap ganda.
-  //
-  // FIX: simpan snapshot appData SEBELUM optimistic update. Jika Firebase gagal, KEMBALIKAN
-  // (rollback) state lokal ke snapshot itu — supaya retry berikutnya mencari origName di
-  // data yang konsisten dengan yang sebenarnya ada di server.
-  //
-  // Tambahan: catch {} sebelumnya membuang pesan error Firebase asli, sehingga kegagalan
-  // selalu generik tanpa bisa didiagnosis (PERMISSION_DENIED? auth invalid? offline?).
-  // Sekarang error asli di-log lewat logger.error() (selalu tercatat di console, dev & prod)
-  // agar penyebab pasti kegagalan bisa diperiksa lewat DevTools.
+  // FIX v11.5.5 (dipertahankan): snapshot appData SEBELUM optimistic update; bila Firebase gagal, kembalikan
+  // SELEKTIF (selectiveRollback, v11.5.7) supaya retry mencari data yang konsisten dengan server. Error asli
+  // dicatat lewat logger.error agar penyebab pasti (PERMISSION_DENIED/offline/…) bisa didiagnosis.
   async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
     if (isSavingRef.current) return false;
     isSavingRef.current = true;
     setIsSaving(true);
-    const prevData = appData; // snapshot untuk rollback jika gagal
+    const prevData = appData;
     setAppData(newData);
     if (!uid) { setIsSaving(false); isSavingRef.current = false; return true; }
     setSyncStatus('loading');
@@ -97,12 +110,6 @@ export default function MembersView() {
     } catch (err) {
       logger.error(`Gagal simpan ke Firebase — action: ${action}`, err);
       setSyncStatus('err');
-      // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts), bukan replace
-      // total ke prevData — lihat penjelasan lengkap di persist() MemberCard.tsx. Fungsi ini
-      // dipanggil dari 5 tempat berbeda (add/edit/delete/restore/purge member) yang masing-masing
-      // menyentuh kombinasi field berbeda (krsMembers/slkMembers, memberInfo, deletedMembers,
-      // payments) — selectiveRollback mendeteksi otomatis field mana yang benar-benar berubah,
-      // jadi satu fix ini berlaku benar untuk kelimanya tanpa perlu hardcode per call site.
       const latest = useAppStore.getState().appData;
       setAppData(selectiveRollback(latest, prevData, newData));
       return false;
@@ -111,432 +118,234 @@ export default function MembersView() {
       isSavingRef.current = false;
     }
   }
-  function openFree(z: Zone, n: string) { setFreeZone(z); setFreeName(n); setFreeOpen(true); }
-  function openRiwayat(z: Zone, n: string) {
+
+  const errorText: Record<MemberError, string> = {
+    nameRequired:    t('members.nameRequired'),
+    nameInvalidChar: t('members.nameInvalidChar'),
+    nameDuplicate:   t('members.nameDuplicate'),
+    notFound:        t('members.notFound'),
+  };
+
+  const prevZone = useRef(zone);
+  useEffect(() => { if (prevZone.current === zone) return; prevZone.current = zone; setSearch(''); setMemberTab('active'); setStatusFilter('all'); }, [zone, setSearch, setMemberTab, setStatusFilter]);   // pindah zona di Header → daftar mulai bersih
+  function openForm(next: FormState) { setNameError(undefined); setFormNonce(n => n + 1); setForm(next); }
+  function closeForm() { setForm(null); setNameError(undefined); }
+  function openFree(z: string, n: string) { setFreeZone(z); setFreeName(n); setFreeOpen(true); }
+  function openRiwayat(z: string, n: string) {
     setRiwayatZone(z); setRiwayatName(n); setRiwayatYear(new Date().getFullYear());
     setRiwOpen(true);
   }
+  async function copyIp(ip: string) {
+    try { await navigator.clipboard.writeText(ip); showToast(t('members.ipCopied')); }
+    catch { showToast(t('members.copyFailed'), 'err'); }
+  }
 
-  async function addMember() {
-    if (isSavingRef.current) return; // double-tap guard
-    const name  = nameRef.current?.value.trim().toUpperCase() || '';
-    const id    = idRef.current?.value.trim()   || '';
-    const ip    = addIP.trim();
-    const tarif = tarifRef.current?.value.trim() || '';
-    if (!name) { showToast(t('members.nameRequired'),'err'); return; }
-    if (hasInvalidFirebaseKeyChars(name)) { showToast(t('members.nameInvalidChar'),'err'); return; }
-    const list = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
-    if (list.includes(name)) { showToast(t('members.nameDuplicate'),'err'); return; }
-    list.push(name); list.sort();
-    const infoKey = `${zone}__${name}`;
-    const newInfo = { ...(appData.memberInfo||{}), [infoKey]: { id, ip, ...(tarif ? { tarif:+tarif } : {}) } };
-    const newData = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']: list, memberInfo: newInfo };
-    const ok = await persist(newData, `[ADD] ${tLog('log.action.addMember')} ${zone} - ${name}`, `ID:${id} IP:${ip}`);
-    if (ok) {
-      showToast(`${name} ${t('members.added')}`);
-      if (nameRef.current)  nameRef.current.value  = '';
-      if (idRef.current)    idRef.current.value    = '';
-      if (tarifRef.current) tarifRef.current.value = '';
-      setAddIP('');
-    } else {
-      showToast(t('common.saveFailed'), 'err');
+  async function submitForm(values: MemberForm) {
+    if (!form || isSavingRef.current) return; // double-tap guard
+    if (form.mode === 'add') {
+      const r = buildAddMember(appData, zone, values);
+      if (!r.ok) { setNameError(errorText[r.error]); showToast(errorText[r.error], 'err'); return; }
+      const ok = await persist(r.data, `[ADD] ${tLog('log.action.addMember')} ${zone} - ${r.name}`, `ID:${values.id.trim()} IP:${values.ip.trim()}`);
+      if (ok) { showToast(`${r.name} ${t('members.added')}`); closeForm(); }
+      else showToast(t('common.saveFailed'), 'err');
+      return;
     }
+    const { origName } = form;
+    const r = buildEditMember(appData, zone, origName, values);
+    if (!r.ok) {
+      showToast(errorText[r.error], 'err');
+      if (r.error === 'notFound') closeForm(); else setNameError(errorText[r.error]);
+      return;
+    }
+    const ok = await persist(r.data, `[EDIT] ${tLog('log.action.editMember')} ${zone}`, `${origName} → ${r.name}`);
+    if (ok) { showToast(`${r.name} ${t('members.updated')}`); closeForm(); }
+    // Gagal tersimpan ke server — JANGAN tutup sheet, biarkan pengguna coba lagi (zip v11.5.5).
+    else showToast(t('common.saveFailed'), 'err');
   }
 
   function openEdit(name: string) {
-    const info = appData.memberInfo?.[zone+'__'+name] || {};
-    setEditData({ zone, origName:name, name, id:String(info.id||''), ip:String(info.ip||''), tarif:String(info.tarif||''), notes:String(info.notes||'') });
-    setEditOpen(true);
+    const info = memberInfoOf(appData, zone, name);
+    openForm({
+      mode: 'edit', origName: name,
+      initial: {
+        name, id: String(info.id || ''), ip: String(info.ip || ''), tarif: String(info.tarif || ''), notes: String(info.notes || ''),
+        // T12: "Terdaftar sejak" tersimpan (null = sejak awal) — selalu eksplisit supaya Simpan tidak diam-diam mengosongkannya.
+        joined: getMemberPeriods(appData, zone, name)?.joined ?? null,
+      },
+    });
   }
 
-  async function saveEdit() {
-    if (isSavingRef.current) return; // double-tap guard — lihat catatan isSavingRef
-    const { zone, origName, name, id, ip, tarif, notes } = editData;
-    const newName = name.trim().toUpperCase();
-    if (!newName) { showToast(t('members.nameRequired'),'err'); return; }
-    if (hasInvalidFirebaseKeyChars(newName)) { showToast(t('members.nameInvalidChar'),'err'); return; }
-    const list = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
-    const idx  = list.indexOf(origName);
-    if (idx === -1) { showToast(t('members.notFound'),'err'); return; }
-    if (newName !== origName && list.includes(newName)) { showToast(t('members.nameDuplicate'),'err'); return; }
-    const newPayments   = { ...appData.payments };
-    const newMemberInfo = { ...(appData.memberInfo||{}) };
-    const trimmedNotes  = notes.trim();
-    if (newName !== origName) {
-      list[idx] = newName; list.sort();
-      Object.keys(newPayments).filter(k => k.startsWith(`${zone}__${origName}__`)).forEach(k => {
-        newPayments[k.replace(`${zone}__${origName}__`,`${zone}__${newName}__`)] = newPayments[k];
-        delete newPayments[k];
-      });
-      const oldInfo = newMemberInfo[`${zone}__${origName}`] || {};
-      delete newMemberInfo[`${zone}__${origName}`];
-      newMemberInfo[`${zone}__${newName}`] = { ...oldInfo, id, ip, ...(tarif ? { tarif:+tarif } : {}), ...(trimmedNotes ? { notes: trimmedNotes } : {}) };
-      if (!trimmedNotes) delete newMemberInfo[`${zone}__${newName}`].notes;
-    } else {
-      const existing = newMemberInfo[`${zone}__${origName}`] || {};
-      newMemberInfo[`${zone}__${origName}`] = { ...existing, id, ip, ...(tarif ? { tarif:+tarif } : {}), ...(trimmedNotes ? { notes: trimmedNotes } : {}) };
-      if (!tarif) delete newMemberInfo[`${zone}__${origName}`].tarif;
-      if (!trimmedNotes) delete newMemberInfo[`${zone}__${origName}`].notes;
-    }
-    const newData = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']:list, payments:newPayments, memberInfo:newMemberInfo };
-    const ok = await persist(newData, `[EDIT] ${tLog('log.action.editMember')} ${zone}`, `${origName} → ${newName}`);
-    if (ok) {
-      showToast(`${newName} ${t('members.updated')}`);
-      setEditOpen(false);
-    } else {
-      // Gagal tersimpan ke server — JANGAN tutup modal, biarkan pengguna coba lagi
-      // (sebelumnya: toast sukses + modal ditutup tetap muncul walau write Firebase gagal,
-      // sehingga nama tampak berubah sesaat lalu kembali ke nama lama setelah reload).
-      showToast(t('common.saveFailed'), 'err');
-    }
-  }
-
-  async function deleteMember(name: string) {
-    showConfirm('🗑️', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
+  function deleteMember(name: string) {
+    showConfirm('trash', `${t('members.delete')} ${name}?`, t('membercard.deleteYes'), async () => {
       if (isSavingRef.current) return; // double-tap guard
-      const list     = zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
-      const filtered = list.filter(m => m !== name);
-      const mk       = `${zone}__${name}`;
-      const mp: Record<string,number> = {};
-      Object.keys(appData.payments||{}).filter(k=>k.startsWith(mk+'__')).forEach(k=>{mp[k]=appData.payments[k];});
-      const nd = { ...appData, [zone==='KRS'?'krsMembers':'slkMembers']:filtered,
-        payments:Object.fromEntries(Object.entries(appData.payments||{}).filter(([k])=>!k.startsWith(mk+'__'))),
-        deletedMembers:{ ...(appData.deletedMembers||{}), [mk]:{ zone,name,deletedAt:Date.now(),payments:mp } } };
-      const ok = await persist(nd, `[DEL] ${tLog('log.action.deleteMember')} ${zone} - ${name}`);
+      const ok = await persist(buildDeleteMember(appData, zone, name), `[DEL] ${tLog('log.action.deleteMember')} ${zone} - ${name}`);
+      // Toast hapus bertipe merah (perilaku zip, T4 §3 butir c).
       showToast(ok ? `${name} ${t('common.deleted')}` : t('common.saveFailed'), 'err');
     }, { description: t('members.deleteNote') });
   }
 
   async function restoreMember(key: string) {
     if (isSavingRef.current) return; // double-tap guard
-    const d = appData.deletedMembers?.[key]; if(!d) return;
-    const list = d.zone==='KRS' ? [...appData.krsMembers] : [...appData.slkMembers];
-    if (!list.includes(d.name)) { list.push(d.name); list.sort(); }
-    const nd = { ...appData, [d.zone==='KRS'?'krsMembers':'slkMembers']:list,
-      payments:{ ...(appData.payments||{}), ...(d.payments||{}) },
-      deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
-    const ok = await persist(nd, `[RESTORE] ${tLog('log.action.restoreMember')} ${d.zone} - ${d.name}`);
-    showToast(ok ? `${d.name} ${t('members.restored')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
+    const r = buildRestoreMember(appData, key);
+    if (!r) return;
+    const ok = await persist(r.data, `[RESTORE] ${tLog('log.action.restoreMember')} ${r.entry.zone} - ${r.entry.name}`);
+    showToast(ok ? `${r.entry.name} ${t('members.restored')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
   }
 
-  async function permanentDelete(key: string) {
-    const d = appData.deletedMembers?.[key]; if(!d) return;
-    showConfirm('[PURGE]', `${t('members.permDelete')} ${d.name}?`, t('members.permDeleteYes'), async () => {
+  function permanentDelete(key: string) {
+    const d = appData.deletedMembers?.[key];
+    if (!d) return;
+    showConfirm('trash', `${t('members.permDelete')} ${d.name}?`, t('members.permDeleteYes'), async () => {
       if (isSavingRef.current) return; // double-tap guard
-      const nd = { ...appData, deletedMembers:Object.fromEntries(Object.entries(appData.deletedMembers||{}).filter(([k])=>k!==key)) };
-      const ok = await persist(nd, `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
+      const ok = await persist(buildPurgeMember(appData, key), `[PURGE] ${tLog('log.action.permDelete')} ${d.zone} - ${d.name}`);
       showToast(ok ? `${d.name} ${t('members.deleted')}` : t('common.saveFailed'), 'err');
-    }, { description: t('members.permDeleteNote'), highlightColor: '#e05c5c' });
+    }, { description: t('members.permDeleteNote'), highlightColor: 'var(--c-belum)' });
   }
 
-  // Sort
-  const getInfo = (n: string) => appData.memberInfo?.[zone+'__'+n] || {};
-  const mems = zone==='KRS' ? [...appData.krsMembers] : zone==='SLK' ? [...appData.slkMembers] : [...(appData.zoneMembers?.[zone] ?? [])];
-  const sortFns: Record<SortMode,(a:string,b:string)=>number> = {
-    'name-asc':  (a,b) => a.localeCompare(b),
-    'name-desc': (a,b) => b.localeCompare(a),
-    'id-asc':    (a,b) => String(getInfo(a).id||'zzz').localeCompare(String(getInfo(b).id||'zzz'),undefined,{numeric:true}),
-    'id-desc':   (a,b) => String(getInfo(b).id||'').localeCompare(String(getInfo(a).id||''),undefined,{numeric:true}),
-    'ip-asc':    (a,b) => String(getInfo(a).ip||'zzz').localeCompare(String(getInfo(b).ip||'zzz'),undefined,{numeric:true}),
-    'ip-desc':   (a,b) => String(getInfo(b).ip||'').localeCompare(String(getInfo(a).ip||''),undefined,{numeric:true}),
-  };
-  mems.sort(sortFns[sortMode]);
-  const filteredMems = mems.filter(m => m.toLowerCase().includes(search.toLowerCase()));
-  const deletedList  = Object.entries(appData.deletedMembers||{}).filter(([k])=>k.startsWith(zone+'__')).sort((a,b)=>b[1].deletedAt-a[1].deletedAt);
-  const sortLabels: Record<SortMode,string> = { 'name-asc':'A-Z','name-desc':'Z-A','id-asc':'ID ↑','id-desc':'ID ↓','ip-asc':'IP ↑','ip-desc':'IP ↓' };
+  // ── Data tampilan ──
+  const getInfo = (n: string) => memberInfoOf(appData, zone, n);
+  const mems = sortMembers(getMembersForZone(zone, appData), getInfo, sortMode);
+  const counts = statusCounts(appData, zone, mems, selYear, selMonth);
+  const filteredMems = filterByStatus(appData, zone, mems, selYear, selMonth, statusFilter)
+    .filter(n => matchesQuery(n, getInfo(n), search));
+  const deletedList = deletedForZone(appData, zone);
+  const monthLabel = `${MONTH_NAMES[selMonth]} ${selYear}`;
+  const totalAllZones = zones.reduce((s, z) => s + getMembersForZone(z, appData).length, 0);
+  const loading = syncStatus === 'loading' && mems.length === 0;
+  const failed  = syncStatus === 'err' && totalAllZones === 0;
 
-  const badgeStyle: React.CSSProperties = {
-    fontSize:'var(--fs-micro)', padding:'2px 6px', borderRadius:'var(--r-xs)', flexShrink:0, fontFamily:"var(--font-mono),monospace",
-  };
+  // T12 (D8): hitungan header memisahkan Aktif/Nonaktif (+ Belum terdaftar) — hanya muncul bila ada member N/A bulan ini.
+  const naInactive = counts.nonaktif ?? 0;
+  const naNotReg   = counts.belumTerdaftar ?? 0;
+  const activityText = naInactive + naNotReg > 0
+    ? ` · ${counts.lunas + counts.belum + counts.free} ${t('members.activeShort')} · ${naInactive} ${t('members.inactiveShort')}${naNotReg ? ` · ${naNotReg} ${t('members.notRegisteredShort')}` : ''}`
+    : '';
+  const countText = `${filteredMems.length} ${t('common.members')}${search ? ` ${t('common.noResult').toLowerCase()}` : ''} · ${zone} · ${monthLabel}${activityText}`;
+
+  function renderList() {
+    if (loading) return <SkeletonList count={5} />;
+    if (failed) {
+      return (
+        <EmptyState icon={WarningCircle} title={t('members.loadErrorTitle')} description={t('members.loadErrorDesc')} size="md"
+          action={<Button variant="secondary" size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</Button>} />
+      );
+    }
+    if (mems.length === 0) {
+      return (
+        <EmptyState icon={UsersThree} title={t('members.empty')} description={t('members.emptyDesc')} size="md"
+          action={!membersLocked ? <Button variant="primary" size="sm" onClick={() => openForm({ mode: 'add' })}><UserPlus aria-hidden="true" /> {t('members.add')}</Button> : undefined} />
+      );
+    }
+    if (filteredMems.length === 0) {
+      return (
+        <EmptyState icon={MagnifyingGlass} title={t('entry.noMatch')} description={t('entry.noMatchDesc')} size="md"
+          action={<Button variant="secondary" size="sm" onClick={() => { setSearch(''); setStatusFilter('all'); }}>{t('common.resetFilter')}</Button>} />
+      );
+    }
+    return (
+      <div className={m.mlist} id="member-rows">
+        {filteredMems.map((name, i) => (
+          <MemberRow
+            key={name}
+            index={i}
+            name={name}
+            info={getInfo(name)}
+            status={refStatus(appData, zone, name, selYear, selMonth)}
+            locked={membersLocked}
+            onOpenRiwayat={() => openRiwayat(zone, name)}
+            onCopyIp={copyIp}
+            onPeriods={() => openFree(zone, name)}
+            onEdit={() => openEdit(name)}
+            onDelete={() => deleteMember(name)}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {/* Zone tabs + lock */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-        <div style={{ display:'flex', gap:3, background:'var(--bg3)', padding:3, borderRadius:24, border:'1px solid var(--border)' }}>
-          {(() => {
-            const hiddenZones: string[] = settings.hiddenZones ?? [];
-            const customZones: { key: string; color: string }[] = settings.customZones ?? [];
-            const allZ = [
-              { key:'KRS', color:'var(--zc-krs)' },
-              { key:'SLK', color:'var(--zc-slk)' },
-              ...customZones.map(c => ({ key: c.key, color: c.color })),
-            ].filter(z => !hiddenZones.includes(z.key));
-            return allZ.map(({ key: z, color: zColor }) => {
-              const mCount = z === 'KRS' ? appData.krsMembers.length
-                           : z === 'SLK' ? appData.slkMembers.length
-                           : (appData.zoneMembers?.[z] ?? []).length;
-              return (
-                <button key={z} onClick={() => { setNewMemberZone(z); setSearch(''); setMemberTab('active'); }}
-                  style={{ padding:'6px 12px', borderRadius:'var(--r-xl)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600,
-                    background: zone===z ? zColor : 'transparent',
-                    color: zone===z ? '#fff' : 'var(--txt3)', minHeight:32 }}>
-                  {z} <span style={{ opacity:.6, fontSize:'var(--fs-label)' }}>({mCount})</span>
-                </button>
-              );
-            });
-          })()}
-        </div>
-        {/* v11.7.0: dipecah jadi 2 elemen sesuai panduan UX, konsisten persis dgn pola
-            Header.tsx (lihat komentar detail di sana) — indikator STATUS (kata sifat
-            "Terkunci"/"Terbuka") + tombol AKSI ikon-saja (warna solid header-lock-action-btn,
-            sama class CSS dgn Header supaya kedua toggle "lock" di app ini benar2 seragam
-            secara visual, bukan cuma seragam secara warna spt v11.6.9). */}
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <div
-            aria-hidden="true"
-            style={{
-              display:'flex', alignItems:'center', gap:5,
-              background: membersLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
-              color: membersLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
-              // v11.7.1: disamakan persis ke Header.tsx (yg baru disamakan ke .sync-pill)
-              // — sebelumnya sudah pakai fs-caption tapi padding+shape beda dr Header.
-              padding:'4px 10px', borderRadius:'var(--r-full)', minHeight:28,
-              fontSize:'var(--fs-caption)', whiteSpace:'nowrap',
-            }}
-          >
-            {membersLocked
-              ? <Lock size={12} strokeWidth={1.5} />
-              : <LockOpen size={12} strokeWidth={1.5} />
-            }
-            {membersLocked ? t('members.statusLocked') : t('members.statusUnlocked')}
+    <div className={m.root} style={zoneVars}>
+      <div className={m.top}>
+        <div className={m.mtb}>
+          <Segmented
+            mode="tabs"
+            ariaLabel={t('members.tabsAria')}
+            value={memberTab}
+            onChange={setMemberTab}
+            options={[
+              { value: 'active',  label: <><UsersThree weight={memberTab === 'active' ? 'fill' : 'regular'} aria-hidden="true" /> {t('common.all')}</>, count: mems.length, color: zoneColor },
+              { value: 'deleted', label: <><Trash weight={memberTab === 'deleted' ? 'fill' : 'regular'} aria-hidden="true" /> {t('action.delete')}</>, count: deletedList.length, color: 'var(--zc-slk)' },
+            ]}
+          />
+          {/* v11.7.0 (dipertahankan): STATUS (tidak bisa diklik; kata sifat Terkunci/Terbuka) + tombol AKSI ikon-saja
+              terpisah, sama persis dengan pola Header. Merah = terkunci, hijau = terbuka. */}
+          <div className={m.lkg}>
+            <div
+              aria-hidden="true"
+              className="hdr-lock-status"
+              style={{ ['--lc' as string]: membersLocked ? 'var(--c-belum)' : 'var(--c-lunas)' } as CSSProperties}
+            >
+              {membersLocked ? <Lock size={14} weight="fill" /> : <LockOpen size={14} weight="fill" />}
+              {membersLocked ? t('members.statusLocked') : t('members.statusUnlocked')}
+            </div>
+            <button
+              className="header-lock-action-btn"
+              onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
+              aria-label={membersLocked ? t('members.actionAriaLocked') : t('members.actionAriaUnlocked')}
+              title={membersLocked ? t('members.unlock') : t('members.lock')}
+            >
+              {membersLocked
+                ? <LockOpen size={16} weight="fill" />
+                : <Lock size={16} weight="fill" />
+              }
+            </button>
           </div>
-          <button
-            className="header-lock-action-btn"
-            onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
-            aria-label={membersLocked ? t('members.actionAriaLocked') : t('members.actionAriaUnlocked')}
-            title={membersLocked ? t('members.unlock') : t('members.lock')}
-            style={{
-              width:34, height:34, minWidth:34, minHeight:34,
-              border:'none', borderRadius:'50%',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              cursor:'pointer', flexShrink:0,
-            }}
-          >
-            {membersLocked
-              ? <LockOpen size={15} strokeWidth={1.5} />
-              : <Lock size={15} strokeWidth={1.5} />
-            }
-          </button>
         </div>
       </div>
 
-      {/* Active / Deleted tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg2)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
-        <button onClick={() => setMemberTab('active')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, background:memberTab==='active'?zc:'transparent', color:memberTab==='active'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-          <Users size={12} strokeWidth={1.5} /> {t('common.all')} ({mems.length})
-        </button>
-        <button onClick={() => setMemberTab('deleted')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, background:memberTab==='deleted'?'var(--zc-slk)':'transparent', color:memberTab==='deleted'?'#fff':'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-          <Trash2 size={12} strokeWidth={1.5} /> {t('action.delete')} ({deletedList.length})
-        </button>
-      </div>
-
-      {/* DELETED TAB */}
       {memberTab === 'deleted' ? (
         deletedList.length === 0
-          ? <EmptyState icon={Trash2} title={t('members.recycleBinEmpty')} description={t('members.recycleBinDesc')} size="md" />
-          : deletedList.map(([k,d]) => (
-            <div key={k} className="del-card">
-              <div>
-                <div className="del-card-name" style={{ display:'flex', alignItems:'center', gap:5 }}>
-                  <Trash2 size={12} strokeWidth={1.5} color="var(--c-belum)" /> {d.name}
-                </div>
-                <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('action.delete')}: {new Date(d.deletedAt).toLocaleDateString()} · {Object.keys(d.payments||{}).length} data</div>
-              </div>
-              <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                <button className="restore-btn" onClick={() => restoreMember(k)}>{t('members.restore')}</button>
-                <button onClick={() => permanentDelete(k)} aria-label={`Hapus permanen ${d.name}`}
-                  style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'var(--c-belum)', padding:'5px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <Trash2 size={12} strokeWidth={1.5} />
-                </button>
-              </div>
-            </div>
-          ))
+          ? <EmptyState icon={Trash} title={t('members.recycleBinEmpty')} description={t('members.recycleBinDesc')} size="md" />
+          : <DeletedMembers entries={deletedList} locale={lang === 'en' ? 'en-GB' : 'id-ID'} onRestore={restoreMember} onPurge={permanentDelete} />
       ) : (
         <>
-          {/* Add form */}
-          {!membersLocked && (
-            <div className="add-form">
-              <div className="af-title">{t('members.addTitle')} {zone}</div>
-              <div className="af-grid">
-                <div>
-                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('common.name').toUpperCase()}</div>
-                  <input ref={nameRef} className="af-input" placeholder={t('members.namePlaceholder')} autoComplete="off" autoFocus
-                    style={{ textTransform:'uppercase' }} onKeyDown={e=>e.key==='Enter'&&addMember()} />
-                </div>
-                <div>
-                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.customerId').toUpperCase()}</div>
-                  <input ref={idRef} className="af-input" placeholder={t('common.optional')} autoComplete="off" />
-                </div>
-                <div style={{ gridColumn:'span 2' }}>
-                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.ipLabel').toUpperCase()}</div>
-                  <input
-                      className="af-input"
-                      placeholder="192.168.x.x atau http://..."
-                      autoComplete="off"
-                      value={addIP}
-                      onChange={e => setAddIP(e.target.value)}
-                    />
-                </div>
-                <div>
-                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', marginBottom:4 }}>{t('members.tarifShort').toUpperCase()}</div>
-                  <input ref={tarifRef} type="number" inputMode="decimal" className="af-input" placeholder="100" autoComplete="off" />
-                </div>
-              </div>
-              <button
-                disabled={isSaving}
-                style={{ width:'100%', background:zc, color:'#fff', border:'none', padding:10, borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', fontWeight:600, cursor: isSaving ? 'not-allowed' : 'pointer', minHeight:40, opacity: isSaving ? 0.6 : 1 }}
-                onClick={addMember}
-              >
-                + {t('members.addTo')} {zone}
-              </button>
-            </div>
-          )}
-
-          {/* Sort */}
-          <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:8, alignItems:'center' }}>
-            {(Object.entries(sortLabels) as [SortMode,string][]).map(([k,l]) => (
-            <button key={k} onClick={() => setSortMode(k)}
-                style={{ padding:'6px 12px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', minHeight:32, fontWeight:sortMode===k?700:500, background:sortMode===k?'var(--zc)':'var(--bg3)', color:sortMode===k?'#fff':'var(--txt3)', transition:'all var(--t-fast)' }}>{l}</button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <div className="search-wrap">
-            <input className="search-box" placeholder={`${t('entry.searchPlaceholder')} ${zone}...`} value={search} onChange={e=>setSearch(e.target.value)} />
-            {search && <button className="search-clear" onClick={()=>setSearch('')} aria-label={t('action.search')}><X size={12} /></button>}
-          </div>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginBottom:8 }}>{filteredMems.length} {t('common.members')}{search ? ` ${t('common.noResult').toLowerCase()}` : ''} · {zone}</div>
-
-          {/* Member rows */}
-          <div id="member-rows">
-            {syncStatus === 'loading' && mems.length === 0 ? (
-              <SkeletonList count={5} />
-            ) : filteredMems.length === 0 ? (
-              <EmptyState icon={Users} title={t('members.empty')} description={t('members.emptyDesc')} size="md" />
-            ) : filteredMems.map((name, i) => {
-                const info      = getInfo(name);
-                const isFreeNow = isFree(appData, zone, name, selYear, selMonth);
-                const ipStr     = String(info.ip || '');
-                const idStr     = String(info.id || '—');
-
-                return (
-                  <div key={name} style={{ background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:4 }}>
-                    {/* Baris 1: nomor, ID, nama, badge */}
-                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: (!membersLocked || ipStr) ? 5 : 0 }}>
-                      <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', width:18, flexShrink:0 }}>{i+1}</span>
-                      <span style={{ ...badgeStyle, background:'var(--zcdim)', border:'1px solid var(--border)', color: info.id ? 'var(--zc)' : 'var(--txt4)' }}>{idStr}</span>
-                      <span style={{ fontSize:'var(--fs-body)', flex:1, cursor:'pointer', color:'var(--txt)', fontWeight:500 }} onClick={() => openRiwayat(zone, name)}>{name}</span>
-                      {isFreeNow && <span style={{ ...badgeStyle, background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} strokeWidth={1.5} />Free</span>}
-                      {info.tarif && <span style={{ ...badgeStyle, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)' }}>{rp(info.tarif as number)}</span>}
-                      {/* v11.5.2: indikator catatan — ikon kecil saja, isi catatan hanya terlihat saat Edit dibuka */}
-                      {info.notes && (
-                        <span
-                          title={t('members.hasNotesHint')}
-                          aria-label={t('members.hasNotesHint')}
-                          style={{ display:'flex', alignItems:'center', flexShrink:0, color:'var(--txt4)' }}
-                        >
-                          <StickyNote size={12} strokeWidth={1.5} />
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Baris 2: IP + action buttons */}
-                    <div style={{ display:'flex', alignItems:'center', gap:6, paddingLeft:24 }}>
-                      {/* IP — hanya selebar teksnya, bukan flex:1 agar area klik tidak melebar */}
-                      {ipStr ? (
-                        <a
-                          href={ipStr.startsWith('http') ? ipStr : 'http://'+ipStr}
-                          target="_blank" rel="noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          style={{ fontSize:'var(--fs-label)', color:'var(--zc)', textDecoration:'none', fontFamily:"var(--font-mono),monospace", flexShrink:0, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:'block' }}
-                        >
-                          {ipStr}
-                        </a>
-                      ) : (
-                        <span style={{ flexShrink:0, fontSize:'var(--fs-label)', color:'var(--txt5)', fontStyle:'italic' }}>—</span>
-                      )}
-                      {/* Spacer — mengisi sisa ruang, bukan area klik */}
-                      <span style={{ flex:1 }} />
-
-                      {/* Action buttons — selalu di baris bawah */}
-                      {!membersLocked && (
-                        <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                          <button onClick={() => openFree(zone, name)}
-                            aria-label={`${isFreeNow ? 'Cabut status' : 'Set'} member gratis: ${name}`}
-                            style={{ background:isFreeNow?'rgba(34,197,94,0.08)':'none', border:`1px solid ${isFreeNow?'rgba(34,197,94,0.3)':'var(--border)'}`, color:isFreeNow?'var(--c-free)':'var(--txt4)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:'var(--fs-label)', display:'flex', alignItems:'center', justifyContent:'center', minHeight:28 }}>
-                            <Gift size={11} strokeWidth={1.5} />
-                          </button>
-                          <button onClick={() => openEdit(name)}
-                            aria-label={`Edit member: ${name}`}
-                            style={{ background:'none', border:'1px solid var(--border)', color:'var(--zc)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', fontSize:'var(--fs-label)', fontFamily:"var(--font-mono),monospace", minHeight:28 }}>
-                            Edit
-                          </button>
-                          <button onClick={() => deleteMember(name)}
-                            aria-label={`Hapus member: ${name}`}
-                            style={{ background:'none', border:'1px solid rgba(239,68,68,0.15)', color:'rgba(239,68,68,0.4)', padding:'3px 8px', borderRadius:'var(--r-xs)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:28 }}>
-                            <X size={11} strokeWidth={1.5} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            }
-          </div>
+          <MembersToolbar
+            search={search}
+            onSearch={setSearch}
+            locked={membersLocked}
+            onAdd={() => openForm({ mode: 'add' })}
+            filter={statusFilter}
+            counts={counts}
+            onFilter={setStatusFilter}
+            countText={countText}
+            statusTitle={`${t('members.statusFor')} ${monthLabel}`}
+            sort={sortMode}
+            onSort={setSortMode}
+          />
+          {renderList()}
         </>
       )}
 
-      {/* Edit Modal */}
-      {editOpen && (
-        <div className="modal-bg center" onClick={() => setEditOpen(false)}>
-          <div className="modal center" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">{t('members.editTitle')} <button className="modal-close" aria-label={t('action.close')} onClick={() => setEditOpen(false)}><X size={13} strokeWidth={1.5} /></button></div>
-            {([
-              { label: t('common.name').toUpperCase(),                   field:'name',  type:'text',   ph:''                             },
-              { label: t('members.customerId').toUpperCase(),            field:'id',    type:'text',   ph: t('common.optional')          },
-              { label: t('members.ipLabel').toUpperCase(),               field:'ip',    type:'text',   ph:'192.168.x.x'                  },
-              { label: t('members.tarifLabel').toUpperCase(),            field:'tarif', type:'number', ph:'100'                          },
-            ] as const).map(({ label, field, type, ph }) => (
-              <div key={field} className="modal-row">
-                <div className="modal-label">{label}</div>
-                <input
-                  className="modal-select"
-                  type={type}
-                  inputMode={type==='number' ? 'numeric' : undefined}
-                  placeholder={ph}
-                  value={editData[field]}
-                  onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-                  style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:'var(--fs-body)', fontFamily:"var(--font-mono),monospace" }}
-                />
-              </div>
-            ))}
-            <div className="modal-row">
-              <div className="modal-label">{(t('members.notesLabel')).toUpperCase()}</div>
-              <textarea
-                className="modal-select"
-                placeholder={t('members.notesPlaceholder')}
-                value={editData.notes}
-                onChange={e => setEditData(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-                style={{ borderRadius:7, padding:'9px 12px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)', fontSize:'var(--fs-body)', fontFamily:"var(--font-sans),sans-serif", resize:'vertical', minHeight:64 }}
-              />
-            </div>
-            <button className="modal-action" disabled={isSaving} style={{ opacity: isSaving ? 0.6 : 1, cursor: isSaving ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }} onClick={saveEdit}>
-              {isSaving && <Loader2 size={14} className="spin-members" />}
-              {t('members.saveChanges')}
-            </button>
-            <style>{`
-              @keyframes spin-members-kf { to { transform: rotate(360deg); } }
-              .spin-members { animation: spin-members-kf 0.8s linear infinite; }
-            `}</style>
-          </div>
-        </div>
+      {form && (
+        <MemberFormSheet
+          key={formNonce}
+          mode={form.mode}
+          zone={zone}
+          zoneColor={zoneColor}
+          initial={form.mode === 'edit' ? form.initial : { ...EMPTY_FORM, joined: { y: new Date().getFullYear(), m: new Date().getMonth() } }}
+          saving={isSaving}
+          nameError={nameError}
+          onNameInput={() => setNameError(undefined)}
+          onSubmit={submitForm}
+          onClose={closeForm}
+        />
       )}
-
-      <FreeMemberModal open={freeOpen} zone={freeZone} name={freeName} onClose={() => setFreeOpen(false)} />
-      <RiwayatModal    open={riwOpen}  onClose={() => setRiwOpen(false)} />
+      <FreeMemberModal
+        open={freeOpen} zone={freeZone} name={freeName} onClose={() => setFreeOpen(false)}
+        onEditMember={() => { setFreeOpen(false); openEdit(freeName); }}
+      />
+      {riwOpen && <RiwayatModal open onClose={() => setRiwOpen(false)} />}
+      {!membersLocked && <FabSpace />}
     </div>
   );
 }

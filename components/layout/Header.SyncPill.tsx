@@ -1,34 +1,36 @@
 // ══════════════════════════════════════════
 // components/layout/Header.SyncPill.tsx
-// Dipecah dari Header.tsx (task 1.15)
+// REDESAIN T6: dipakai Header.tsx (sebelumnya yatim + duplikat inline). Kelas `.sync-pill`
+// tetap dipakai MembersView (T9) — jangan ganti nama.
 // ══════════════════════════════════════════
 'use client';
 
+import { CloudCheck, ArrowsClockwise, Warning, WifiSlash } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { useT } from '@/hooks/useT';
-import { Cloud, RotateCw, AlertTriangle, WifiOff } from 'lucide-react';
 
 export default function HeaderSyncPill() {
-  const { syncStatus } = useAppStore();
+  const syncStatus = useAppStore(s => s.syncStatus);
   const t = useT();
 
   const configs = {
-    ok:      { icon: <Cloud size={12} strokeWidth={1.5} />,         label: t('common.saved'),   cls: 'sync-pill ok'      },
-    loading: { icon: <RotateCw size={12} strokeWidth={1.5} />,      label: t('common.saving'),  cls: 'sync-pill loading' },
-    err:     { icon: <AlertTriangle size={12} strokeWidth={1.5} />, label: t('sync.error'),     cls: 'sync-pill err'     },
-    offline: { icon: <WifiOff size={12} strokeWidth={1.5} />,       label: t('common.offline'), cls: 'sync-pill offline' },
+    ok:      { Icon: CloudCheck,      label: t('common.saved'),   cls: 'sync-pill ok'      },
+    loading: { Icon: ArrowsClockwise, label: t('common.saving'),  cls: 'sync-pill loading' },
+    err:     { Icon: Warning,         label: t('sync.error'),     cls: 'sync-pill err'     },
+    offline: { Icon: WifiSlash,       label: t('common.offline'), cls: 'sync-pill offline' },
   };
   const cfg = configs[syncStatus as keyof typeof configs] ?? configs.ok;
+  const { Icon } = cfg;
 
   return (
     <div
       className={cfg.cls}
       role="status"
       aria-live="polite"
-      aria-label={`Status sync: ${cfg.label}`}
+      aria-label={`${t('header.syncStatus')}: ${cfg.label}`}
     >
-      <span className={syncStatus === 'loading' ? 'sync-spin' : ''}>{cfg.icon}</span>
-      <span>{cfg.label}</span>
+      <span className={syncStatus === 'loading' ? 'sync-spin' : ''}><Icon size={14} weight="fill" aria-hidden="true" /></span>
+      <span className="sync-pill__txt">{cfg.label}</span>
     </div>
   );
 }

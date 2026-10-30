@@ -1,281 +1,205 @@
-// components/features/tunggakan/TunggakanView.tsx — Fase 4: Skeleton + EmptyState
+// components/features/tunggakan/TunggakanView.tsx — REDESAIN T8 (prototype T3 keputusan 9–12, 16, 19)
+// Orkestrator Tunggakan: periode + pencarian (A19) + mode (Nunggak/Rajin/Gratis) + chip aging (TunggakanView.FilterBar),
+// ringkasan (jumlah member + total tunggakan A16), daftar kartu (TunggakanView.Item) dan RiwayatModal (A18).
+// Seluruh perhitungan ada di hooks/useTunggakan.ts (fungsi murni buildTunggakan, teruji, tanpa percabangan KRS/SLK).
+// Perilaku zip dipertahankan: periode = selYear/selMonth (store, dibagi dengan Entry/Dashboard), Kirim WA memakai
+// tarif individual member (doWABlast), aging 1 / 2–3 / 4+ bulan, 12 bulan pertama tampil lalu "+N lagi".
 'use client';
 
-import { useState } from 'react';
+import { CardFilter, Vis } from '@/components/ui/CardFilter';
+import { useState, type CSSProperties } from 'react';
+import { clsx } from 'clsx';
+import Link from 'next/link';
+import { CheckCircle, Gift, MagnifyingGlass, Medal, UsersThree, Warning, X } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { getArrears, isFree, getMembersForZone } from '@/lib/helpers';
+import { getYears } from '@/lib/constants';
+import { rp } from '@/lib/helpers';
+import { getMemberPeriods, periodContains } from '@/lib/memberPeriods';
 import { doWABlast } from '@/lib/export.wa';
 import { useT } from '@/hooks/useT';
-import {
-  AlertTriangle, Star, Gift, CheckCircle2,
-  AlertCircle, Flame, Clock, Medal, MessageCircle,
-} from 'lucide-react';
-import { SkeletonList } from '@/components/ui/Skeleton';
+import { filterArrearsByAging, useTunggakan, type AgingFilter, type TunggakanMode } from '@/hooks/useTunggakan';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Select } from '@/components/ui/Select';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import RiwayatModal from '@/components/modals/RiwayatModal';
+import TunggakanFilterBar from './TunggakanView.FilterBar';
+import { ArrearsCard, FreeCard, OnTimeCard } from './TunggakanView.Item';
+import s from './tunggakan.module.css';
 
-// Tab mode: nakal/rajin/free (mode existing)
-type TMode = 'nakal' | 'rajin' | 'free';
-// Aging filter (sub-filter dari nakal)
-type AgingFilter = 'total' | 'baru' | 'segera' | 'kritis';
+const rise = (i: number) => ({ ['--i' as string]: Math.min(i, 8) }) as CSSProperties;
 
 export default function TunggakanView() {
-  const { appData, syncStatus, activeZone, selYear, selMonth, setSelYear, setSelMonth } = useAppStore();
-  const [mode, setMode] = useState<TMode>('nakal');
-  const [agingFilter, setAgingFilter] = useState<AgingFilter>('total');
+  const {
+    appData, syncStatus, activeZone, setSelYear, setSelMonth,
+    search, setSearch, setView, setRiwayatZone, setRiwayatName, setRiwayatYear,
+  } = useAppStore();
   const t = useT();
-  const settings = useAppStore(s => s.settings);
-  const lang = settings.language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
+  const { memberCount, arrears, rajin, free, aging, fallbackTarif, MONTH_NAMES, selYear, selMonth } = useTunggakan();
 
-  const mems = getMembersForZone(activeZone, appData); // FIX: custom zone support
+  const [mode, setMode] = useState<TunggakanMode>('nakal');
+  const [agingFilter, setAgingFilter] = useState<AgingFilter>('total');
+  const [riwOpen, setRiwOpen] = useState(false);
 
-  // Nunggak
-  const allArrears = mems.map(name => {
-    const unpaid = getArrears(appData, activeZone, name, selYear, selMonth)
-      .filter(u => !isFree(appData, activeZone, name, u.y, u.mi));
-    return { name, unpaid, count: unpaid.length };
-  }).filter(x => x.count > 0).sort((a, b) => b.count - a.count);
-
-  // Rajin
-  const rajin = mems.filter(name => {
-    if (isFree(appData, activeZone, name, selYear, selMonth)) return false;
-    return getArrears(appData, activeZone, name, selYear, selMonth)
-      .filter(u => !isFree(appData, activeZone, name, u.y, u.mi)).length === 0;
-  });
-
-  // Free
-  const freeList = mems.filter(name => isFree(appData, activeZone, name, selYear, selMonth));
-
-  // ── Aging classification ──
-  const agingBaru   = allArrears.filter(x => x.count === 1);
-  const agingSegera = allArrears.filter(x => x.count >= 2 && x.count <= 3);
-  const agingKritis = allArrears.filter(x => x.count >= 4);
-
-  // Filtered list berdasarkan aging tab
-  const filteredArrears = agingFilter === 'total'  ? allArrears
-    : agingFilter === 'baru'    ? agingBaru
-    : agingFilter === 'segera'  ? agingSegera
-    : agingKritis;
-
-  const count = mode === 'nakal' ? filteredArrears.length : mode === 'rajin' ? rajin.length : freeList.length;
+  const shown = filterArrearsByAging(arrears, agingFilter);
+  const count = mode === 'nakal' ? shown.length : mode === 'rajin' ? rajin.length : free.length;
   const sumColor = mode === 'nakal' ? 'var(--c-belum)' : mode === 'rajin' ? 'var(--c-lunas)' : 'var(--c-free)';
   const sumLabel = mode === 'nakal' ? t('tunggakan.sumLabel') : mode === 'rajin' ? t('tunggakan.sumLunas') : t('tunggakan.sumFree');
+  const totalAmount = shown.reduce((sum, x) => sum + x.amount, 0);
 
-  return (
-    <div>
-      {/* Period selector */}
-      <div className="ctrl-row">
-        <select className="cs" value={selMonth} onChange={e => setSelMonth(+e.target.value)}>
-          {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-        </select>
-        <select className="cs" value={selYear} onChange={e => setSelYear(+e.target.value)}>
-          {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
+  // A18: ketuk kartu = RiwayatModal (komponen yang sama dengan Member/Rekap, tahun = periode yang dilihat)
+  function openRiwayat(zone: string, name: string) {
+    setRiwayatZone(zone);
+    setRiwayatName(name);
+    setRiwayatYear(selYear);
+    setRiwOpen(true);
+  }
 
-      {/* Mode tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
-        {([
-          ['nakal', <AlertCircle key="ic" size={12} />, t('tunggakan.nakal'), allArrears.length, 'var(--c-belum)'],
-          ['rajin', <Star key="ic" size={12} />,        t('tunggakan.rajin'),   rajin.length,       'var(--c-lunas)'],
-          ['free',  <Gift key="ic" size={12} />,         t('status.free'),    freeList.length,    'var(--c-free)'],
-        ] as const).map(([m, icon, label, cnt, color]) => (
-          <button
-            key={m}
-            onClick={() => { setMode(m as TMode); setAgingFilter('total'); }}
-            style={{
-              flex:1, padding:'7px 4px', borderRadius:'var(--r-lg)', border:'none', cursor:'pointer',
-              fontSize:'var(--fs-caption)', fontWeight:600, minHeight:36,
-              background: mode === m ? color as string : 'transparent',
-              color:      mode === m ? (m === 'rajin' ? '#0a0c12' : '#fff') : 'var(--txt3)',
-              display:'flex', alignItems:'center', justifyContent:'center', gap:5,
-              transition:'all var(--t-fast)',
-            }}
-          >
-            {icon} {label} ({cnt})
-          </button>
+  // REDESAIN T12: Free bisa banyak periode — tampilkan periode yang mencakup bulan acuan.
+  function fmFreePeriod(zone: string, name: string): string {
+    const fm = getMemberPeriods(appData, zone, name)?.free?.find(p => periodContains(p, selYear, selMonth));
+    if (!fm) return '';
+    const to = fm.toY != null && fm.toM != null
+      ? ` ${t('tunggakan.until')} ${MONTH_NAMES[fm.toM]} ${fm.toY}`
+      : ` (${t('tunggakan.forever')})`;
+    return `${t('tunggakan.from')} ${MONTH_NAMES[fm.fromM]} ${fm.fromY}${to}`;
+  }
+
+  const resetSearch = (
+    <Button variant="secondary" size="sm" onClick={() => setSearch('')}>{t('common.resetFilter')}</Button>
+  );
+
+  let body: React.ReactNode;
+  if (syncStatus === 'loading' && memberCount === 0) {
+    body = <SkeletonList count={4} />;
+  } else if (syncStatus === 'err' && memberCount === 0) {
+    body = (
+      <Card>
+        <EmptyState
+          icon={Warning}
+          title={t('tunggakan.loadErrorTitle')}
+          description={t('tunggakan.loadErrorDesc')}
+          action={<Button variant="primary" size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</Button>}
+        />
+      </Card>
+    );
+  } else if (memberCount === 0) {
+    body = (
+      <Card>
+        <EmptyState
+          icon={UsersThree}
+          title={t('common.noMember')}
+          description={t('common.addMemberHint')}
+          action={(
+            <Link href="/members" className={buttonVariants({ variant: 'primary', size: 'sm' })} onClick={() => setView('members')}>
+              {t('entry.zoneEmptyAction')}
+            </Link>
+          )}
+        />
+      </Card>
+    );
+  } else if (count === 0) {
+    const emptyDesc = agingFilter === 'total' ? t('tunggakan.emptyTotal')
+      : agingFilter === 'baru' ? t('tunggakan.emptyNew')
+      : agingFilter === 'segera' ? t('tunggakan.emptySoon')
+      : t('tunggakan.emptyCritical');
+    body = search ? (
+      <Card><EmptyState icon={MagnifyingGlass} title={t('entry.noMatch')} description={t('common.noResult')} action={resetSearch} /></Card>
+    ) : (
+      <Card>
+        {mode === 'nakal' && <EmptyState icon={CheckCircle} title={t('dashboard.allPaid')} description={emptyDesc} />}
+        {mode === 'rajin' && <EmptyState icon={Medal} title={t('common.noData')} description={t('tunggakan.emptyRajin')} />}
+        {mode === 'free' && <EmptyState icon={Gift} title={t('common.noData')} description={t('tunggakan.emptyFree')} />}
+      </Card>
+    );
+  } else {
+    body = (
+      <div className={s.mlist}>
+        {mode === 'nakal' && shown.map((x, i) => (
+          <ArrearsCard
+            key={`${x.zone}__${x.name}`}
+            item={x}
+            index={i}
+            monthNames={MONTH_NAMES}
+            style={rise(i)}
+            onOpen={() => openRiwayat(x.zone, x.name)}
+            // v11.5 FIX (zip): tarif INDIVIDUAL member, bukan selalu quickAmounts[0] global
+            onWa={() => doWABlast(x.name, x.zone, x.unpaid, x.tarif ?? fallbackTarif)}
+          />
+        ))}
+        {mode === 'rajin' && rajin.map((m, i) => (
+          <OnTimeCard key={`${m.zone}__${m.name}`} name={m.name} index={i} style={rise(i)} onOpen={() => openRiwayat(m.zone, m.name)} />
+        ))}
+        {mode === 'free' && free.map((m, i) => (
+          <FreeCard key={`${m.zone}__${m.name}`} name={m.name} index={i} style={rise(i)}
+            period={fmFreePeriod(m.zone, m.name)} onOpen={() => openRiwayat(m.zone, m.name)} />
         ))}
       </div>
+    );
+  }
 
-      {/* ── Aging filter bar — hanya tampil di mode nakal ── */}
-      {mode === 'nakal' && (
-        <div style={{
-          display:'flex', gap:6, marginBottom:10,
-          overflowX:'auto', paddingBottom:2,
-        }}>
-          {([
-            ['total',  <AlertTriangle key="ic" size={11} />, t('tunggakan.filter.total'),   allArrears.length,  'var(--txt2)',   'var(--bg3)', 'var(--border)'],
-            ['baru',   <Clock key="ic" size={11} />,          t('tunggakan.filter.new'),    agingBaru.length,   '#FFC107',       '#1a1500',   '#FFC10733'],
-            ['segera', <AlertCircle key="ic" size={11} />,    t('tunggakan.filter.soon'),  agingSegera.length, '#F97316',       '#1a0d00',   '#F9731633'],
-            ['kritis', <Flame key="ic" size={11} />,           t('tunggakan.filter.critical'),  agingKritis.length, 'var(--c-belum)','rgba(239,68,68,0.08)', 'rgba(239,68,68,0.25)'],
-          ] as const).map(([key, icon, label, cnt, textColor, bgColor, borderColor]) => (
-            <button
-              key={key}
-              onClick={() => setAgingFilter(key as AgingFilter)}
-              style={{
-                display:'flex', alignItems:'center', gap:6,
-                padding:'7px 14px', borderRadius:'var(--r-full)',
-                border:`1px solid ${agingFilter === key ? borderColor as string : 'var(--border)'}`,
-                background: agingFilter === key ? bgColor as string : 'transparent',
-                color: agingFilter === key ? textColor as string : 'var(--txt4)',
-                fontSize:'var(--fs-caption)', fontWeight: agingFilter === key ? 700 : 500,
-                cursor:'pointer', whiteSpace:'nowrap', minHeight:36,
-                transition:'all var(--t-fast)',
-                flexShrink:0,
-              }}
-            >
-              {icon}
-              {label}
-              <span style={{
-                background: agingFilter === key ? 'rgba(0,0,0,0.2)' : 'var(--bg3)',
-                borderRadius:'var(--r-full)', padding:'1px 7px',
-                fontSize:'var(--fs-label)', fontWeight:700,
-                color: agingFilter === key ? textColor as string : 'var(--txt3)',
-              }}>
-                {cnt}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Summary bar */}
-      <div className="sum-bar" style={{ marginBottom:10 }}>
-        <div className="sum-lbl">{sumLabel} {MONTH_NAMES[selMonth].toUpperCase()} {selYear} · {activeZone}</div>
-        <div className="sum-val" style={{ color: sumColor }}>{count} {t('common.members')}</div>
+  return (
+    <div className={s.page}>
+      <div className={clsx('wp-pbar', s.rise)} role="group" aria-label={t('tunggakan.periodAria')}>
+        <Select size="sm" aria-label={t('common.year')} value={selYear} onChange={e => setSelYear(+e.target.value)}>
+          {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+        </Select>
+        <Select size="sm" aria-label={t('common.month')} value={selMonth} onChange={e => setSelMonth(+e.target.value)}>
+          {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        </Select>
+        <CardFilter compact screen="tunggakan" items={[['sum', 'view.tunggakan.sum'], ['chips', 'view.tunggakan.chips'], ['months', 'view.tunggakan.months'], ['wa', 'view.tunggakan.wa']].map(([id, k]) => ({ id, label: t(k) }))} />
       </div>
 
-      {/* Cards — mode nakal */}
-      {mode === 'nakal' && (
-        syncStatus === 'loading' && mems.length === 0 ? (
-          <SkeletonList count={4} />
-        ) : filteredArrears.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle2}
-            title={t('dashboard.allPaid')}
-            description={
-              agingFilter === 'total' ? t('tunggakan.emptyTotal')
-              : agingFilter === 'baru'   ? t('tunggakan.emptyNew')
-              : agingFilter === 'segera' ? t('tunggakan.emptySoon')
-              : t('tunggakan.emptyCritical')
-            }
-            size="md"
+      <div className="wp-field">
+        <div className="wp-inpw">
+          <span className="wp-inpw__ico" aria-hidden="true"><MagnifyingGlass /></span>
+          <input
+            className="wp-inp"
+            data-testid="tunggakan-search"
+            type="text"
+            placeholder={t('tunggakan.searchPlaceholder')}
+            aria-label={t('header.searchMember')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            autoComplete="off"
           />
-        ) : (
-          filteredArrears.map((x, i) => {
-            // Tentukan warna aging per card
-            const agingColor = x.count >= 4 ? 'var(--c-belum)'
-              : x.count >= 2 ? '#F97316'
-              : '#FFC107';
+          {search && (
+            <span className="wp-inpw__end" style={{ pointerEvents: 'auto' }}>
+              <button type="button" aria-label={t('entry.clearSearch')} onClick={() => setSearch('')}
+                style={{ background: 'none', border: 0, color: 'inherit', display: 'flex', cursor: 'pointer' }}>
+                <X />
+              </button>
+            </span>
+          )}
+        </div>
+      </div>
 
-            return (
-              <div key={x.name} className="tcard" style={{
-                borderLeft: `3px solid ${agingColor}`,
-                borderRadius:'var(--r-md)',
-              }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                  <span className="tcard-name">{i + 1}. {x.name}</span>
-                  <span style={{
-                    fontSize:'var(--fs-label)', fontWeight:600, color: agingColor,
-                    display:'flex', alignItems:'center', gap:4,
-                  }}>
-                    {x.count >= 4 ? <Flame size={11} /> : x.count >= 2 ? <AlertCircle size={11} /> : <Clock size={11} />}
-                    {x.count} {t('tunggakan.months')}
-                  </span>
-                </div>
-                <div className="tcard-months">
-                  {x.unpaid.slice(0, 12).map(u => <span key={u.label} className="tmonth">{u.label}</span>)}
-                  {x.unpaid.length > 12 && <span className="tmonth" style={{ color:'var(--txt2)' }}>+{x.unpaid.length - 12} lagi</span>}
-                </div>
-                <button
-                  onClick={() => {
-                    // v11.5 FIX: ambil tarif INDIVIDUAL member dari memberInfo, bukan selalu
-                    // quickAmounts[0] global. Setiap member bisa punya tarif beda (ada yang 50,
-                    // ada yang 100) — total tagihan WA blast harus dihitung dari tarif masing-masing.
-                    const memberTarif = appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif as number | undefined;
-                    doWABlast(x.name, activeZone, x.unpaid, memberTarif ?? settings?.quickAmounts?.[0] ?? 100);
-                  }}
-                  style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:5, background:'rgba(37,211,102,0.08)', border:'1px solid rgba(37,211,102,0.25)', color:'#22C55E', borderRadius:'var(--r-sm)', padding:'5px 10px', cursor:'pointer', fontSize:'var(--fs-label)', fontWeight:700, transition:'all var(--t-fast)' }}
-                >
-                  <MessageCircle size={11} />
-                  Kirim WA
-                </button>
-                {!appData.memberInfo?.[`${activeZone}__${x.name}`]?.tarif && (
-                  <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginLeft:6 }}>
-                    ({t('tunggakan.tarifDefaultHint')})
-                  </span>
-                )}
-              </div>
-            );
-          })
-        )
-      )}
+      <TunggakanFilterBar
+        mode={mode}
+        aging={agingFilter}
+        counts={{ nakal: aging.total, rajin: rajin.length, free: free.length }}
+        agingCounts={aging}
+        onMode={m => { setMode(m); setAgingFilter('total'); }}
+        onAging={setAgingFilter}
+      />
 
-      {/* Cards — mode rajin */}
-      {mode === 'rajin' && (
-        rajin.length === 0 ? (
-          <EmptyState
-            icon={Medal}
-            title={t('common.noData')}
-            description={t('tunggakan.emptyRajin')}
-            size="md"
-          />
-        ) : (
-          rajin.map((name, i) => (
-            <div key={name} className="tcard" style={{
-              borderLeft:'3px solid var(--c-lunas)',
-              borderColor:'rgba(34,197,94,0.2)',
-              borderRadius:'var(--r-md)',
-            }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span className="tcard-name" style={{ color:'var(--c-lunas)', display:'flex', alignItems:'center', gap:6 }}>
-                  <CheckCircle2 size={13} /> {i + 1}. {name}
-                </span>
-                <span style={{ fontSize:'var(--fs-label)', color:'var(--c-lunas)' }}>{t('tunggakan.paidAll')}</span>
-              </div>
-            </div>
-          ))
-        )
-      )}
+<Vis screen="tunggakan" id="sum">      <Card className={clsx(s.sumrow, s.rise)} style={rise(1)}>
+        <div className={s.sumMain}>
+          <div className="wp-t-label">{sumLabel} {MONTH_NAMES[selMonth].toUpperCase()} {selYear} · {activeZone}</div>
+          <b className={clsx('wp-num', s.sumVal)} style={{ color: sumColor }}>{count} {t('common.members')}</b>
+        </div>
+        {mode === 'nakal' && count > 0 && (
+          <div className={s.sumR}>
+            <div className="wp-t-label">{t('tunggakan.totalArrears')}</div>
+            <b className={clsx('wp-num', s.sumVal)}>{rp(totalAmount)}</b>
+          </div>
+        )}
+      </Card></Vis>
 
-      {/* Cards — mode free */}
-      {mode === 'free' && (
-        freeList.length === 0 ? (
-          <EmptyState
-            icon={Gift}
-            title={t('common.noData')}
-            description={t('tunggakan.emptyFree')}
-            size="md"
-          />
-        ) : (
-          freeList.map((name, i) => {
-            const fm = appData.freeMembers?.[activeZone + '__' + name];
-            const toStr = fm?.toYear !== undefined
-              ? ` s/d ${MONTH_NAMES[fm.toMonth!]} ${fm.toYear}` : `(${t('tunggakan.forever')})`;
-            return (
-              <div key={name} className="tcard" style={{
-                borderLeft:'3px solid var(--c-free)',
-                borderColor:'var(--border)',
-                background:'var(--bg3)',
-                borderRadius:'var(--r-md)',
-              }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span className="tcard-name" style={{ color:'var(--c-free)', display:'flex', alignItems:'center', gap:6 }}>
-                    <Gift size={13} /> {i + 1}. {name}
-                  </span>
-                  <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)' }}>{t('status.free')}</span>
-                </div>
-                {fm && (
-                  <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:3 }}>
-                    Dari {MONTH_NAMES[fm.fromMonth]} {fm.fromYear}{toStr}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )
-      )}
+      {body}
+
+      {riwOpen && <RiwayatModal open onClose={() => setRiwOpen(false)} />}
     </div>
   );
 }

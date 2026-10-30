@@ -21,6 +21,16 @@ export function getMembersForZone(zone: string, appData: AppData): string[] {
   return appData.zoneMembers?.[zone] || [];
 }
 
+// ── REDESAIN T9 (serah-terima T4 bagian 3 butir 2): tulis daftar member sebuah zona ──
+// Pasangan getMembersForZone: mengembalikan PATCH AppData yang hanya menyentuh daftar zona itu
+// ({krsMembers} / {slkMembers} / {zoneMembers: {...lama, [zona]: daftar}}). Dengan ini tambah/edit/hapus/
+// pulihkan member di zona kustom tidak lagi menimpa daftar SLK. Tidak memutasi `appData`.
+export function setMembersForZone(appData: AppData, zone: string, list: string[]): Partial<AppData> {
+  if (zone === 'KRS') return { krsMembers: list };
+  if (zone === 'SLK') return { slkMembers: list };
+  return { zoneMembers: { ...(appData.zoneMembers || {}), [zone]: list } };
+}
+
 // ── Fuzzy match (subsequence matching) ──
 // Contoh: query "ag" → match "Angga", "Agus"
 // PENTING — kapan pakai fuzzyMatch vs textMatch (di bawah):

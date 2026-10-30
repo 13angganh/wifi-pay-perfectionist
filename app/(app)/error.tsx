@@ -1,9 +1,16 @@
-// app/(app)/error.tsx — Error boundary page
+// ══════════════════════════════════════════
+// app/(app)/error.tsx — halaman galat rute (REDESAIN T11: primitive + Phosphor + i18n; perilaku zip utuh)
+// Pesan error asli tetap ditampilkan (operator tunggal butuh detailnya); Coba Lagi = reset(); Dashboard = router.push.
+// ══════════════════════════════════════════
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle, RotateCcw, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { ArrowCounterClockwise, House, WarningCircle } from '@phosphor-icons/react';
+import { useT } from '@/hooks/useT';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import s from './boundary.module.css';
 
 export default function ErrorPage({
   error,
@@ -13,107 +20,30 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   const router = useRouter();
+  const t = useT();
 
   useEffect(() => {
     console.error('[WiFi-Pay Error]', error);
   }, [error]);
 
   return (
-    <div
-      style={{
-        minHeight: '60vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-        gap: '1.5rem',
-        textAlign: 'center',
-      }}
-    >
-      {/* Icon */}
-      <div
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 'var(--r-lg)',
-          background: 'rgba(239,68,68,0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid rgba(239,68,68,0.2)',
-        }}
-      >
-        <AlertTriangle size={32} strokeWidth={1.5} style={{ color: 'var(--c-belum)' }} />
-      </div>
-
-      {/* Text */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 280 }}>
-        <p
-          style={{
-            fontSize: 'var(--fs-heading)',
-            fontWeight: 700,
-            color: 'var(--txt1)',
-            margin: 0,
-          }}
-        >
-          Terjadi Kesalahan
-        </p>
-        <p
-          style={{
-            fontSize: 'var(--fs-caption)',
-            color: 'var(--txt3)',
-            lineHeight: 'var(--lh-caption)',
-            margin: 0,
-          }}
-        >
-          {error.message || 'Halaman ini mengalami error. Coba muat ulang atau kembali ke dashboard.'}
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button
-          onClick={reset}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            borderRadius: 'var(--r-md)',
-            border: '1px solid var(--border)',
-            background: 'var(--bg3)',
-            color: 'var(--txt2)',
-            fontSize: 'var(--fs-body)',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all var(--t-fast)',
-          }}
-        >
-          <RotateCcw size={14} />
-          Coba Lagi
-        </button>
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            borderRadius: 'var(--r-md)',
-            border: 'none',
-            background: 'var(--zc)',
-            color: '#fff',
-            fontSize: 'var(--fs-body)',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all var(--t-fast)',
-          }}
-        >
-          <Home size={14} />
-          Dashboard
-        </button>
-      </div>
+    <div className={s.wrap}>
+      <EmptyState
+        size="lg"
+        icon={WarningCircle}
+        title={t('errorpage.title')}
+        description={error.message || t('errorpage.desc')}
+        action={(
+          <div className={s.actions}>
+            <Button variant="secondary" onClick={reset}>
+              <ArrowCounterClockwise aria-hidden="true" /> {t('common.retry')}
+            </Button>
+            <Button variant="primary" onClick={() => router.push('/dashboard')}>
+              <House aria-hidden="true" /> {t('nav.dashboard')}
+            </Button>
+          </div>
+        )}
+      />
     </div>
   );
 }

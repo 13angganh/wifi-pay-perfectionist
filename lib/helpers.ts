@@ -5,8 +5,9 @@
 
 export { fbKey } from './firebase-key';
 export { rp, rpShort, formatDate } from './format';
-export { getKey, getPay, isFree, isLunas, getEffectivePay, getZoneTotal, getArrears, getPrevMonth, calcPctDelta, resolveEntryCardPeriod, resolveDisplayStatus } from './payment';
-export { getAllActiveZones, getMembersForZone, fuzzyMatch, textMatch, convertMemberIPs } from './member';
+export { getKey, getPay, isFree, isLunas, getEffectivePay, getZoneTotal, getArrears, getPrevMonth, calcPctDelta, resolveEntryCardPeriod, resolveDisplayStatus, getMonthStatus, isNotApplicable, billableMonths } from './payment';
+export type { MonthStatus, BillableMonth } from './payment';
+export { getAllActiveZones, getMembersForZone, setMembersForZone, fuzzyMatch, textMatch, convertMemberIPs } from './member';
 
 import { AppData } from '@/types';
 

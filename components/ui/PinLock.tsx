@@ -1,45 +1,50 @@
 'use client';
 
-import Image from 'next/image';
-// components/ui/PinLock.tsx — Fase 4: redesign premium, numpad 56x56px
+// ══════════════════════════════════════════
+// components/ui/PinLock.tsx — layar kunci PIN (REDESAIN T10, D13, prototype T5 `.pinl`)
+// Logika zip UTUH: 6 digit, hash sederhana (sama dengan SettingsPinSection.simpleHash), PIN salah → goyang + pesan +
+// reset 600ms (digits kembali 6 slot, pesan dibersihkan), biometrik opsional (muncul bila diaktifkan + kredensial ada +
+// perangkat mendukung). Enam <input maxLength=1 readOnly> tersembunyi dipertahankan (dipakai test dan fokus keyboard fisik);
+// masukan utama lewat Numpad primitive. Tampilan: PinScreen + AppLogo + PinDots + Numpad.
+// ══════════════════════════════════════════
 import { useState, useRef, useEffect } from 'react';
+import { Fingerprint } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { Delete, Fingerprint, ScanFace } from 'lucide-react';
+import { useT } from '@/hooks/useT';
 import { verifyBiometric, hasBiometricCred, isBiometricAvailable } from '@/lib/biometric';
+import { APP_NAME } from '@/lib/constants';
+import { AppLogo } from '@/components/ui/AppLogo';
+import { Numpad } from '@/components/ui/Numpad';
+import { PinDots } from '@/components/ui/PinDots';
+import { PinScreen } from '@/components/ui/PinScreen';
+
+const EMPTY = () => ['', '', '', '', '', ''];
+
+/** Harus identik dengan simpleHash di SettingsPinSection (PIN tersimpan harus tetap valid). */
+export function simpleHash(str: string): string {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
+  return String(Math.abs(h));
+}
 
 export default function PinLock() {
   const { settings, setPinUnlocked, pinUnlocked } = useAppStore();
-  const [digits, setDigits]   = useState(['','','','','','']);
-  const [error,  setError]    = useState('');
-  const [shake,  setShake]    = useState(false);
+  const t = useT();
+  const [digits, setDigits] = useState<string[]>(EMPTY);
+  const [error, setError] = useState('');
+  const [shake, setShake] = useState(false);
   const [bioAvail, setBioAvail] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
-  const refs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    refs[0].current?.focus();
-    // Cek biometric tersedia dan credential sudah terdaftar
-    if (settings.biometricEnabled && hasBiometricCred()) {
-      isBiometricAvailable().then(ok => setBioAvail(ok));
-    }
-    // refs[0] dan settings.biometricEnabled stabil — hanya perlu run sekali saat mount
+    refs.current[0]?.focus();
+    // Biometrik tersedia dan kredensial sudah terdaftar — hanya perlu dicek sekali saat dipasang
+    if (settings.biometricEnabled && hasBiometricCred()) isBiometricAvailable().then(ok => setBioAvail(ok));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!settings.pinEnabled || pinUnlocked) return null;
-
-  function simpleHash(s: string): string {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
-    return String(Math.abs(h));
-  }
 
   function handleDigit(i: number, val: string) {
     if (!/^\d?$/.test(val)) return;
@@ -47,57 +52,39 @@ export default function PinLock() {
     next[i] = val;
     setDigits(next);
     setError('');
-    if (val && i < 5) refs[i+1].current?.focus();
+    if (val && i < 5) refs.current[i + 1]?.focus();
     if (next.every(d => d !== '') && val) {
-      const entered = next.join('');
-      if (simpleHash(entered) === settings.pin) {
+      if (simpleHash(next.join('')) === settings.pin) {
         setPinUnlocked(true);
       } else {
         setShake(true);
-        setError('PIN salah, coba lagi');
-        // v11.5.18 fix: sebelumnya reset ke 4 elemen (sisa dari sebelum PIN
-        // di-upgrade 4→6 digit) padahal state digits & UI-nya (6 dot, 6
-        // hidden input) sudah 6-digit di semua tempat lain. Efeknya: setelah
-        // PIN pertama salah, digits berubah panjang dari 6 → 4 di tengah
-        // sesi — dot indikator & hidden input yg di-render dari digits.map()
-        // ikut menyusut jadi 4, sementara refs[] (dipakai utk fokus & Backspace)
-        // tetap 6 dan tidak sinkron lagi dgn panjang digits. Persis gejala yg
-        // dilaporkan: kadang 6 digit kadang 4 digit muncul saat login.
-        //
-        // v11.5.19 fix: setError('') ditambahkan di sini. Sebelumnya pesan
-        // "PIN salah, coba lagi" tidak pernah dibersihkan oleh timer reset
-        // ini — ia baru hilang saat user mengetik digit baru (setError('')
-        // di baris 49), sehingga pesan itu nyangkut di layar meski dot
-        // indikator sudah kosong lagi dan siap menerima input baru. Kondisi
-        // "dot kosong tapi pesan error masih ada" ini membingungkan/terlihat
-        // macet, jadi error dibersihkan di titik yang sama dgn reset digits.
+        setError(t('pin.wrongRetry'));
+        // v11.5.18/19 (dipertahankan): reset ke 6 slot + bersihkan pesan di titik yang sama (jangan 4 slot, jangan pesan menyangkut).
         setTimeout(() => {
           setShake(false);
-          setDigits(['','','','','','']);
+          setDigits(EMPTY());
           setError('');
-          refs[0].current?.focus();
+          refs.current[0]?.focus();
         }, 600);
       }
     }
   }
 
   function handleKeyDown(i: number, e: React.KeyboardEvent) {
-    if (e.key === 'Backspace' && !digits[i] && i > 0) refs[i-1].current?.focus();
+    if (e.key === 'Backspace' && !digits[i] && i > 0) refs.current[i - 1]?.focus();
   }
 
-  const padKeys = ['1','2','3','4','5','6','7','8','9','','0','DEL'];
+  function pressDigit(k: string) {
+    const idx = digits.findIndex(d => d === '');
+    if (idx === -1) return;
+    handleDigit(idx, k);
+  }
 
-  function pressPad(k: string) {
-    if (k === 'DEL') {
-      const last = digits.map((d,i)=>({d,i})).filter(x=>x.d).pop();
-      if (!last) return;
-      const next = [...digits]; next[last.i]=''; setDigits(next);
-      refs[last.i].current?.focus();
-    } else {
-      const idx = digits.findIndex(d=>d==='');
-      if (idx === -1) return;
-      handleDigit(idx, k);
-    }
+  function pressBackspace() {
+    const last = digits.map((d, i) => ({ d, i })).filter(x => x.d).pop();
+    if (!last) return;
+    const next = [...digits]; next[last.i] = ''; setDigits(next);
+    refs.current[last.i]?.focus();
   }
 
   async function handleBiometric() {
@@ -105,165 +92,46 @@ export default function PinLock() {
     try {
       const ok = await verifyBiometric();
       if (ok) setPinUnlocked(true);
-      else {
-        setError('Verifikasi biometrik gagal');
-        setTimeout(() => setError(''), 2000);
-      }
+      else { setError(t('pin.bioFailed')); setTimeout(() => setError(''), 2000); }
     } catch {
-      setError('Biometrik dibatalkan');
+      setError(t('biometric.cancelled'));
       setTimeout(() => setError(''), 2000);
     } finally {
       setBioLoading(false);
     }
   }
 
+  const filled = digits.filter(Boolean).length;
+
   return (
-    <div style={{
-      position:'fixed', inset:0, zIndex:99999,
-      background:'var(--bg)',
-      backdropFilter:'blur(16px)',
-      display:'flex', flexDirection:'column',
-      alignItems:'center', justifyContent:'center',
-      gap:0, padding:24,
-    }}>
-      {/* Logo */}
-      <div style={{
-        width:72, height:72, borderRadius:'var(--r-xl)', marginBottom:20,
-        overflow:'hidden',
-        boxShadow:'0 8px 32px rgba(201,149,42,0.25), 0 0 0 1px rgba(255,255,255,0.06)',
-      }}>
-        <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-      </div>
+    <PinScreen label={t('pin.enter')}>
+      <AppLogo size="l" priority />
+      <b className="wp-t-head">{APP_NAME}</b>
+      <span className="wp-t-label">{t('pin.enter')}</span>
 
-      {/* Title */}
-      <div style={{
-        fontFamily:"var(--font-sans),sans-serif", fontWeight:800,
-        // v11.7.1: 22px literal disengaja — lihat penjelasan lengkap di LoadingScreen.tsx
-        fontSize:22, color:'var(--txt)',
-        letterSpacing:'-0.02em', marginBottom:6,
-      }}>
-        WiFi Pay
-      </div>
+      <PinDots filled={filled} shake={shake} label={`${filled}/6`} />
+      <div className="wp-t-cap" role="alert" style={{ minHeight: '1.5em', color: 'var(--c-belum)', textAlign: 'center' }}>{error}</div>
 
-      {/* Subtitle */}
-      <div style={{
-        fontSize:'var(--fs-caption)', color:'var(--txt3)',
-        letterSpacing:'.1em', textTransform:'uppercase',
-        marginBottom:32,
-      }}>
-        Masukkan PIN
-      </div>
-
-      {/* Dot indicator */}
-      <div
-        style={{ display:'flex', gap:16, marginBottom: error ? 12 : 32 }}
-        className={shake ? 'pin-shake' : ''}
-      >
-        {digits.map((d,i) => (
-          <div key={i} style={{
-            width:14, height:14, borderRadius:'50%',
-            background: d ? 'var(--zc)' : 'transparent',
-            border: d ? '2px solid var(--zc)' : '2px solid var(--txt4)',
-            transition:'all .15s var(--ease-out)',
-            boxShadow: d ? '0 0 10px var(--zcdim)' : 'none',
-          }} />
+      {/* Input tersembunyi: readOnly + inputMode=none mencegah keyboard mobile; semua masukan via Numpad */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}>
+        {digits.map((d, i) => (
+          <input key={i} ref={el => { refs.current[i] = el; }} type="tel" inputMode="none" readOnly maxLength={1} value={d}
+            aria-hidden="true" tabIndex={-1}
+            onChange={() => {/* hanya Numpad: ditangani pressDigit */}}
+            onKeyDown={e => handleKeyDown(i, e)} />
         ))}
       </div>
 
-      {/* Error */}
-      <div style={{
-        fontSize:'var(--fs-caption)', color:'var(--c-belum)',
-        marginBottom:20, minHeight:16, textAlign:'center',
-        opacity: error ? 1 : 0,
-        transition:'opacity .15s',
-      }}>
-        {error || '—'}
-      </div>
-
-      {/* Hidden inputs — readOnly + inputMode=none mencegah keyboard mobile muncul.
-          onChange={noop} karena controlled input butuh onChange tapi kita tidak
-          ingin keyboard native — semua input lewat pressPad numpad. */}
-      <div style={{ position:'absolute', opacity:0, pointerEvents:'none' }}>
-        {digits.map((d,i) => (
-          <input key={i} ref={refs[i]} type="tel" inputMode="none" readOnly maxLength={1} value={d}
-            onChange={() => {/* nompad-only input: handled by pressPad */}}
-            onKeyDown={e => handleKeyDown(i, e)}
-          />
-        ))}
-      </div>
-
-      {/* Numpad */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
-        {padKeys.map((k,i) => {
-          if (k === '') return <div key={i} />;
-          const isDel = k === 'DEL';
-          return (
-            <button
-              key={i}
-              onClick={() => pressPad(k)}
-              aria-label={isDel ? 'Hapus angka' : k}
-              style={{
-                width:64, height:56, borderRadius:'var(--r-md)',
-                border:'1px solid var(--border)',
-                background: isDel ? 'var(--bg3)' : 'var(--bg2)',
-                color: isDel ? 'var(--txt3)' : 'var(--txt)',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                cursor:'pointer',
-                transition:'all var(--t-fast) var(--ease-smooth)',
-                fontFamily: isDel ? undefined : "var(--font-mono),monospace",
-                // v11.7.1: 22px literal disengaja (tombol keypad PIN, butuh besar) — sama
-                // kelas ukuran dgn LoadingScreen.tsx, lihat penjelasan lengkap di sana
-                fontWeight:600, fontSize:22,
-                boxShadow:'var(--shadow-xs)',
-                WebkitTapHighlightColor:'transparent',
-              }}
-              onMouseDown={e => (e.currentTarget.style.transform='scale(.93)')}
-              onMouseUp={e   => (e.currentTarget.style.transform='scale(1)')}
-              onTouchStart={e => (e.currentTarget.style.transform='scale(.93)')}
-              onTouchEnd={e  => (e.currentTarget.style.transform='scale(1)')}
-            >
-              {isDel ? <Delete size={20} strokeWidth={1.5} /> : k}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Biometric button — tampil jika tersedia */}
-      {bioAvail && settings.biometricEnabled && (
-        <button
-          onClick={handleBiometric}
-          disabled={bioLoading}
-          aria-label="Buka dengan sidik jari atau face ID"
-          style={{
-            marginTop:24,
-            background:'none', border:'1px solid var(--border)',
-            borderRadius:'var(--r-full)',
-            padding:'10px 24px',
-            display:'flex', alignItems:'center', gap:8,
-            color:'var(--txt3)', cursor:'pointer',
-            fontSize:'var(--fs-body)', fontFamily:"var(--font-sans),sans-serif",
-            transition:'all var(--t-fast)',
-            opacity: bioLoading ? 0.5 : 1,
-          }}
-        >
-          <Fingerprint size={16} strokeWidth={1.5} />
-          <ScanFace    size={16} strokeWidth={1.5} />
-          <span>{bioLoading ? 'Memverifikasi...' : 'Sidik Jari / Face ID'}</span>
-        </button>
-      )}
-
-      <style>{`
-        .pin-shake {
-          animation: pinShake .5s var(--ease-spring);
-        }
-        @keyframes pinShake {
-          0%, 100% { transform: translateX(0); }
-          20%       { transform: translateX(-8px); }
-          40%       { transform: translateX(8px); }
-          60%       { transform: translateX(-6px); }
-          80%       { transform: translateX(6px); }
-        }
-      `}</style>
-    </div>
+      <Numpad
+        onDigit={pressDigit}
+        onBackspace={pressBackspace}
+        backspaceLabel={t('pin.backspace')}
+        extra={bioAvail && settings.biometricEnabled ? (
+          <button type="button" disabled={bioLoading} aria-label={t('pin.bioAria')} onClick={handleBiometric}>
+            <Fingerprint size="1em" aria-hidden="true" />
+          </button>
+        ) : undefined}
+      />
+    </PinScreen>
   );
 }

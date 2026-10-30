@@ -1,7 +1,12 @@
 'use client';
 
-import Image from 'next/image';
-// components/layout/Header.tsx — Fase 4: sync pill + Lucide + 3-mode theme cycle
+// components/layout/Header.tsx — REDESAIN T6
+// 2 baris: (1) hamburger [mode sidebar] + logo + versi + cari + notifikasi [kerangka A3] + tema + avatar;
+//          (2) tab zona dinamis + SyncPill + status/aksi kunci global.
+// Logika TIDAK berubah dari v11.7.1: toggleGlobalLock (+ rollback selektif), cycleTheme,
+// ResizeObserver --header-h. Perubahan non-visual yang disengaja (lihat MANIFEST):
+//   - warna zona aktif ditulis ke <body> lewat zoneCssVars() dalam effect → ikut tema Terang/Emas
+//     dan ikut perubahan zona terprogram (sebelumnya hanya saat tombol tab diklik).
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { saveDB } from '@/lib/db';
@@ -11,38 +16,40 @@ import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
 import { useT } from '@/hooks/useT';
 import {
-  Menu, Lock, LockOpen, Search, Sun, Moon, Sparkles,
-  Cloud, RotateCw, AlertTriangle, WifiOff,
-} from 'lucide-react';
+  List, Lock, LockOpen, MagnifyingGlass, Sun, Moon, Crown,
+} from '@phosphor-icons/react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
 import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
+import { zoneCssVars } from '@/lib/design-tokens';
+import AppLogo from '@/components/ui/AppLogo';
+import IconButton from '@/components/ui/IconButton';
+import HeaderZoneTabs from './Header.ZoneTabs';
+import HeaderSyncPill from './Header.SyncPill';
+import NotificationCenter from '@/components/features/notifications/NotificationCenter';
+import { getInitials } from './userInitials';
 
-interface Props { onToggleSidebar: () => void; }
+interface Props {
+  onToggleSidebar: () => void;
+  onOpenAccount: () => void;
+}
 
-export default function Header({ onToggleSidebar }: Props) {
+const THEME_ICON = { light: Sun, dark: Moon, gold: Crown } as const;
+
+export default function Header({ onToggleSidebar, onOpenAccount }: Props) {
   const {
     activeZone, setZone,
     globalLocked, setGlobalLocked,
-    syncStatus, theme, setTheme,
+    theme, setTheme,
     appData, uid, setSyncStatus,
     settings, setAppData,
+    navMode, userName, userEmail,
   } = useAppStore();
 
   const [searchOpen, setSearchOpen] = useState(false);
   const t = useT();
 
-  // v11.7.1 FIX: --header-h (styles/tokens.css) statis 56px, sudah lama tidak akurat —
-  // Header ini sudah 2 baris (Row 1 logo+zone, Row 2 sync/status/aksi) sejak sebelum sesi
-  // ini, tinggi asli jauh lebih dari 56px. Toast.tsx & komponen lain pakai --header-h utk
-  // menempatkan diri tepat di bawah Header — dgn token basi, toast (top: header-h + 8px)
-  // muncul menimpa Row 2 (badge status "Terkunci/Terbuka" + tombol aksi), bukan di bawahnya.
-  // FIX: ukur tinggi ASLI via ResizeObserver (pola sama dgn EntryView.tsx sheetHeight —
-  // "menghindari duplikasi konstanta layout/px yang gampang basi") & tulis ke CSS var
-  // --header-h di document.documentElement scr langsung, krn Toast.tsx berada di node
-  // terpisah dlm pohon komponen (bukan child Header) — tidak bisa dioper via React state/
-  // props biasa, harus lewat CSS custom property global spy kedua sisi tetap sinkron
-  // otomatis kapan pun Header berubah tinggi (termasuk di masa depan), bukan angka statis
-  // yg gampang basi lagi.
+  // v11.7.1 FIX (dipertahankan): --header-h diukur ASLI via ResizeObserver & ditulis ke <html>;
+  // Toast.tsx (node terpisah) membacanya lewat CSS custom property global.
   const headerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = headerRef.current;
@@ -56,33 +63,31 @@ export default function Header({ onToggleSidebar }: Props) {
     return () => ro.disconnect();
   }, []);
 
+  // Warna zona aktif → CSS variable di <body> (menang atas aturan body.light/body.gold).
+  const customZones = settings.customZones;
+  useEffect(() => {
+    const v = zoneCssVars(activeZone, customZones ?? []);
+    const st = document.body.style;
+    st.setProperty('--zc', v.zc);
+    st.setProperty('--zcdim', v.zcdim);
+    st.setProperty('--zc-rgb', v.rgb);
+  }, [activeZone, customZones]);
+  useEffect(() => () => {
+    const st = document.body.style;
+    st.removeProperty('--zc'); st.removeProperty('--zcdim'); st.removeProperty('--zc-rgb');
+  }, []);
+
   // Cycle: dark → light → gold → dark
   function cycleTheme() {
     const next: Record<ThemeMode, ThemeMode> = { dark: 'light', light: 'gold', gold: 'dark' };
     const toasts: Record<ThemeMode, string> = {
-      light: settings.language === 'en' ? 'Light mode' : 'Mode Terang',
-      dark:  settings.language === 'en' ? 'Dark mode'  : 'Mode Gelap',
-      gold:  settings.language === 'en' ? 'Gold mode'  : 'Mode Emas',
+      light: t('header.themeToast.light'),
+      dark:  t('header.themeToast.dark'),
+      gold:  t('header.themeToast.gold'),
     };
     const n = next[theme];
     setTheme(n);
     showToast(toasts[n]);
-  }
-
-  function handleZone(z: string) {
-    setZone(z);
-    // Cari color dari customZones jika bukan KRS/SLK
-    const customZones: { key: string; color: string }[] = settings.customZones ?? [];
-    const color = z === 'KRS' ? '#3B82F6'
-                : z === 'SLK' ? '#F97316'
-                : (customZones.find(c => c.key === z)?.color ?? '#8B5CF6');
-    // Parse hex ke RGB
-    const r = parseInt(color.slice(1,3),16);
-    const g = parseInt(color.slice(3,5),16);
-    const b = parseInt(color.slice(5,7),16);
-    document.documentElement.style.setProperty('--zc', color);
-    document.documentElement.style.setProperty('--zc-rgb', `${r},${g},${b}`);
-    document.documentElement.style.setProperty('--zcdim', color + '22');
   }
 
   async function toggleGlobalLock() {
@@ -102,10 +107,8 @@ export default function Header({ onToggleSidebar }: Props) {
         logger.error('Gagal simpan toggleGlobalLock ke Firebase', err);
         setSyncStatus('err'); ok = false;
         setGlobalLocked(prevLocked); // rollback
-        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — replace
-        // total ke prevData (snapshot dari sebelum await saveDB) bisa menghapus payment
-        // member lain yang berhasil tersimpan di antaranya. Baca state terbaru, kembalikan
-        // hanya field yang disentuh operasi ini (_globalLocked).
+        // FIX v11.5.7: rollback SELEKTIF via selectiveRollback (lib/rollback.ts) — baca state
+        // terbaru, kembalikan hanya field yang disentuh operasi ini (_globalLocked).
         const latest = useAppStore.getState().appData;
         setAppData(selectiveRollback(latest, prevData, newData));
       }
@@ -117,168 +120,81 @@ export default function Header({ onToggleSidebar }: Props) {
     }
   }
 
-  // Sync pill config
-  const syncConfigs = {
-    ok:      { icon: <Cloud size={12} strokeWidth={1.5} />,         label: t('common.saved'),   cls: 'sync-pill ok'      },
-    loading: { icon: <RotateCw size={12} strokeWidth={1.5} />,      label: t('common.saving'),  cls: 'sync-pill loading' },
-    err:     { icon: <AlertTriangle size={12} strokeWidth={1.5} />, label: t('sync.error'),     cls: 'sync-pill err'     },
-    offline: { icon: <WifiOff size={12} strokeWidth={1.5} />,       label: t('common.offline'), cls: 'sync-pill offline' },
-  };
-  const syncCfg = syncConfigs[syncStatus as keyof typeof syncConfigs] ?? syncConfigs.ok;
+  const ThemeIcon = THEME_ICON[theme];
+  const themeLabel = theme === 'light' ? t('settings.theme.light') : theme === 'gold' ? t('settings.theme.gold') : t('settings.theme.dark');
 
   return (
     <>
-      <div id="header" ref={headerRef}>
-        {/* Row 1: hamburger + logo + zone switch */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-          <button
-            id="hamburger"
-            className="hbtn"
-            style={{ padding:'0 8px', flexShrink:0, minWidth:40, minHeight:40, display:'flex', alignItems:'center', justifyContent:'center' }}
-            onClick={onToggleSidebar}
-            aria-label="Buka menu"
-          >
-            <Menu size={18} strokeWidth={1.5} />
-          </button>
+      <header id="header" ref={headerRef}>
+        {/* Baris 1: hamburger (mode sidebar) + logo + versi + aksi */}
+        <div className="hdr-row">
+          {navMode === 'sidebar' && (
+            <IconButton
+              id="hamburger"
+              icon={List}
+              label={t('header.menuOpen')}
+              round
+              onClick={onToggleSidebar}
+            />
+          )}
 
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{
-              width:30, height:30, borderRadius:'var(--r-sm)',
-              overflow:'hidden', flexShrink:0,
-              boxShadow:'0 2px 8px rgba(201,149,42,0.2)',
-            }}>
-              <Image src="/icon-512.png" alt={APP_NAME} width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-            </div>
+          <div className="hdr-brand">
+            <AppLogo size="m" priority />
             <div>
-              <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', letterSpacing:'-.02em' }}>
-                {APP_NAME}
-              </div>
-              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{APP_VERSION_FULL}</div>
+              <b>{APP_NAME}</b>
+              <span>{APP_VERSION_FULL}</span>
             </div>
           </div>
 
-          {/* Zone switch — KRS + SLK + zona custom, filter hidden */}
-          <div className="zone-sw" style={{ marginLeft:'auto' }}>
-            {(() => {
-              const hiddenZones: string[] = settings.hiddenZones ?? [];
-              const customZones: { key: string; color: string }[] = settings.customZones ?? [];
-              const allZ = [
-                { key: 'KRS', cls: 'krs' },
-                { key: 'SLK', cls: 'slk' },
-                ...customZones.map(c => ({ key: c.key, cls: 'custom' })),
-              ].filter(z => !hiddenZones.includes(z.key));
-              return allZ.map(z => (
-                <button
-                  key={z.key}
-                  className={`zbtn ${activeZone === z.key ? z.cls : ''}`}
-                  onClick={() => handleZone(z.key)}
-                  aria-label={`Zona ${z.key}`}
-                  style={activeZone === z.key && z.cls === 'custom' ? {
-                    background: (customZones.find(c=>c.key===z.key)?.color ?? '#8B5CF6'),
-                    color: '#fff', borderColor: 'transparent',
-                  } : {}}
-                >{z.key}</button>
-              ));
-            })()}
-          </div>
+          <span className="hdr-sp" />
+
+          <IconButton icon={MagnifyingGlass} label={t('header.searchMember')} round onClick={() => setSearchOpen(true)} />
+          <NotificationCenter />
+          <IconButton
+            icon={ThemeIcon}
+            label={`${t('settings.theme')}: ${themeLabel}`}
+            title={themeLabel}
+            round
+            weight={theme === 'gold' ? 'fill' : 'regular'}
+            onClick={cycleTheme}
+            style={theme === 'gold' ? { color: 'var(--gold)' } : undefined}
+          />
+          <button type="button" className="hdr-av" aria-label={t('sidebar.accountAria')} title={t('sidebar.manageAccount')} onClick={onOpenAccount}>
+            {getInitials(userName, userEmail)}
+          </button>
         </div>
 
-        {/* Row 2: sync pill + action buttons */}
-        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          {/* Sync pill */}
+        {/* Baris 2: zona + sync + kunci */}
+        <div className="hdr-row">
+          <HeaderZoneTabs onZoneChange={setZone} />
+          <HeaderSyncPill />
+          <span className="hdr-sp" />
+
+          {/* v11.7.0 (dipertahankan): STATUS (tidak bisa diklik) + tombol AKSI ikon-saja terpisah. */}
           <div
-            className={syncCfg.cls}
-            role="status"
-            aria-live="polite"
-            aria-label={`Status sync: ${syncCfg.label}`}
+            aria-hidden="true"
+            className="hdr-lock-status"
+            style={{ ['--lc' as string]: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)' }}
           >
-            <span className={syncStatus === 'loading' ? 'sync-spin' : ''}>
-              {syncCfg.icon}
-            </span>
-            <span>{syncCfg.label}</span>
+            {globalLocked
+              ? <Lock size={14} weight="fill" />
+              : <LockOpen size={14} weight="fill" />
+            }
+            {globalLocked ? t('header.statusLocked') : t('header.statusUnlocked')}
           </div>
-
-          <span style={{ flex:1 }} />
-
-          {/* v11.7.0: dipecah jadi 2 elemen terpisah sesuai panduan UX — indikator STATUS
-              (kiri, tidak bisa diklik, teks+ikon+warna mengikuti kondisi globalLocked saat
-              ini) dan tombol AKSI (kanan, ikon-saja tanpa teks, warna solid ikut tema aktif
-              via CSS body.gold override — lihat header-lock-action-btn di
-              styles/components.header.css). Sebelumnya 1 tombol gabungan dgn teks pendek
-              "KUNCI"/"BUKA" yg ambigu antara status vs perintah (linter halus: kata kerja
-              imperatif dipakai utk menampilkan status, bukan utk memicu aksi eksplisit).
-              LockBanner (pesan panjang duplikat di bawah Header) DIHAPUS — redundan setelah
-              status ini ada, lihat AppShell.tsx & LockBanner.tsx (dihapus). */}
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <div
-              aria-hidden="true"
-              style={{
-                display:'flex', alignItems:'center', gap:5,
-                background: globalLocked ? 'rgba(239,68,68,0.10)' : 'rgba(34,197,94,0.10)',
-                color: globalLocked ? 'var(--c-belum)' : 'var(--c-lunas)',
-                // v11.7.1: FIX — disamakan ke ukuran badge "Tersimpan" (.sync-pill,
-                // styles/components.header.css) yg sebelumnya lebih besar (padding
-                // 4px 10px + font 11px/fs-caption + min-height 28px vs badge status
-                // sblmnya padding 5px 9px + font 9px/fs-micro tanpa min-height).
-                // Naik ke fs-caption (bukan sync-pill turun ke fs-micro) krn 11px
-                // sudah persis cocok token resmi & sync-pill lbh dulu established.
-                padding:'4px 10px', borderRadius:'var(--r-full)', minHeight:28,
-                fontSize:'var(--fs-caption)', whiteSpace:'nowrap',
-              }}
-            >
-              {globalLocked
-                ? <Lock size={12} strokeWidth={1.5} />
-                : <LockOpen size={12} strokeWidth={1.5} />
-              }
-              {globalLocked ? t('header.statusLocked') : t('header.statusUnlocked')}
-            </div>
-            <button
-              className="header-lock-action-btn"
-              onClick={toggleGlobalLock}
-              aria-label={globalLocked ? t('header.actionAriaLocked') : t('header.actionAriaUnlocked')}
-              title={globalLocked ? t('header.unlock') : t('header.lock')}
-              style={{
-                width:34, height:34, minWidth:34, minHeight:34,
-                border:'none', borderRadius:'50%',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                cursor:'pointer', flexShrink:0,
-              }}
-            >
-              {globalLocked
-                ? <LockOpen size={15} strokeWidth={1.5} />
-                : <Lock size={15} strokeWidth={1.5} />
-              }
-            </button>
-          </div>
-
-          {/* Pencarian */}
           <button
-            className="hbtn"
-            style={{ minWidth:40, minHeight:40, display:'flex', alignItems:'center', justifyContent:'center' }}
-            onClick={() => setSearchOpen(true)}
-            aria-label="Cari member"
-            title="Cari member"
+            className="header-lock-action-btn"
+            onClick={toggleGlobalLock}
+            aria-label={globalLocked ? t('header.actionAriaLocked') : t('header.actionAriaUnlocked')}
+            title={globalLocked ? t('header.unlock') : t('header.lock')}
           >
-            <Search size={16} strokeWidth={1.5} />
-          </button>
-
-          {/* Toggle tema — klik untuk cycle dark→light→gold→dark */}
-          <button
-            className="hbtn"
-            style={{ minWidth:40, minHeight:40, display:'flex', alignItems:'center', justifyContent:'center' }}
-            onClick={cycleTheme}
-            aria-label={t('settings.theme')}
-            title={theme === 'light' ? t('settings.theme.light') : theme === 'gold' ? t('settings.theme.gold') : t('settings.theme.dark')}
-          >
-            {theme === 'light'
-              ? <Sun size={16} strokeWidth={1.5} />
-              : theme === 'gold'
-              ? <Sparkles size={16} strokeWidth={1.5} style={{ color: '#C9952A' }} />
-              : <Moon size={16} strokeWidth={1.5} />
+            {globalLocked
+              ? <LockOpen size={16} weight="fill" />
+              : <Lock size={16} weight="fill" />
             }
           </button>
         </div>
-      </div>
+      </header>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>

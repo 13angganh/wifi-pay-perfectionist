@@ -13,7 +13,7 @@ async function loginIfCredentialsAvailable(page: Page): Promise<boolean> {
   await page.goto('/login');
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(pass);
-  await page.locator('button.lf-btn').click();
+  await page.locator('[data-testid="login-submit"]').click();
   await page.waitForURL(/\/(app|dashboard|\(app\))/, { timeout: 12_000 });
   return true;
 }
@@ -39,19 +39,19 @@ test.describe('Entry View', () => {
 
   test('halaman entry menampilkan search box', async ({ page }) => {
     await goToEntry(page);
-    const searchBox = page.locator('input[placeholder*="cari"], .search-box, input[type="search"]').first();
+    const searchBox = page.locator('[data-testid="entry-search"], input[placeholder*="cari"], .search-box, input[type="search"]').first();
     await expect(searchBox).toBeVisible({ timeout: 5_000 });
   });
 
   test('search dengan query tidak ada → daftar kosong atau empty state', async ({ page }) => {
     await goToEntry(page);
-    const searchBox = page.locator('input[placeholder*="cari"], .search-box').first();
+    const searchBox = page.locator('[data-testid="entry-search"], input[placeholder*="cari"], .search-box').first();
     if (await searchBox.count() === 0) return;
 
     await searchBox.fill('ZZZNOTEXISTMEMBER999');
     await page.waitForTimeout(400);
 
-    const items = page.locator('.ml-item, [class*="member-item"], [class*="member-card"]');
+    const items = page.locator('[data-testid="member-card"], .ml-item, [class*="member-item"], [class*="member-card"]');
     const count = await items.count();
     // Harusnya kosong atau ada empty state
     const emptyState = page.locator('[class*="empty"], text=/tidak ada/i, text=/no result/i');
@@ -70,7 +70,7 @@ test.describe('Entry View', () => {
   test('filter chip tersedia (Semua / Lunas / Belum / Free)', async ({ page }) => {
     await goToEntry(page);
     // Cari chip filter apapun
-    const chips = page.locator('.fchip, [class*="chip"], [class*="filter"]');
+    const chips = page.locator('.wp-fchip, .fchip, [class*="chip"], [class*="filter"]');
     const chipCount = await chips.count();
     expect(chipCount).toBeGreaterThanOrEqual(1);
   });
@@ -78,7 +78,7 @@ test.describe('Entry View', () => {
   test('klik member pertama → quick pay panel atau detail muncul', async ({ page }) => {
     await goToEntry(page);
 
-    const firstMember = page.locator('.ml-item, [class*="member-card"], [class*="member-row"]').first();
+    const firstMember = page.locator('[data-testid="member-card"] [role="button"], .ml-item, [class*="member-card"], [class*="member-row"]').first();
     if (await firstMember.count() === 0) {
       test.skip(true, 'Tidak ada member di daftar — skip');
       return;
@@ -88,7 +88,7 @@ test.describe('Entry View', () => {
     await page.waitForTimeout(400);
 
     // Quick pay atau expanded detail harus muncul
-    const qpOrDetail = page.locator('.qp-btn, [class*="quick"], [class*="expand"], [class*="detail"]');
+    const qpOrDetail = page.locator('.wp-qk, .qp-btn, [class*="quick"], [class*="expand"], [class*="detail"]');
     const visible = await qpOrDetail.count() > 0;
     expect(visible).toBe(true);
   });

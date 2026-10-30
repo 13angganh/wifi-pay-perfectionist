@@ -1,77 +1,93 @@
 // ══════════════════════════════════════════
 // components/features/auth/LoginForm.tsx
-// Dipecah dari app/login/page.tsx (task 1.15)
+// Dipecah dari app/login/page.tsx (task 1.15). REDESAIN T6: tampilan baru; semua logika
+// (login, Google, reset password) tetap di app/login/page.tsx — komponen ini murni tampilan.
 // ══════════════════════════════════════════
 'use client';
 
+import { ArrowLeft, CheckCircle, EnvelopeSimple } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
+import Button from '@/components/ui/Button';
+import Checkbox from '@/components/ui/Checkbox';
+import Notice from '@/components/ui/Notice';
+import GoogleButton from './GoogleButton';
+import PasswordField from './PasswordField';
 
 interface Props {
-  email:       string;
-  pass:        string;
-  error:       string;
-  loading:     boolean;
+  email:         string;
+  pass:          string;
+  remember:      boolean;
+  error:         string;
+  loading:       boolean;
+  googleLoading: boolean;
+  resetSent:     boolean;
+  resetLoading:  boolean;
   hasRemembered: boolean;
-  onEmail:     (v: string) => void;
-  onPass:      (v: string) => void;
-  onLogin:     () => void;
-  onBack:      () => void;
-  onRegister:  () => void;
+  onEmail:       (v: string) => void;
+  onPass:        (v: string) => void;
+  onRemember:    (v: boolean) => void;
+  onLogin:       () => void;
+  onGoogle:      () => void;
+  onReset:       () => void;
+  onBack:        () => void;
+  onRegister:    () => void;
 }
 
-const inputStyle: React.CSSProperties = {
-  width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
-  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
-  marginBottom:14, fontFamily:"var(--font-mono),monospace", outline:'none',
-  transition:'border .2s', boxSizing:'border-box',
-};
-
-export default function LoginForm({ email, pass, error, loading, hasRemembered, onEmail, onPass, onLogin, onBack, onRegister }: Props) {
+export default function LoginForm(p: Props) {
   const t = useT();
   return (
-    <div>
-      <div style={{ textAlign:'center', marginBottom:20 }}>
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)', letterSpacing:'-0.02em', lineHeight:1.2, marginBottom:4 }}>
-          {t('login.greetingNew')}
-        </div>
-        <div style={{ fontSize:'var(--fs-body)', color:'var(--txt3)' }}>{t('login.continuePrompt')}</div>
+    <div className="auth-form">
+      <div className="auth-head">
+        <b className="wp-t-display">{t('login.greetingNew')}</b>
+        <span className="wp-t-cap" style={{ fontSize: 'var(--fs-body)' }}>{t('login.continuePrompt')}</span>
       </div>
 
-      {hasRemembered && (
-        <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--txt3)', fontSize:'var(--fs-caption)', cursor:'pointer', marginBottom:12, display:'block' }}>
-          ← {t('action.back')}
+      {p.hasRemembered && (
+        <button type="button" className="auth-back" onClick={p.onBack}>
+          <ArrowLeft size={14} aria-hidden="true" /> {t('action.back')}
         </button>
       )}
 
-      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>EMAIL</div>
-      <input
-        style={inputStyle} type="email" inputMode="email" placeholder="email@gmail.com"
-        value={email} onChange={e => onEmail(e.target.value)} autoComplete="email"
-        onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--zc)')}
-        onBlur={e  => ((e.target as HTMLInputElement).style.borderColor = 'var(--border)')}
-      />
-      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>PASSWORD</div>
-      <input
-        style={inputStyle} type="password" placeholder="••••••••"
-        value={pass} onChange={e => onPass(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && onLogin()}
-        onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--zc)')}
-        onBlur={e  => ((e.target as HTMLInputElement).style.borderColor = 'var(--border)')}
-      />
-      {error && <div className="lf-err">{error}</div>}
-      <button className="lf-btn" onClick={onLogin} disabled={loading}>
-        {loading ? t('common.loading') : t('login.submit')}
-      </button>
-
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-label)', color:'var(--txt5)', position:'relative' }}>
-        <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
-        <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
+      <div className="wp-inpw">
+        <span className="wp-inpw__ico" aria-hidden="true"><EnvelopeSimple size="1em" /></span>
+        <input
+          className="wp-inp" type="email" inputMode="email" autoComplete="email"
+          placeholder="email@gmail.com" aria-label={t('login.email')}
+          value={p.email} onChange={e => p.onEmail(e.target.value)}
+        />
       </div>
-      <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', textAlign:'center' }}>
+      <PasswordField
+        value={p.pass} onChange={p.onPass} onEnter={p.onLogin}
+        autoComplete="current-password" ariaLabel={t('login.password')}
+      />
+
+      {p.error && <div className="auth-err" role="alert" data-testid="login-error">{p.error}</div>}
+
+      <div className="auth-row">
+        <Checkbox label={t('login.remember')} checked={p.remember} onChange={e => p.onRemember(e.target.checked)} />
+        <button type="button" className="wp-lnk" onClick={p.onReset} disabled={p.resetLoading}>
+          {p.resetLoading ? t('login.resetSending') : t('login.forgot')}
+        </button>
+      </div>
+
+      {p.resetSent && (
+        <Notice tone="ok" icon={CheckCircle}>
+          {t('login.resetSentTo')} {p.email} — {t('login.resetSentCheck')}
+        </Notice>
+      )}
+
+      <Button variant="primary" size="lg" block onClick={p.onLogin} loading={p.loading} data-testid="login-submit">
+        {p.loading ? t('common.loading') : t('login.submit')}
+      </Button>
+
+      <div className="wp-sep">{t('login.orWith')}</div>
+      <GoogleButton onClick={p.onGoogle} loading={p.googleLoading} />
+
+      <div className="auth-switch">
         {t('login.noAccount')}{' '}
-        <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={onRegister}>
+        <button type="button" className="wp-lnk" style={{ fontSize: 'var(--fs-body)' }} onClick={p.onRegister}>
           {t('login.registerHere')}
-        </span>
+        </button>
       </div>
     </div>
   );

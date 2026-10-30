@@ -1,9 +1,14 @@
-// components/features/rekap/RekapModal.tsx — Sub-component dipecah dari RekapView (Fase 3)
+// components/features/rekap/RekapModal.tsx — REDESAIN T8 (T3 keputusan 7): dialog Sheet + RekapModal.MonthGrid.
+// Logika tulis dipertahankan persis zip (quickPay optimis + toast Urungkan, manualPay, clearPay, kunci, rollback selektif).
+// REDESAIN T12: tanggal bayar lewat SATU helper (lib/payDate.ts) di semua jalur tulis modal ini; mode manual punya
+// pemilih tanggal (default hari ini); bulan Belum-terdaftar/Nonaktif tanpa pembayaran butuh konfirmasi sebelum dicatat.
 'use client';
 
+import { useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS_EN, MONTHS } from '@/lib/constants';
-import { getPay, isFree, rp, getKey } from '@/lib/helpers';
+import { getPay, isFree, rp, getKey, getMonthStatus, isNotApplicable } from '@/lib/helpers';
+import { localDateISO, resolvePayDate, setPayDate, payDatePatch, applyPayDatePatch, readPayDate, restorePayDate, type PayDatePatch } from '@/lib/payDate';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { persistPayment, persistPaymentGranular } from '@/lib/db';
@@ -11,8 +16,11 @@ import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
-import { X, Gift, Lock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Wallet } from '@phosphor-icons/react';
+import { IconTile } from '@/components/ui/IconTile';
+import { Sheet } from '@/components/ui/Sheet';
+import RekapMonthGrid from './RekapModal.MonthGrid';
+import r from './rekap.module.css';
 
 interface RekapModalProps {
   inputDirty: React.MutableRefObject<boolean>;
@@ -34,11 +42,20 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
+  // T12 (F4): tanggal bayar pilihan pengguna (mode manual); kosong = hari ini. Direset tiap modal ditutup.
+  const payDateRef = useRef('');
+  // T12 (D3/D5): konfirmasi "tetap catat" untuk bulan N/A — kunci periode sel supaya otomatis tertutup lagi di sel lain.
+  const [naOkKey, setNaOkKey] = useState('');
+
   if (!rekapExpanded) return null;
   const { name, month } = rekapExpanded;
+  const close: RekapModalProps['onClose'] = (paidCell) => { payDateRef.current = ''; onClose(paidCell); };
+  const manualDate = () => resolvePayDate(settings?.autoDate, payDateRef.current || localDateISO());
 
   const entryVal  = getPay(appData, activeZone, name, selYear, month);
   const entryFree = isFree(appData, activeZone, name, selYear, month);
+  const entryNA   = (s => (isNotApplicable(s) ? s : null))(getMonthStatus(appData, activeZone, name, selYear, month));
+  const naKey     = `${activeZone}|${name}|${selYear}|${month}`;
   const locked    = globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   const info      = appData.memberInfo?.[activeZone + '__' + name] || {};
   const tarif     = info.tarif as number | undefined;
@@ -86,10 +103,12 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     paymentValue: number | null,
     action: string,
     detail: string,
+    payDate?: PayDatePatch,
   ): Promise<boolean> {
     const current   = useAppStore.getState().appData;
     const prevValue = current.payments[paymentKey] ?? null;
-    const newData = { ...current, payments: { ...current.payments } };
+    const prevDate  = payDate ? readPayDate(current, payDate) : undefined;
+    const newData = applyPayDatePatch({ ...current, payments: { ...current.payments } }, payDate);
     if (paymentValue === null) delete newData.payments[paymentKey];
     else newData.payments[paymentKey] = paymentValue;
     setAppData(newData);
@@ -103,6 +122,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
           globalLocked: useAppStore.getState().globalLocked,
           lockedEntries: useAppStore.getState().lockedEntries,
         }),
+        payDate,
       );
       setSyncStatus('ok');
       return true;
@@ -113,7 +133,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       const rolledBack = { ...latest, payments: { ...latest.payments } };
       if (prevValue === null) delete rolledBack.payments[paymentKey];
       else rolledBack.payments[paymentKey] = prevValue;
-      setAppData(rolledBack);
+      setAppData(payDate ? restorePayDate(rolledBack, payDate, prevDate) : rolledBack);
       return false;
     }
   }
@@ -123,19 +143,13 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     const k         = getKey(activeZone, name, selYear, month);
     const prevVal   = getPay(appData, activeZone, name, selYear, month);
     const snapshot  = appData; // simpan SEBELUM optimistic update, untuk rollback yang benar
-    const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
-    if (settings?.autoDate) {
-      const today   = new Date().toISOString().slice(0, 10);
-      const infoKey = `${activeZone}__${name}`;
-      const dateKey = `date_${selYear}_${month}`;
-      newData.memberInfo = {
-        ...(newData.memberInfo || {}),
-        [infoKey]: { ...(newData.memberInfo?.[infoKey] || {}), [dateKey]: today },
-      };
-    }
+    const newData = setPayDate(
+      { ...appData, payments: { ...appData.payments, [k]: amt } },
+      activeZone, name, selYear, month, manualDate(),
+    );
     // FIX 8+9: Optimistic — update state + toast LANGSUNG, Firebase async
     setAppData(newData);
-    onClose({ name, month });
+    close({ name, month });
     // FIX v11.5.7: baca state TERBARU via getState() saat callback benar-benar jalan (bisa
     // sampai 4 detik kemudian — lihat penjelasan lengkap di MemberCard.tsx doQuickPay), bukan
     // dari closure `appData` yang beku pada saat quickPay ini dipanggil.
@@ -145,7 +159,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
       await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
-      showToast(`${name} dibatalkan`, 'info');
+      showToast(`${name} ${t('entry.cancelled')}`, 'info');
     });
     // FIX: jika write Firebase di background ini gagal, beri tahu user secara eksplisit
     // — sebelumnya gagal diam-diam, hanya terlihat dari pill header yang mudah terlewat,
@@ -154,8 +168,8 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       .then(ok => { if (!ok) showToast(t('common.saveFailed'), 'err'); });
   }
 
-  async function manualPay(val: string) {
-    if (!inputDirty.current) return;
+  async function manualPay(val: string, force = false) {
+    if (!force && !inputDirty.current) return;
     if (modalClosing.current) return;
     // eslint-disable-next-line react-hooks/immutability
     inputDirty.current = false;
@@ -165,17 +179,20 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       const ok = await persistPaymentOnly(k, null, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
       if (ok) {
         showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
-        onClose();
+        close();
       } else {
         showToast(t('common.saveFailed'), 'err');
       }
     } else {
       const amt = +val;
-      if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
-      const ok = await persistPaymentOnly(k, amt, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`);
+      if (isNaN(amt)) { showToast(t('entry.invalidNominal'), 'err'); return; }
+      const ok = await persistPaymentOnly(
+        k, amt, `[PAY] ${tLog('log.action.pay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear} → ${rp(amt)}`,
+        payDatePatch(activeZone, name, selYear, month, manualDate()),
+      );
       if (ok) {
         showToast(`${name} ${MONTH_NAMES[month]} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`);
-        onClose({ name, month });
+        close({ name, month });
       } else {
         showToast(t('common.saveFailed'), 'err');
       }
@@ -188,7 +205,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     const curVal = getPay(appData, activeZone, name, selYear, month);
     if (curVal === null) return;
     showConfirm(
-      '🗑️',
+      'trash',
       `${t('rekap.deletePayment')} ${name}?`,
       t('membercard.deleteYes'),
       async () => {
@@ -196,7 +213,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
         const ok = await persistPaymentOnly(k, null, `[DEL] ${tLog('log.action.deletePay')} Rekap ${activeZone} - ${name}`, `${MONTH_NAMES[month]} ${selYear}`);
         if (ok) {
           showToast(`${name} ${MONTH_NAMES[month]} ${t('common.deleted')}`, 'err');
-          onClose();
+          close();
         } else {
           showToast(t('common.saveFailed'), 'err');
         }
@@ -205,85 +222,43 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
     );
   }
 
+  function askRecordNA() {
+    if (!entryNA) return;
+    showConfirm(
+      'info',
+      t('membercard.naConfirmTitle'),
+      t('action.confirm'),
+      () => setNaOkKey(naKey),
+      { description: `${name} · ${MONTH_NAMES[month]} ${selYear} · ${t(`status.${entryNA}`)}` },
+    );
+  }
+
   return (
-    <motion.div
-      style={{ position:'fixed', inset:0, zIndex:8000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop: Math.round(window.innerHeight * 0.18), background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
-      onClick={() => onClose()}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+    <Sheet
+      open
+      variant="dialog"
+      onClose={() => close()}
+      leading={<IconTile icon={Wallet} size="sm" />}
+      title={<span className="wp-num" style={{ fontSize: 'var(--fs-body)' }}>{name}</span>}
+      subtitle={<span className={r.modalMeta}>{activeZone} · {MONTH_NAMES[month]} {selYear}</span>}
     >
-      <motion.div
-        style={{
-          background:'rgba(24,28,39,0.92)', backdropFilter:'blur(16px)',
-          border:'1px solid rgba(255,255,255,0.08)', borderRadius:'var(--r-lg)',
-          width:'min(320px,90vw)', boxShadow:'var(--shadow-lg)',
-          overflow:'hidden', animation:'modalScaleIn var(--t-base) var(--ease-spring)',
-        }}
-        onClick={e => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 8 }} transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
-      >
-        <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:4 }}>
-          <div style={{ width:32, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
-        </div>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-          <div>
-            <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{name}</div>
-            <div style={{ fontSize:'var(--fs-label)', color:'var(--zc)', marginTop:2 }}>{activeZone} · {MONTH_NAMES[month]} {selYear}</div>
-          </div>
-          <button onClick={() => onClose()} aria-label="Tutup" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <X size={14} />
-          </button>
-        </div>
-        <div style={{ padding:'14px 16px 16px' }}>
-          {entryFree ? (
-            <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-free)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <Gift size={14} /> {t('rekap.freeMember')}
-            </div>
-          ) : locked ? (
-            <div style={{ textAlign:'center', fontSize:'var(--fs-body)', color:'var(--c-belum)', padding:'12px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-              <Lock size={12} strokeWidth={1.5} />
-              {t('rekap.dataLocked')}
-            </div>
-          ) : (
-            <>
-              <div style={{ display:'flex', gap:6, alignItems:'center', marginBottom:10 }}>
-                <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', flexShrink:0, minWidth:60 }}>{t('common.amount').toUpperCase()}</span>
-                <input
-                  className="mc-input"
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="0"
-                  defaultValue={entryVal !== null ? String(entryVal) : ''}
-                  style={{ flex:1, minWidth:0 }}
-                  onChange={() => { inputDirty.current = true; }} // eslint-disable-line react-hooks/immutability
-                  onBlur={e => manualPay(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      inputDirty.current = true; // eslint-disable-line react-hooks/immutability
-                      manualPay((e.target as HTMLInputElement).value);
-                    }
-                  }}
-                  autoFocus
-                />
-                {entryVal !== null && (
-                  <button className="delbtn" onClick={clearPay} aria-label={t('action.delete')}>
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {tarif && (
-                  <button className="qb" style={{ borderColor:'var(--zc)', color:'var(--zc)', fontWeight:700 }} onClick={() => quickPay(tarif)}>
-                    {tarif} ★
-                  </button>
-                )}
-                {quickAmts.filter(a => a !== tarif).map(a => (
-                  <button key={a} className="qb" onClick={() => quickPay(a)}>{a}</button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
+      <RekapMonthGrid
+        entryVal={entryVal}
+        entryFree={entryFree}
+        entryNA={entryNA && naOkKey !== naKey ? entryNA : null}
+        onRecordNA={askRecordNA}
+        showDate={!settings?.autoDate}
+        onPayDate={v => { payDateRef.current = v; }}
+        locked={locked}
+        tarif={tarif}
+        quickAmts={quickAmts}
+        inputDirty={inputDirty}
+        onQuickPay={quickPay}
+        // inputDirty adalah ref milik pemanggil yang SENGAJA diubah di manualPay (perilaku zip; lihat komentar di sana)
+        // eslint-disable-next-line react-hooks/immutability
+        onManualPay={manualPay}
+        onClearPay={clearPay}
+      />
+    </Sheet>
   );
 }

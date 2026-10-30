@@ -1,157 +1,180 @@
-// components/features/log/LogView.tsx — Fase 4: Skeleton + EmptyState
+// ══════════════════════════════════════════
+// components/features/log/LogView.tsx — layar Log Aktivitas (REDESAIN T10, prototype T5, D4 + A27/A28/A29)
+//
+// Logika zip yang DIPERTAHANKAN: pencarian substring di aksi + detail (textMatch), filter "Hanya Bayar" (aturan zip,
+// log.logic.ts), filter Tahun + Bulan + Reset, batas 150 baris, teks auto-hapus 30 hari, ikon per aksi (dipakai ulang
+// dari Dashboard T7, satu sumber aturan), loading/kosong/tidak ada hasil, Log TIDAK dikunci kunci global (D15).
+// Yang BERUBAH (disetujui): daftar dikelompokkan per hari, awalan [PAY] dsb. disembunyikan di tampilan (data dan
+// pencarian tetap memakai teks asli), A27 tab Data + Sistem, A28 Detail Aktivitas, A29 Statistik, kata "dari"
+// lewat i18n (di zip tertulis langsung), state error.
+// ══════════════════════════════════════════
 'use client';
 
-import { useState } from 'react';
-import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowCounterClockwise, ChartBar, MagnifyingGlass, Scroll, Warning, X } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { textMatch } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
-import { ScrollText, Search, X, RotateCcw, Banknote, Trash2, Pencil, UserPlus, Undo2, Globe, Gift, FileText, Lock, LogIn, LogOut, RefreshCw } from 'lucide-react';
-import { SkeletonList } from '@/components/ui/Skeleton';
+import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
+import { showToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { Input } from '@/components/ui/Input';
+import { Segmented } from '@/components/ui/Segmented';
+import { Select } from '@/components/ui/Select';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { extractAmount, getActivityMeta, stripActionTag } from '@/components/features/dashboard/DashboardView.RecentActivity';
+import type { ActivityLog } from '@/types';
+import LogDetailSheet from './LogView.Detail';
+import LogStatsSheet from './LogView.Stats';
+import { LOG_DETAIL_EVENT, takePendingLogDetail } from './logDetailBridge';
+import {
+  LOG_LIMIT, countByKind, filterLogs, findLogByTs, formatClock, groupByDay, isFilterActive,
+  type LogFilterType,
+} from './log.logic';
+import l from './log.module.css';
 
 export default function LogView() {
   const { appData, syncStatus, logSearch, setLogSearch, logType, setLogType } = useAppStore();
-  const [logYear,  setLogYear]  = useState('');
+  const [logYear, setLogYear] = useState('');
   const [logMonth, setLogMonth] = useState('');
+  const [detail, setDetail] = useState<ActivityLog | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
   const t = useT();
   const lang = useAppStore(s => s.settings).language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
 
-  const logs = appData.activityLog || [];
+  const logs = useMemo(() => appData.activityLog || [], [appData.activityLog]);
+  const filter = { type: logType as LogFilterType, query: logSearch, year: logYear, month: logMonth };
+  const filtered = filterLogs(logs, filter);
+  const base = filterLogs(logs, filter, true);      // tanpa jenis → jumlah per tab + bahan Statistik
+  const counts = countByKind(base);
+  const active = isFilterActive(filter);
+  const shown = filtered.slice(0, LOG_LIMIT);
+  const groups = groupByDay(shown, new Date(), { today: t('dashboard.today'), yesterday: t('dashboard.yesterday') });
 
-  // v11.5 FIX: gabungkan dua search box yang sebelumnya redundan (search aksi + filter nama)
-  // — keduanya mencari di field yang sama persis (action + detail).
-  // KOREKSI v11.5.11: komentar asli di sini mengklaim fuzzyMatch "superset dari includes...
-  // tanpa kehilangan kapabilitas apapun" — klaim itu salah. fuzzyMatch (subsequence match)
-  // pada kalimat panjang seperti action log ("[PAY] Quick Pay Rekap KRS - WILDAN") kehilangan
-  // presisi drastis: kata umum yang berulang di SETIAP entry ("Quick Pay") sendirian sudah
-  // cukup mengandung huruf berurutan untuk query pendek apapun. Bug nyata: cari "uci" match
-  // ke WILDAN/VIO/VINA/SIFA — semua kebetulan mengandung u,i,c dari kata "Quick", padahal
-  // tidak relevan sama sekali dengan "uci". Diganti textMatch (substring presisi, lihat
-  // lib/member.ts untuk penjelasan lengkap kapan pakai yang mana).
-  let filtered = [...logs];
-  if (logType === 'pay') {
-    filtered = filtered.filter(l => l.action && (
-      l.action.includes('Quick Pay') ||
-      l.action.startsWith('[PAY]') || l.action.startsWith('[DEL]') || l.action.startsWith('[FREE]') ||
-      // Legacy: data lama pakai emoji prefix
-      /^[\u{1F4B0}\u{1F5D1}\u{1F193}]/u.test(l.action) ||
-      l.action.includes('Hapus bayar')
-    ));
-  }
-  if (logSearch.trim()) {
-    filtered = filtered.filter(l => textMatch(l.action || '', logSearch) || textMatch(l.detail || '', logSearch));
-  }
-  if (logYear)  filtered = filtered.filter(l => new Date(l.ts).getFullYear() === +logYear);
-  if (logMonth) filtered = filtered.filter(l => new Date(l.ts).getMonth() === +logMonth);
+  // Pusat Notifikasi → Detail Log (permintaan tertunda saat layar dibuka + event saat sudah terbuka)
+  useEffect(() => {
+    const open = () => {
+      const ts = takePendingLogDetail();
+      if (ts === null) return;
+      const found = findLogByTs(useAppStore.getState().appData.activityLog || [], ts);
+      if (found) setDetail(found); else showToast(t('log.notFound'), 'warn');
+    };
+    open();
+    window.addEventListener(LOG_DETAIL_EVENT, open);
+    return () => window.removeEventListener(LOG_DETAIL_EVENT, open);
+  }, [t]);
 
   function reset() { setLogSearch(''); setLogYear(''); setLogMonth(''); setLogType('all'); }
 
-
-  const isFiltered = logType !== 'all' || logSearch.trim() || logYear || logMonth;
-
-  function getLogMeta(action: string): { icon: React.ReactNode; color: string } {
-    const a = action || '';
-    if (a.startsWith('[PAY]') || a.includes('Quick Pay') || a.includes('bayar') || a.includes('Bayar'))
-      return { icon: <Banknote size={14} strokeWidth={1.5} />, color: 'rgba(34,197,94,0.6)' };
-    if (a.startsWith('[DEL]') || a.includes('Hapus'))
-      return { icon: <Trash2 size={14} strokeWidth={1.5} />, color: 'rgba(239,68,68,0.6)' };
-    if (a.startsWith('[EDIT]') || a.includes('Edit') || a.includes('Ubah'))
-      return { icon: <Pencil size={14} strokeWidth={1.5} />, color: 'rgba(59,130,246,0.6)' };
-    if (a.startsWith('[ADD]') || a.includes('Tambah'))
-      return { icon: <UserPlus size={14} strokeWidth={1.5} />, color: 'rgba(59,130,246,0.6)' };
-    if (a.startsWith('[RESTORE]') || a.startsWith('[UNDO]') || a.includes('Pulihkan') || a.includes('Batalkan'))
-      return { icon: <Undo2 size={14} strokeWidth={1.5} />, color: 'rgba(249,115,22,0.6)' };
-    if (a.startsWith('[IP]') || a.includes('Konversi IP'))
-      return { icon: <Globe size={14} strokeWidth={1.5} />, color: 'rgba(99,102,241,0.6)' };
-    if (a.startsWith('[FREE]') || a.includes('Gratis'))
-      return { icon: <Gift size={14} strokeWidth={1.5} />, color: 'rgba(168,85,247,0.6)' };
-    if (a.includes('Login') || a.includes('Masuk'))
-      return { icon: <LogIn size={14} strokeWidth={1.5} />, color: 'rgba(20,184,166,0.6)' };
-    if (a.includes('Logout') || a.includes('Keluar'))
-      return { icon: <LogOut size={14} strokeWidth={1.5} />, color: 'rgba(100,116,139,0.6)' };
-    if (a.includes('Kunci') || a.includes('Lock'))
-      return { icon: <Lock size={14} strokeWidth={1.5} />, color: 'rgba(245,158,11,0.6)' };
-    if (a.startsWith('[SYNC]') || a.includes('Sync'))
-      return { icon: <RefreshCw size={14} strokeWidth={1.5} />, color: 'rgba(14,165,233,0.6)' };
-    return { icon: <FileText size={14} strokeWidth={1.5} />, color: 'var(--border)' };
-  }
+  const loading = syncStatus === 'loading' && logs.length === 0;
+  const failed = syncStatus === 'err' && logs.length === 0;
 
   return (
-    <div>
-      {/* Type filter tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:8, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
-        <button onClick={() => setLogType('all')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', background: logType==='all' ? 'var(--zc)' : 'transparent', color: logType==='all' ? '#fff' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-          <ScrollText size={11} /> {t('common.all')}
-        </button>
-        <button onClick={() => setLogType('pay')} style={{ flex:1, padding:6, borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', background: logType==='pay' ? 'var(--c-lunas)' : 'transparent', color: logType==='pay' ? '#0a0c12' : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-          <Banknote size={11} /> {t('log.payOnly')}
-        </button>
-      </div>
-
-      {/* Search — satu search box untuk cari aksi/nama/detail (v11.5: digabung dari 2 box) */}
-      <div className="search-wrap" style={{ marginBottom:8, position:'relative', display:'flex', alignItems:'center' }}>
-        <Search size={13} style={{ position:'absolute', left:10, color:'var(--txt4)', pointerEvents:'none' }} />
-        <input className="search-box" style={{ margin:0, paddingLeft:30 }} placeholder={t('log.searchPlaceholder')} value={logSearch} onChange={e => setLogSearch(e.target.value)} />
-        {logSearch && <button className="search-clear" onClick={() => setLogSearch('')} aria-label="Hapus pencarian"><X size={12} /></button>}
-      </div>
-
-      {/* Date filter */}
-      <div style={{ display:'flex', gap:6 }}>
-        <select className="cs" style={{ flex:1 }} value={logYear} onChange={e => setLogYear(e.target.value)}>
+    <div className={l.root}>
+      <div className="wp-pbar">
+        <Select size="sm" aria-label={t('log.yearAria')} value={logYear} onChange={e => setLogYear(e.target.value)}>
           <option value="">{t('log.allYears')}</option>
           {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <select className="cs" style={{ flex:1 }} value={logMonth} onChange={e => setLogMonth(e.target.value)}>
+        </Select>
+        <Select size="sm" aria-label={t('log.monthAria')} value={logMonth} onChange={e => setLogMonth(e.target.value)}>
           <option value="">{t('log.allMonths')}</option>
           {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-        </select>
-        <button onClick={reset} aria-label={`${t('action.reset')} filter`} style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt3)', padding:'6px 10px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4, transition:'all var(--t-fast)' }}>
-          <RotateCcw size={12} /> {t('action.reset')}
-        </button>
+        </Select>
+        <IconButton icon={ArrowCounterClockwise} label={t('log.resetAria')} onClick={reset} />
       </div>
 
-      {/* Loading skeleton */}
-      {syncStatus === 'loading' && logs.length === 0 ? (
-        <div style={{ marginTop: 12 }}>
-          <SkeletonList count={6} />
+      <Segmented
+        ariaLabel={t('log.typeAria')}
+        value={logType as LogFilterType}
+        onChange={v => setLogType(v)}
+        options={[
+          { value: 'all', label: t('common.all'), count: base.length },
+          { value: 'pay', label: t('log.payOnly'), count: counts.pay },
+          { value: 'data', label: t('log.typeData'), count: counts.data },
+          { value: 'sys', label: t('log.typeSystem'), count: counts.sys },
+        ]}
+      />
+
+      <div className={l.search}>
+        <div className={l.searchFld}>
+          <Input
+            aria-label={t('log.searchPlaceholder')}
+            placeholder={t('log.searchPlaceholder')}
+            autoComplete="off"
+            leftIcon={<MagnifyingGlass aria-hidden="true" />}
+            rightIcon={logSearch ? (
+              <button type="button" className={l.clr} onClick={() => setLogSearch('')} aria-label={t('log.searchClear')}><X aria-hidden="true" /></button>
+            ) : undefined}
+            value={logSearch}
+            onChange={e => setLogSearch(e.target.value)}
+          />
         </div>
+        <IconButton icon={ChartBar} label={t('log.stats')} onClick={() => setStatsOpen(true)} />
+      </div>
+
+      {loading ? (
+        <SkeletonList count={6} />
+      ) : failed ? (
+        <EmptyState icon={Warning} title={t('log.loadErrorTitle')} description={t('log.loadErrorDesc')} size="md"
+          action={<Button variant="secondary" size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</Button>} />
       ) : (
         <>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', margin:'10px 0', letterSpacing:'.06em', fontFamily:"var(--font-sans),sans-serif" }}>
-            {filtered.length} dari {logs.length} {t('log.autoDelete')}
+          <div className={l.count}>
+            {filtered.length} {t('log.countOf')} {logs.length} {t('log.autoDelete')}
           </div>
-
-          {/* Log items */}
-          <div id="log-items">
+          <div id="log-items" className={l.groups}>
             {filtered.length === 0 ? (
               <EmptyState
-                icon={ScrollText}
-                title={isFiltered ? t('common.noResult') : t('log.empty')}
-                description={isFiltered ? t('log.noResultsDesc') : t('log.emptyDesc')}
+                icon={Scroll}
+                title={active ? t('common.noResult') : t('log.empty')}
+                description={active ? t('log.noResultsDesc') : t('log.emptyDesc')}
                 size="md"
+                action={active ? <Button variant="secondary" size="sm" onClick={reset}>{t('action.reset')}</Button> : undefined}
               />
-            ) : (
-              filtered.slice(0, 150).map((l, i) => {
-                const d  = new Date(l.ts);
-                const dt = `${d.toLocaleDateString()} ${d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' })}`;
-                const meta = getLogMeta(l.action);
-                return (
-                  <div key={i} className="log-item" style={{ borderLeft:`3px solid ${meta.color}`, paddingLeft:10 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
-                      <span style={{ color:meta.color, display:'flex', alignItems:'center', flexShrink:0 }}>{meta.icon}</span>
-                      <div className="log-action" style={{ flex:1 }}>{l.action}</div>
-                    </div>
-                    {l.detail && <div className="log-detail" style={{ paddingLeft:20 }}>{l.detail}</div>}
-                    <div className="log-time" style={{ paddingLeft:20 }}>{dt} · {l.user || '—'}</div>
-                  </div>
-                );
-              })
-            )}
+            ) : groups.map(g => (
+              <section key={g.key} className={l.group} aria-label={g.label}>
+                <h3 className={l.day}>{g.label}</h3>
+                <Card padding="none" className={l.card}>
+                  {g.items.map((x, i) => {
+                    const meta = getActivityMeta(x.action);
+                    const amount = extractAmount(x.action, x.detail);
+                    return (
+                      <button key={`${x.ts}-${i}`} type="button" className={l.item} onClick={() => setDetail(x)}
+                        aria-label={`${t('log.openDetail')}: ${stripActionTag(x.action)}`}>
+                        <IconTile icon={meta.icon} tone={meta.tone} size="sm" />
+                        <span className={l.tx}>
+                          <b className={l.act}>{stripActionTag(x.action) || '—'}</b>
+                          {x.detail && <small className={l.det}>{x.detail}</small>}
+                        </span>
+                        <span className={l.end}>
+                          {amount && <em className={`wp-num ${l.amt}`}>{amount}</em>}
+                          <small>{formatClock(x.ts)}</small>
+                          <small className={l.who}>{x.user || '—'}</small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </Card>
+              </section>
+            ))}
           </div>
         </>
+      )}
+
+      {detail && <LogDetailSheet key={detail.ts} log={detail} onClose={() => setDetail(null)} />}
+      {statsOpen && (
+        <LogStatsSheet
+          logs={base}
+          year={logYear}
+          month={logMonth}
+          lang={lang}
+          onClose={() => setStatsOpen(false)}
+          onOpen={x => { setStatsOpen(false); setDetail(x); }}
+        />
       )}
     </div>
   );

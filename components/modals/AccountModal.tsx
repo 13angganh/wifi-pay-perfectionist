@@ -1,20 +1,29 @@
-// components/modals/AccountModal.tsx
-// v11.3: Link Google + migrasi data jika login Google dengan UID baru
+// ══════════════════════════════════════════
+// components/modals/AccountModal.tsx — Akun (REDESAIN T10, D11)
+// Dialog tengah (Sheet variant="dialog"): LOGIN SEBAGAI, lencana Email/Google, Hubungkan Google (loading, sukses,
+// atau gagal), Ganti Akun (Confirm), Keluar. Logika zip utuh (v11.3): getLinkedProviders, doLinkGoogle (migrasi data bila
+// UID baru), switchAccount, doLogout. Dibuka dari avatar header; satu instance dimiliki AppShell.
+// ══════════════════════════════════════════
 'use client';
 
 import { useState, useMemo } from 'react';
+import { GoogleLogo, SignOut, UserSwitch } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogout, switchAccount, doLinkGoogle, getLinkedProviders } from '@/hooks/useAuth';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { useT } from '@/hooks/useT';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
+import { Sheet } from '@/components/ui/Sheet';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function AccountModal({ open, onClose }: Props) {
   const { userEmail, userName } = useAppStore();
   const t = useT();
-  const [linking,    setLinking]    = useState(false);
+  const [linking, setLinking] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -23,15 +32,12 @@ export default function AccountModal({ open, onClose }: Props) {
   if (!open) return null;
 
   const isGoogleLinked = providers.includes('google.com');
-  const isEmailLinked  = providers.includes('password');
+  const isEmailLinked = providers.includes('password');
 
-  async function handleLogout() {
-    onClose();
-    await doLogout();
-  }
+  async function handleLogout() { onClose(); await doLogout(); }
 
-  async function handleSwitch() {
-    showConfirm('↔', t('account.switchConfirmQuestion'), t('account.switchConfirmYes'), async () => {
+  function handleSwitch() {
+    showConfirm('switch', t('account.switchConfirmQuestion'), t('account.switchConfirmYes'), async () => {
       onClose();
       await switchAccount();
     });
@@ -41,91 +47,33 @@ export default function AccountModal({ open, onClose }: Props) {
     setLinking(true);
     const res = await doLinkGoogle();
     setLinking(false);
-    if (res.error) {
-      showToast(res.error, 'err');
-    } else {
-      showToast(t('account.googleLinkedToast'));
-      setRefreshKey(k => k + 1);
-    }
+    if (res.error) { showToast(res.error, 'err'); return; }
+    showToast(t('account.googleLinkedToast'));
+    setRefreshKey(k => k + 1);
   }
 
-  const btnRow: React.CSSProperties = {
-    width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)',
-    cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, marginBottom:8,
-    fontFamily:"var(--font-sans),sans-serif", transition:'all var(--t-fast)',
-    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-    border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)',
-  };
-
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-title">
-          {t('account.title')}
-          <button className="modal-close" aria-label={t('account.close')} onClick={onClose}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* Info akun */}
-        <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:14 }}>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:4 }}>{t('account.loggedInAs')}</div>
-          {userName && <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontWeight:600 }}>{userName}</div>}
-          <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt4)', marginTop:2 }}>{userEmail}</div>
-
-          {/* Provider badges */}
-          <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap' }}>
-            {isEmailLinked && (
-              <span style={{ fontSize:'var(--fs-micro)', fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
-                borderRadius:100, background:'rgba(59,130,246,0.12)', color:'#60a5fa',
-                border:'1px solid rgba(59,130,246,0.25)' }}>
-                {t('account.badgeEmail')}
-              </span>
-            )}
-            {isGoogleLinked && (
-              <span style={{ fontSize:'var(--fs-micro)', fontWeight:700, letterSpacing:'.05em', padding:'2px 8px',
-                borderRadius:100, background:'rgba(234,67,53,0.1)', color:'#f87171',
-                border:'1px solid rgba(234,67,53,0.25)' }}>
-                {t('account.badgeGoogle')}
-              </span>
-            )}
+    <Sheet open onClose={onClose} variant="dialog" title={t('account.title')}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-h)' }}>
+        <div>
+          <span className="wp-t-label">{t('account.loggedInAs')}</span>
+          {userName && <b style={{ display: 'block', fontWeight: 'var(--fw-strong)' }}>{userName}</b>}
+          <span className="wp-t-cap">{userEmail}</span>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 'var(--sp-2)', flexWrap: 'wrap' }}>
+            {isEmailLinked && <Badge variant="neutral" size="xs">{t('account.badgeEmail')}</Badge>}
+            {isGoogleLinked && <Badge variant="belum" size="xs">{t('account.badgeGoogle')}</Badge>}
           </div>
         </div>
 
-        {/* Hubungkan Google */}
-        {!isGoogleLinked && (
-          <button
-            style={{ ...btnRow, opacity: linking ? 0.6 : 1, pointerEvents: linking ? 'none' : 'auto' }}
-            onClick={handleLinkGoogle}
-            disabled={linking}
-          >
-            <svg width="16" height="16" viewBox="0 0 48 48" style={{ flexShrink:0 }}>
-              <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
-            </svg>
-            {linking ? t('account.linking') : t('account.linkGoogle')}
-          </button>
-        )}
+        {isGoogleLinked
+          ? <Notice tone="ok">{t('account.googleLinked')}</Notice>
+          : <Button variant="secondary" block loading={linking} onClick={handleLinkGoogle}>
+              <GoogleLogo aria-hidden="true" weight="bold" /> {linking ? t('account.linking') : t('account.linkGoogle')}
+            </Button>}
 
-        {isGoogleLinked && (
-          <div style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)', textAlign:'center', marginBottom:12,
-            padding:'8px 12px', background:'rgba(34,197,94,0.07)', borderRadius:'var(--r-sm)',
-            border:'1px solid rgba(34,197,94,0.2)' }}>
-            {t('account.googleLinked')}
-          </div>
-        )}
-
-        <button style={btnRow} onClick={handleSwitch}>{t('account.switchAccount')}</button>
-        <button
-          style={{ ...btnRow, background:'rgba(239,68,68,0.08)', color:'var(--c-belum)',
-            border:'1px solid rgba(239,68,68,0.25)', marginBottom:0 }}
-          onClick={handleLogout}
-        >
-          {t('account.logout')}
-        </button>
+        <Button variant="secondary" block onClick={handleSwitch}><UserSwitch aria-hidden="true" /> {t('account.switchAccount')}</Button>
+        <Button variant="danger" block onClick={handleLogout}><SignOut aria-hidden="true" /> {t('account.logout')}</Button>
       </div>
-    </div>
+    </Sheet>
   );
 }

@@ -1,0 +1,19 @@
+/* components/modals/freeMember.module.css — FreeMemberModal (REDESAIN T9; sheet Status & Periode T12). Hanya token. */
+.body  { display: flex; flex-direction: column; gap: var(--sp-h); }
+.fm2   { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.forever { padding: 10px; background: var(--bg3); border-radius: var(--r-md); border: 1px solid var(--border); }
+.actions { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* REDESAIN T12 — sheet "Status & Periode" */
+.summary { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-h); background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r-md); }
+.sumRow  { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.sumLabel { font-size: var(--fs-caption); color: var(--txt3); }
+.sumVal  { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-body); color: var(--txt); font-weight: 600; }
+.section { display: flex; flex-direction: column; gap: var(--sp-2); }
+.secHead { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.secTitle { margin: 0; font-size: var(--fs-body); font-weight: 700; color: var(--txt); }
+.rows    { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.row     { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-2) var(--sp-h); background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r-md); }
+.rowTx   { min-width: 0; font-size: var(--fs-body); color: var(--txt); overflow-wrap: anywhere; }
+.rowAct  { display: inline-flex; gap: var(--sp-1); flex-shrink: 0; }
+.warn    { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2) var(--sp-h); border-radius: var(--r-md); font-size: var(--fs-caption); color: var(--c-warn); background: color-mix(in srgb, var(--c-warn) 12%, transparent); }

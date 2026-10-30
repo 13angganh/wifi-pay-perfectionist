@@ -1,0 +1,376 @@
+/* ══════════════════════════════════════════════════════
+   styles/ui.css — PRIMITIVE UI (REDESAIN T6)
+   Diporting dari CORE BLOCK v3 (T1) + "USULAN REVISI CORE" serah-terima T2–T5.
+   Semua kelas berawalan `wp-` agar TIDAK bentrok dengan kelas lama
+   (.badge, .toast, .modal*, .confirm-* di components.*.css masih dipakai layar tahap lain).
+   Pemakai React: components/ui/*.tsx. Peta primitive → layar: docs/REDESAIN-MANIFEST.md.
+   Hanya memakai token dari styles/tokens.css (tanpa warna literal selain gradasi tile).
+   ══════════════════════════════════════════════════════ */
+
+/* ── Tipografi ── */
+.wp-t-display { font-size: var(--fs-display); font-weight: var(--fw-title); letter-spacing: -.025em; line-height: var(--lh-heading); }
+.wp-t-head    { font-size: var(--fs-heading); font-weight: var(--fw-title); letter-spacing: -.02em;  line-height: var(--lh-heading); }
+.wp-t-cap     { font-size: var(--fs-caption); color: var(--txt3); line-height: var(--lh-caption); }
+.wp-t-label   { font-size: var(--fs-label); font-weight: var(--fw-strong); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); }
+.wp-t-micro   { font-family: var(--font-mono), monospace; font-size: var(--fs-micro); color: var(--txt4); }
+.wp-num       { font-family: var(--font-mono), monospace; font-weight: 500; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.wp-num--xl   { font-size: 28px; line-height: 1.1; font-weight: 600; }
+body.gold .wp-gtxt { background: linear-gradient(180deg,#F8E2A0,#C9952A); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── Button ── */
+.wp-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); height: 40px; padding: 0 var(--sp-3); border-radius: var(--r-md); border: 1px solid transparent; font-family: var(--font-sans), sans-serif; font-size: var(--fs-body); font-weight: var(--fw-strong); letter-spacing: -.005em; cursor: pointer; transition: all var(--t-fast) var(--ease); user-select: none; white-space: nowrap; }
+.wp-btn:active { transform: scale(.97); }
+.wp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.wp-btn--xs { height: 28px; padding: 0 var(--sp-2); font-size: var(--fs-caption); border-radius: var(--r-sm); }
+.wp-btn--sm { height: 32px; padding: 0 var(--sp-h); font-size: var(--fs-caption); border-radius: var(--r-sm); }
+.wp-btn--lg { height: 48px; }
+.wp-btn--block { width: 100%; }
+.wp-btn--primary   { background: var(--grad-a); color: var(--on-accent); box-shadow: var(--glow), var(--hl); }
+.wp-btn--primary:hover { filter: brightness(1.07); }
+.wp-btn--secondary { background: var(--card); border-color: var(--border); color: var(--txt); box-shadow: var(--shadow-xs); }
+.wp-btn--secondary:hover { background: var(--bg4); }
+.wp-btn--ghost     { background: transparent; color: var(--txt2); }
+.wp-btn--ghost:hover { background: var(--bg3); color: var(--txt); }
+.wp-btn--danger    { background: linear-gradient(135deg,#F26B6B,#DC2626); color: #fff; box-shadow: 0 6px 18px rgba(239,68,68,.28); }
+.wp-btn--success   { background: linear-gradient(135deg,#4ADE80,#16A34A); color: #fff; box-shadow: 0 6px 18px rgba(34,197,94,.26); }
+.wp-btn--danger:hover, .wp-btn--success:hover { filter: brightness(1.07); }
+
+/* ── Tombol ikon: .wp-ibtn (persegi, aksi kartu) & .wp-ibtn--round (header) ── */
+.wp-ibtn { width: 34px; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+.wp-ibtn:hover { background: var(--bg4); color: var(--txt); }
+.wp-ibtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-ibtn:disabled { opacity: .4; cursor: default; pointer-events: none; }
+.wp-ibtn--sm { width: 32px; height: 32px; color: var(--txt3); }
+.wp-ibtn--on { color: var(--c-free); border-color: color-mix(in srgb,var(--c-free) 40%,transparent); background: color-mix(in srgb,var(--c-free) 12%,transparent); }
+.wp-ibtn--danger { color: var(--c-belum); border-color: color-mix(in srgb,var(--c-belum) 30%,transparent); background: color-mix(in srgb,var(--c-belum) 8%,transparent); }
+.wp-ibtn--round { width: 38px; height: 38px; border: 0; background: none; border-radius: var(--r-full); color: var(--txt); font-size: 22px; position: relative; }
+.wp-ibtn--round:hover { background: var(--bg3); }
+
+/* ── Card ── */
+.wp-card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-3); box-shadow: var(--shadow-sm), var(--hl); position: relative; transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.wp-card--flat { box-shadow: none; background: var(--bg3); }
+.wp-card--elevated { box-shadow: var(--shadow-md), var(--hl); }
+.wp-card--bordered { background: var(--bg2); border-width: 2px; box-shadow: none; }
+.wp-card--hl   { border-color: color-mix(in srgb,var(--accent) 40%,var(--border)); background: linear-gradient(180deg,var(--accentdim),var(--card)); }
+.wp-card--zone { border-color: color-mix(in srgb,var(--zc) 40%,var(--border)); box-shadow: 0 0 0 1px var(--zcdim), var(--shadow-sm); }
+.wp-card--interactive { cursor: pointer; }
+.wp-card--interactive:hover { box-shadow: var(--shadow-md), var(--hl); border-color: var(--txt4); }
+.wp-card--interactive:active { transform: scale(.99); }
+.wp-card--p0 { padding: 0; }
+.wp-card--p1 { padding: var(--sp-h); }
+.wp-card--p2 { padding: var(--sp-3); }
+.wp-card--p3 { padding: var(--sp-4); }
+
+/* ── Badge ── */
+.wp-badge { display: inline-flex; align-items: center; gap: var(--sp-1); height: 22px; padding: 0 var(--sp-2); border-radius: var(--r-full); font-size: var(--fs-label); font-weight: var(--fw-strong); line-height: 1; white-space: nowrap; background: var(--bg3); color: var(--txt2); }
+.wp-badge--xs { height: 18px; padding: 0 6px; font-size: var(--fs-micro); }
+.wp-badge--md { height: 26px; padding: 0 10px; font-size: var(--fs-caption); }
+.wp-badge--lunas { background: color-mix(in srgb,var(--c-lunas) 14%,transparent); color: var(--c-lunas); }
+.wp-badge--belum { background: color-mix(in srgb,var(--c-belum) 14%,transparent); color: var(--c-belum); }
+.wp-badge--free  { background: color-mix(in srgb,var(--c-free) 16%,transparent);  color: var(--c-free); }
+.wp-badge--warn  { background: color-mix(in srgb,var(--c-warn) 16%,transparent);  color: var(--c-warn); }
+.wp-badge--zone  { background: var(--zcdim); color: var(--zc); }
+/* aging Tunggakan (T3 keputusan 11): Baru = kuning, Segera = oranye, Kritis = merah */
+.wp-badge--baru   { background: color-mix(in srgb,#EAB308 16%,transparent); color: #EAB308; }
+.wp-badge--segera { background: color-mix(in srgb,var(--zc-slk) 16%,transparent); color: var(--zc-slk); }
+.wp-badge--kritis { background: color-mix(in srgb,var(--c-belum) 14%,transparent); color: var(--c-belum); }
+
+/* ── Field / Input / Select / Textarea ── */
+.wp-field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.wp-field > label { font-size: var(--fs-caption); font-weight: var(--fw-strong); color: var(--txt2); }
+.wp-field .wp-msg { font-size: var(--fs-caption); color: var(--c-belum); }
+.wp-field .wp-hint-txt { font-size: var(--fs-caption); color: var(--txt3); }
+.wp-inp { width: 100%; height: 44px; padding: 0 var(--sp-h); background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--txt); font-family: var(--font-sans), sans-serif; font-size: var(--fs-body); font-weight: var(--fw-body); outline: none; transition: border-color var(--t-fast), background var(--t-fast); }
+.wp-inp:focus { border-color: var(--accent); background: var(--bg2); }
+.wp-inp:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-inp::placeholder { color: var(--txt4); }
+.wp-inp:disabled { opacity: .4; cursor: not-allowed; }
+.wp-inp--err { border-color: var(--c-belum); }
+.wp-inp--err:focus { border-color: var(--c-belum); }
+.wp-inp--sm { height: 36px; }
+.wp-inp--lg { height: 48px; }
+.wp-inp--num { font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; }
+.wp-inp--search { background: var(--bg2); border-color: var(--border2); }
+textarea.wp-inp { height: auto; min-height: 88px; padding: var(--sp-h); resize: vertical; line-height: var(--lh-body); }
+select.wp-inp { appearance: none; -webkit-appearance: none; padding-right: 36px; background-image: none; }
+.wp-inpw { position: relative; display: flex; align-items: center; }
+.wp-inpw > .wp-inpw__ico { position: absolute; left: 14px; font-size: 18px; color: var(--txt3); pointer-events: none; display: flex; }
+.wp-inpw > .wp-inpw__ico + .wp-inp { padding-left: 42px; }
+.wp-inpw > .wp-inp:has(+ .wp-inpw__end) { padding-right: 44px; }
+.wp-inpw > .wp-inpw__end { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; background: none; color: var(--txt3); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; border-radius: var(--r-sm); }
+.wp-inpw > .wp-inpw__end:hover { color: var(--txt); }
+.wp-inpw--sel > .wp-inpw__end { pointer-events: none; }
+
+/* ── Checkbox kotak (.wp-chk) & bulat (.wp-cbx, pilih banyak) ── */
+.wp-chk { display: inline-flex; gap: 8px; align-items: center; font-size: var(--fs-caption); color: var(--txt2); cursor: pointer; }
+.wp-chk input { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--txt4); background: var(--bg3); display: grid; place-content: center; margin: 0; cursor: pointer; flex-shrink: 0; }
+.wp-chk input:checked { background: var(--accent); border-color: var(--accent); }
+.wp-chk input:checked::after { content: ''; width: 9px; height: 5px; border: 2px solid var(--on-accent); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px,-1px); }
+.wp-chk input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-chk input:disabled { opacity: .5; cursor: not-allowed; }
+.wp-cbx { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--txt4); display: grid; place-content: center; flex-shrink: 0; font-size: 14px; color: var(--on-accent); background: none; padding: 0; cursor: pointer; }
+.wp-cbx--on { background: var(--accent); border-color: var(--accent); }
+.wp-cbx--dis { border-style: dashed; opacity: .5; cursor: not-allowed; }
+
+/* ── Link, separator ── */
+.wp-lnk { background: none; border: 0; color: var(--accent); font-weight: var(--fw-strong); font-size: var(--fs-caption); cursor: pointer; padding: 0; font-family: inherit; }
+.wp-lnk:hover { text-decoration: underline; }
+.wp-sep { display: flex; align-items: center; gap: var(--sp-3); color: var(--txt3); font-size: var(--fs-caption); }
+.wp-sep::before, .wp-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Tile ikon berwarna ── */
+.wp-tile { width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; color: #fff; flex-shrink: 0; background: var(--grad-a); box-shadow: 0 3px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.3); }
+.wp-tile--sm { width: 34px; height: 34px; font-size: 18px; border-radius: 10px; }
+.wp-tile--lg { width: 60px; height: 60px; font-size: 30px; border-radius: 18px; }
+.wp-tile--lunas { background: linear-gradient(135deg,#4ADE80,#16A34A); }
+.wp-tile--belum { background: linear-gradient(135deg,#F87171,#DC2626); }
+.wp-tile--blue, .wp-tile--free { background: linear-gradient(135deg,#60A5FA,#2563EB); }
+.wp-tile--warn, .wp-tile--orange { background: linear-gradient(135deg,#FBBF24,#F59E0B); }
+.wp-tile--purple { background: linear-gradient(135deg,#A78BFA,#7C3AED); }
+.wp-tile--teal { background: linear-gradient(135deg,#2DD4BF,#0D9488); }
+.wp-tile--slate { background: linear-gradient(135deg,#7C8AA8,#4B5877); }
+.wp-tile--night { background: linear-gradient(135deg,#334155,#0F172A); }
+.wp-tile--gold { background: linear-gradient(135deg,#F6D56B,#C9952A); color: #1a1205; }
+.wp-tile--soft { background: var(--accentdim); color: var(--accent); box-shadow: none; }
+
+/* ── Skeleton, spinner, progres ── */
+.wp-skel { border-radius: var(--r-sm); background: linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%); background-size: 400% 100%; animation: wpshim 1.4s linear infinite; }
+@keyframes wpshim { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes wpspin { to { transform: rotate(360deg); } }
+
+.wp-spinner { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: wpspin .8s linear infinite; opacity: .8; }
+.wp-prog { width: 220px; max-width: 70vw; height: 6px; border-radius: 9px; background: var(--bg4); overflow: hidden; }
+.wp-prog i { display: block; height: 100%; border-radius: 9px; background: var(--grad-a); animation: wpbar 2.4s var(--ease) infinite alternate; }
+@keyframes wpbar { 0% { width: 8%; } 60% { width: 78%; } 100% { width: 96%; } }
+.wp-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
+.wp-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width var(--t-slow) var(--ease); }
+.wp-pct { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-micro); font-weight: var(--fw-strong); }
+.wp-pct--g { color: var(--c-lunas); } .wp-pct--b { color: var(--c-belum); } .wp-pct--n { color: var(--txt3); }
+
+/* ── Empty state ── */
+.wp-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-2); padding: var(--sp-5) var(--sp-3); color: var(--txt3); }
+.wp-empty--sm { padding: var(--sp-4) var(--sp-3); }
+.wp-empty--lg { padding: var(--sp-7) var(--sp-3); }
+.wp-empty__ico { width: 56px; height: 56px; border-radius: var(--r-xl); background: var(--bg3); box-shadow: var(--hl); display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--txt3); }
+.wp-empty b { color: var(--txt); font-size: var(--fs-heading); }
+.wp-empty__cap { font-size: var(--fs-caption); color: var(--txt3); line-height: var(--lh-caption); max-width: 260px; }
+
+/* ── Toast ── */
+.wp-toast-wrap { position: fixed; left: 0; right: 0; z-index: 9500; display: flex; flex-direction: column; gap: var(--sp-2); padding: 0 var(--sp-3); pointer-events: none; align-items: center; }
+.wp-toast-wrap[data-pos="top"]    { top: calc(var(--banner-h, 0px) + var(--header-h, 92px) + var(--sp-2)); }
+.wp-toast-wrap[data-pos="bottom"] { bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px)); flex-direction: column-reverse; }
+.wp-toast-wrap[data-pos="bottom"][data-nav="bottom"] { bottom: calc(var(--bnav-h) + var(--sp-3) + env(safe-area-inset-bottom, 0px)); }
+.wp-toast { --tc: var(--c-info); pointer-events: auto; display: flex; align-items: center; gap: var(--sp-h); width: 100%; max-width: 420px; padding: var(--sp-h); border-radius: var(--r-lg); background: color-mix(in srgb,var(--tc) 10%,var(--bg2)); border: 1px solid color-mix(in srgb,var(--tc) 35%,var(--border)); box-shadow: var(--shadow-lg); animation: wpin var(--t-base) var(--ease) both; }
+.wp-toast--out { animation: wpout var(--t-base) var(--ease) forwards; }
+.wp-toast--ok { --tc: var(--c-lunas); } .wp-toast--err { --tc: var(--c-belum); } .wp-toast--warn { --tc: var(--c-warn); } .wp-toast--info { --tc: var(--c-info); }
+.wp-toast__ti { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; flex-shrink: 0; background: var(--tc); }
+.wp-toast__tb { flex: 1; min-width: 0; }
+.wp-toast__tb b { display: block; font-size: var(--fs-body); font-weight: var(--fw-strong); color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-toast__tb span { display: block; font-size: var(--fs-caption); color: var(--txt3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-toast__act { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt); font: var(--fw-strong) var(--fs-caption) var(--font-sans); cursor: pointer; flex-shrink: 0; }
+.wp-toast__x { width: 28px; height: 28px; border: 0; background: none; color: var(--txt3); display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: var(--r-sm); flex-shrink: 0; font-size: 16px; }
+.wp-toast__x:hover { color: var(--txt); background: var(--bg3); }
+@keyframes wpin  { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes wpout { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px); } }
+.wp-toast-wrap[data-pos="bottom"] .wp-toast { animation-name: wpinb; }
+.wp-toast-wrap[data-pos="bottom"] .wp-toast--out { animation-name: wpoutb; }
+@keyframes wpinb  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes wpoutb { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px); } }
+
+/* ── Confirm ── */
+.wp-backdrop { position: fixed; inset: 0; z-index: 9600; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: var(--sp-3); animation: wpfade var(--t-base) var(--ease); }
+@keyframes wpfade { from { opacity: 0; } to { opacity: 1; } }
+.wp-confirm { width: 100%; max-width: 340px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-xl); padding: var(--sp-4); text-align: center; box-shadow: var(--shadow-lg); animation: wpin var(--t-base) var(--ease-spring) both; }
+.wp-confirm__ico { width: 52px; height: 52px; border-radius: 50%; margin: 0 auto var(--sp-h); display: flex; align-items: center; justify-content: center; font-size: 26px; background: color-mix(in srgb,var(--c-belum) 14%,transparent); color: var(--c-belum); }
+.wp-confirm--info .wp-confirm__ico { background: var(--accentdim); color: var(--accent); }
+.wp-confirm__title { font-size: var(--fs-heading); font-weight: var(--fw-title); letter-spacing: -.01em; color: var(--txt); line-height: var(--lh-heading); }
+.wp-confirm__desc { color: var(--txt3); font-size: var(--fs-body); margin: var(--sp-2) 0 0; line-height: var(--lh-body); }
+.wp-confirm__hl { margin-top: var(--sp-2); padding: 4px 10px; background: var(--bg3); border-radius: var(--r-xs); font-size: var(--fs-body); font-weight: var(--fw-title); word-break: break-all; }
+.wp-confirm__row { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+.wp-confirm__row .wp-btn { flex: 1; }
+
+/* ── Sheet / dialog (bottom sheet di mobile, dialog di tengah-atas bila .wp-md--c) ── */
+.wp-md { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-end; animation: wpfade var(--t-base) var(--ease); }
+.wp-md--c { align-items: flex-start; padding: 16vh var(--sp-3) 0; }
+.wp-md__bx { width: 100%; max-width: 440px; background: var(--bg2); border: 1px solid var(--border); box-shadow: var(--shadow-lg); border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 90%; display: flex; flex-direction: column; overflow: hidden; padding-bottom: env(safe-area-inset-bottom, 0px); animation: wpup var(--t-slow) var(--ease) both; }
+.wp-md--c .wp-md__bx { max-width: 340px; border-radius: var(--r-xl); padding-bottom: 0; animation-name: wpin; }
+.wp-md--wide .wp-md__bx { max-width: 560px; }
+.wp-md__mh { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-h) var(--sp-3); }
+.wp-md__mh .wp-md__tx { flex: 1; min-width: 0; }
+.wp-md__mb { padding: 0 var(--sp-3) var(--sp-3); overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-h); }
+@keyframes wpup { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+/* ── Segmented, chip filter ── */
+.wp-sg { display: flex; gap: 4px; padding: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r-full); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.wp-sg::-webkit-scrollbar { display: none; }
+.wp-sg button { flex: 1; flex-shrink: 0; white-space: nowrap; height: 36px; padding: 0 var(--sp-h); border: 0; border-radius: var(--r-full); background: none; color: var(--txt3); font: var(--fw-strong) var(--fs-caption) var(--font-sans); display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: background var(--t-fast); }
+.wp-sg button[aria-pressed="true"], .wp-sg button[aria-selected="true"] { background: var(--sc, var(--accent)); color: var(--on-accent); box-shadow: var(--shadow-xs); }
+.wp-sg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.wp-sg button .wp-sg__c { font: var(--fw-strong) var(--fs-micro) var(--font-mono); opacity: .8; }
+.wp-fchips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; flex-shrink: 0; scrollbar-width: none; }
+.wp-fchips::-webkit-scrollbar { display: none; }
+.wp-fchip { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: var(--r-full); border: 1px solid var(--border); background: var(--card); color: var(--txt2); font: var(--fw-strong) var(--fs-caption) var(--font-sans); cursor: pointer; white-space: nowrap; box-shadow: var(--shadow-xs); flex-shrink: 0; }
+.wp-fchip[aria-pressed="true"] { background: var(--accentdim); border-color: var(--accent); color: var(--accent); }
+.wp-fchip i { font-style: normal; font-family: var(--font-mono), monospace; font-size: var(--fs-micro); opacity: .8; }
+.wp-fchip--ag[aria-pressed="true"] { color: var(--ac); border-color: var(--ac); background: color-mix(in srgb,var(--ac) 12%,transparent); }
+.wp-fchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-zchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-full); background: var(--zcdim); color: var(--zc); font-weight: var(--fw-strong); font-size: var(--fs-caption); }
+.wp-idc { font: var(--fw-strong) var(--fs-micro) var(--font-mono); padding: 2px 6px; border-radius: var(--r-xs); background: var(--zcdim); border: 1px solid var(--border); color: var(--zc); align-self: flex-start; display: inline-block; }
+.wp-idc--no { background: var(--bg3); color: var(--txt4); }
+.wp-hint { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-md); background: var(--zcdim); border: 1px solid var(--border); color: var(--zc); font-size: var(--fs-caption); }
+.wp-hint span { flex: 1; }
+
+/* ── QuickPay (Entry + RekapModal) ── */
+.wp-qk { display: flex; flex-wrap: wrap; gap: 6px; }
+.wp-qk button { flex: 1 0 28%; height: 38px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--bg3); color: var(--txt); font: var(--fw-strong) var(--fs-body) var(--font-mono); cursor: pointer; transition: transform var(--t-fast); }
+.wp-qk button:active { transform: scale(.95); }
+.wp-qk button[data-tarif="true"] { background: var(--accentdim); border-color: var(--accent); color: var(--accent); }
+.wp-qk button:disabled { opacity: .4; }
+.wp-qk button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── KPI ── */
+.wp-kpi2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.wp-kpi { padding: var(--sp-h); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wp-kpi__v { font: 800 var(--fs-heading) var(--font-mono); letter-spacing: -.03em; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Baris daftar + pilihan radio (halaman Pengaturan > Tampilan, T10) ── */
+.wp-rows { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.wp-row { display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: 11px var(--sp-3); border: 0; border-top: 1px solid var(--border2); background: none; cursor: pointer; text-align: left; color: var(--txt); font: inherit; }
+.wp-rows > .wp-row:first-child { border-top: 0; }
+.wp-row:hover { background: var(--bg3); }
+.wp-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.wp-row__tx { flex: 1; min-width: 0; }
+.wp-row__tx b { display: block; font-size: var(--fs-body); font-weight: var(--fw-strong); }
+.wp-row__tx span { display: block; font-size: var(--fs-caption); color: var(--txt3); }
+.wp-row__chev { color: var(--txt4); font-size: 16px; display: flex; }
+.wp-row__rd { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--txt4); flex-shrink: 0; }
+.wp-row[aria-checked="true"] { background: var(--accentdim); }
+.wp-row[aria-checked="true"] .wp-row__rd { border: 6px solid var(--accent); }
+
+/* ── Grup bisa dilipat level-1 (Pengaturan, T5 D1) ── */
+.wp-gh { display: flex; align-items: center; gap: var(--sp-h); width: 100%; padding: 11px var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surf); box-shadow: var(--shadow-sm), var(--hl); cursor: pointer; text-align: left; color: var(--txt); font: inherit; }
+.wp-gh b { flex: 1; font-size: var(--fs-heading); font-weight: 800; letter-spacing: -.01em; }
+.wp-gh__cn { font: var(--fw-strong) var(--fs-micro) var(--font-mono); color: var(--txt3); background: var(--bg3); border-radius: var(--r-full); padding: 2px 8px; }
+.wp-gh__chev { color: var(--txt3); font-size: 18px; display: flex; transition: transform var(--t-base); }
+.wp-gh[aria-expanded="true"] .wp-gh__chev { transform: rotate(180deg); }
+.wp-gh[aria-expanded="true"] { border-color: color-mix(in srgb,var(--accent) 35%,var(--border)); }
+.wp-gh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-gb { margin-top: var(--sp-2); }
+.wp-gb[hidden] { display: none; }
+
+/* ── Notice (banner info sukses/peringatan/bahaya) ── */
+.wp-notice { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-md); font-size: var(--fs-caption); line-height: 1.45; background: color-mix(in srgb,var(--c-lunas) 10%,transparent); border: 1px solid color-mix(in srgb,var(--c-lunas) 30%,transparent); color: var(--c-lunas); }
+.wp-notice--warn { background: color-mix(in srgb,var(--c-warn) 10%,transparent); border-color: color-mix(in srgb,var(--c-warn) 30%,transparent); color: var(--c-warn); }
+.wp-notice--bad { background: color-mix(in srgb,var(--c-belum) 10%,transparent); border-color: color-mix(in srgb,var(--c-belum) 30%,transparent); color: var(--c-belum); }
+.wp-notice--info { background: color-mix(in srgb,var(--c-info) 10%,transparent); border-color: color-mix(in srgb,var(--c-info) 30%,transparent); color: var(--c-info); }
+.wp-notice > svg { flex-shrink: 0; font-size: 16px; margin-top: 1px; display: flex; }
+
+/* ── GhostInput (edit di tempat, Operasional) ── */
+.wp-gin { background: transparent; border: 1px solid transparent; border-radius: var(--r-sm); height: 38px; padding: 0 8px; color: var(--txt); outline: none; min-width: 0; width: 100%; font: var(--fw-strong) var(--fs-body) var(--font-sans); transition: border-color var(--t-fast), background var(--t-fast); }
+.wp-gin:hover { border-color: var(--border); }
+.wp-gin:focus { border-color: var(--accent); background: var(--bg3); }
+.wp-gin::placeholder { color: var(--txt4); font-weight: 400; }
+.wp-gin--nm { font-family: var(--font-mono), monospace; text-align: right; padding: 0 2px 0 6px; width: 60px; flex: none; }
+.wp-gin--nm::-webkit-inner-spin-button, .wp-gin--nm::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.wp-nomw { display: flex; align-items: center; gap: 0; flex: 0 0 auto; font: var(--fs-caption) var(--font-mono); color: var(--txt3); }
+
+/* ── Titik PIN + keypad (PinLock, halaman PIN Pengaturan) ── */
+.wp-pdots { display: flex; gap: 14px; margin: 6px 0; justify-content: center; }
+.wp-pdots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--txt4); transition: background var(--t-fast), border-color var(--t-fast); }
+.wp-pdots i.on { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
+.wp-pdots--sm { gap: 10px; }
+.wp-pdots--sm i { width: 11px; height: 11px; }
+.wp-pdots--shake { animation: wpshake .5s; }
+@keyframes wpshake { 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+.wp-npad { display: grid; grid-template-columns: repeat(3,68px); gap: 12px; justify-content: center; }
+.wp-npad button { height: 58px; border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow-xs); font: 600 22px var(--font-mono); color: var(--txt); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.wp-npad button:active { transform: scale(.94); background: var(--accentdim); }
+.wp-npad button:disabled { opacity: .4; cursor: default; }
+.wp-npad button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wp-npad button svg { font-size: 22px; }
+
+/* ── Baris centang (daftar member lintas zona, Akun Penagih) ── */
+.wp-tzh { display: flex; gap: 8px; align-items: center; padding: 8px 12px; position: sticky; top: 0; z-index: 1; background: var(--bg4); font-size: var(--fs-caption); border-bottom: 1px solid var(--border2); }
+.wp-tzh b { flex: 1; }
+.wp-tmr { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px 12px; border: 0; background: none; color: var(--txt); cursor: pointer; text-align: left; font: inherit; font-size: var(--fs-body); }
+.wp-tmr:hover { background: var(--bg4); }
+.wp-tmr[aria-checked="true"] { background: var(--accentdim); }
+.wp-tmr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ── Pilihan warna (Pengaturan > Zona) ── */
+.wp-swt { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #fff; padding: 0; font-size: 14px; flex-shrink: 0; }
+.wp-swt--on { border-color: var(--txt); box-shadow: inset 0 0 0 2px var(--bg2); }
+.wp-swt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Kartu aksi besar (Export & Import) ── */
+.wp-g2x { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.wp-bigact { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; cursor: pointer; color: var(--txt); font: inherit; border: 1px solid var(--border); }
+.wp-bigact:hover { border-color: var(--accent); }
+.wp-bigact b { font-size: var(--fs-body); }
+.wp-bigact:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-skel, .wp-spinner, .wp-prog i, .wp-toast, .wp-toast--out, .wp-md, .wp-md__bx, .wp-backdrop, .wp-confirm, .wp-pdots--shake { animation: none !important; }
+}
+
+/* ── Tambahan T6: tombol persegi ikon & logo ── */
+.wp-btn--sq { padding: 0; aspect-ratio: 1 / 1; }
+.wp-logo { display: block; flex-shrink: 0; border-radius: 22%; overflow: hidden; filter: drop-shadow(0 6px 16px rgba(0,0,0,.28)); }
+.wp-logo--s  { width: 34px;  height: 34px; }
+.wp-logo--m  { width: 40px;  height: 40px; }
+.wp-logo--l  { width: 76px;  height: 76px; }
+.wp-logo--xl { width: 116px; height: 116px; filter: drop-shadow(0 12px 32px color-mix(in srgb,var(--accent) 40%,transparent)); }
+.wp-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Layar kunci PIN (kerangka PinLock, T10) ── */
+.wp-pinl { position: fixed; inset: 0; z-index: 9900; background-color: var(--bg); background-image: var(--halo); display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-3); overflow: auto; text-align: center; }
+.wp-pinl > :first-child { margin-top: auto; }
+.wp-pinl > :last-child { margin-bottom: auto; }
+
+/* ── Ukuran Teks Besar (Pengaturan > Tampilan > Ukuran Teks): token teks ±20%, target sentuh lebih besar (lansia) ── */
+html[data-text-size="large"] { --fs-display: 24px; --fs-heading: 19px; --fs-body: 17px; --fs-data: 17px; --fs-caption: 14px; --fs-label: 13px; --fs-micro: 12px; --bnav-h: 72px; }
+html[data-text-size="large"] .wp-btn { height: 48px; }
+html[data-text-size="large"] .wp-btn--xs { height: 38px; }
+html[data-text-size="large"] .wp-btn--sm { height: 42px; }
+html[data-text-size="large"] .wp-btn--lg { height: 56px; }
+html[data-text-size="large"] .wp-inp, html[data-text-size="large"] select { min-height: 52px; }
+html[data-text-size="large"] .nb { font-size: 11px; }
+
+/* ── Tombol Atur Tampilan (filter kartu) ── */
+.wp-filterbtn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 var(--sp-h); border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--txt2); font-family: var(--font-sans), sans-serif; font-size: var(--fs-caption); font-weight: 600; cursor: pointer; }
+.wp-filterbtn:active { transform: scale(.96); }
+.wp-filterbtn__n { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: var(--fs-micro); display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── Desain V2 (PERMANEN sejak T13): hierarki tegas, kontras teks jelas, angka proporsional tabular (bukan monospace),
+      aksi utama menonjol, aksi sekunder tenang. Fungsi dan data tidak berubah. Prefiks :root menjaga prioritas di atas aturan dasar. ── */
+:root body:not(.light):not(.gold) { --txt2: #BCC3DB; --txt3: #8E98B8; }
+:root body.light { --txt3: #565F6E; }
+:root .wp-num { font-family: var(--font-sans), system-ui, sans-serif; font-weight: 650; letter-spacing: -.015em; font-variant-numeric: tabular-nums; }
+:root .wp-num--xl { font-weight: 760; letter-spacing: -.03em; }
+:root .wp-t-label { letter-spacing: .05em; color: var(--txt2); }
+:root .wp-t-head { font-weight: 720; }
+:root .wp-btn--primary { font-weight: 700; }
+:root .wp-btn--secondary { background: transparent; box-shadow: none; border-color: color-mix(in srgb, var(--txt) 18%, transparent); }
+:root .wp-btn--secondary:hover { background: color-mix(in srgb, var(--txt) 7%, transparent); }
+:root .wp-card { border-color: color-mix(in srgb, var(--border) 80%, transparent); }
+:root .wp-card--hl { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, var(--card)), var(--card) 70%); box-shadow: var(--shadow-md), var(--hl); }
+.wp-filterbtn--icon { position: relative; width: 36px; height: 36px; padding: 0; justify-content: center; flex-shrink: 0; }
+.wp-filterbtn--icon .wp-filterbtn__n { position: absolute; top: -6px; right: -6px; }
+html[data-text-size="large"] .wp-filterbtn--icon { width: 44px; height: 44px; }
+
+/* ── Period bar standar: Tahun | Bulan | aksi ikon — posisi, tinggi, dan jarak sama di semua menu ── */
+.wp-pbar { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.wp-pbar > .wp-field { flex: 1 1 0; min-width: 0; }
+.wp-pbar > .wp-pbar__fix, .wp-pbar > button { flex: 0 0 auto; }
+/* ── FAB: aksi tambah di pojok kanan bawah ── */
+.wp-fab { position: fixed; right: var(--sp-3); bottom: calc(var(--bnav-h) + var(--sp-3) + env(safe-area-inset-bottom, 0px)); z-index: 40; width: 56px; height: 56px; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--accent); background-image: var(--grad-a, none); color: var(--on-accent, #fff); font-size: 26px; box-shadow: var(--shadow-md), var(--glow); cursor: pointer; transition: transform var(--t-fast) var(--ease); }
+.wp-fab:active { transform: scale(.93); }
+.wp-fab:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.wp-app[data-nav="sidebar"] .wp-fab { bottom: var(--sp-4); }
+.wp-fab-space { height: 72px; flex-shrink: 0; }
+html[data-text-size="large"] .wp-fab { width: 64px; height: 64px; }
+/* ── Tab zona Header: lebih ringkas + pudar di tepi kanan sebagai petunjuk bisa digeser ── */
+.zone-sw { scroll-snap-type: x proximity; }
+.zone-sw[data-more="true"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
+.zbtn { padding: 4px 10px; scroll-snap-align: start; }

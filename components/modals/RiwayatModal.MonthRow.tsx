@@ -1,58 +1,50 @@
 // ══════════════════════════════════════════
-// components/modals/RiwayatModal.MonthRow.tsx
-// Dipecah dari RiwayatModal.tsx (task 1.15)
+// components/modals/RiwayatModal.MonthRow.tsx — baris bulan RiwayatModal (REDESAIN T8)
+// Dipakai ulang (sebelumnya yatim): satu baris bulan + tanggal bayar (opsional) + status
+// (gratis · nominal · Akumulasi · Belum). Ketuk = buka kartu member itu di Entry (handler ada di RiwayatModal).
+// REDESAIN T12: bulan Belum terdaftar / Nonaktif tanpa pembayaran (na) tampil netral, bukan "Belum".
 // ══════════════════════════════════════════
 'use client';
 
-import { Gift, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle, Gift, Prohibit, XCircle } from '@phosphor-icons/react';
+import { Badge } from '@/components/ui/Badge';
 import { rp } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
+import s from './riwayat.module.css';
 
 interface Props {
-  displayName: string;  // nama bulan yang di-display
-  tgl:         string;  // tanggal bayar (opsional)
+  displayName: string;   // nama bulan + tahun
+  tgl:         string;   // tanggal bayar (opsional)
   value:       number | null;
   isFree:      boolean;
+  /** T12: alasan bulan tidak terhitung (null/undefined = terhitung) */
+  na?:         'nonaktif' | 'belumTerdaftar' | null;
   onClick:     () => void;
 }
 
-export default function RiwayatMonthRow({ displayName, tgl, value, isFree, onClick }: Props) {
+export default function RiwayatMonthRow({ displayName, tgl, value, isFree, na, onClick }: Props) {
   const t = useT();
 
   let statusEl: React.ReactNode;
-  if (isFree) {
-    statusEl = (
-      <span style={{ color:'var(--c-free)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-        <Gift size={12} /> Free
-      </span>
-    );
+  if (na) {
+    statusEl = <Badge variant="neutral"><Prohibit size={12} aria-hidden="true" /> {t(`status.${na}`)}</Badge>;
+  } else if (isFree) {
+    statusEl = <Badge variant="free"><Gift size={12} weight="duotone" aria-hidden="true" /> {t('status.free')}</Badge>;
   } else if (value !== null && value > 0) {
-    statusEl = (
-      <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
-        {rp(value)}
-      </span>
-    );
+    statusEl = <b className={`wp-num ${s.stAmt}`}>{rp(value)}</b>;
   } else if (value === 0) {
-    statusEl = (
-      <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-        <CheckCircle2 size={12} /> {t('rekap.accumulation')}
-      </span>
-    );
+    statusEl = <span className={`${s.st} ${s.stLunas}`}><CheckCircle size={14} weight="fill" aria-hidden="true" /> {t('rekap.accumulation')}</span>;
   } else {
-    statusEl = (
-      <span style={{ color:'var(--c-belum)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-        <XCircle size={12} /> {t('status.belum')}
-      </span>
-    );
+    statusEl = <span className={`${s.st} ${s.stBelum}`}><XCircle size={14} weight="fill" aria-hidden="true" /> {t('status.belum')}</span>;
   }
 
   return (
-    <div className="rw-month-row" style={{ cursor:'pointer' }} onClick={onClick}>
-      <div>
-        <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName}</div>
-        {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
-      </div>
+    <button type="button" className={s.rwr} onClick={onClick}>
+      <span>
+        <b className={`wp-num ${s.rwMon}`}>{displayName}</b>
+        {tgl && <span className={`wp-t-micro ${s.rwTgl}`}>{tgl}</span>}
+      </span>
       {statusEl}
-    </div>
+    </button>
   );
 }

@@ -1,15 +1,21 @@
-// components/ui/Confirm.tsx — Fase 2: refactor total
-// - Hapus module-level _showConfirm (anti-pattern, race condition)
-// - Hapus dangerouslySetInnerHTML (XSS risk)
-// - State pindah ke Zustand uiSlice
-// - Props terstruktur: title, description, highlight (semua plain string)
+// components/ui/Confirm.tsx — Dialog konfirmasi (REDESAIN T6, CORE BLOCK v3 .confirm)
+// - State tetap di Zustand uiSlice; helper imperatif showConfirm() TIDAK berubah.
+// - `icon` (string) kini KUNCI SEMANTIK: 'trash' | 'lock' | 'warning' | 'switch' | 'signout' |
+//   'question' | 'info'. Nilai lama dari pemanggil yang belum dimigrasi (emoji, simbol, '[PURGE]',
+//   kosong) dipetakan ke ikon Phosphor yang setara — TIDAK PERNAH dirender sebagai teks/emoji.
+//   Pemanggil diganti ke kunci semantik di tahap pemilik layarnya (lihat docs/REDESAIN-MANIFEST.md).
 'use client';
 
+import { useEffect, useRef } from 'react';
+import {
+  ArrowsLeftRight, Info, Lock, Question, SignOut, Trash, Warning,
+} from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { useT } from '@/hooks/useT';
+import { Button } from './Button';
+import type { AnyIcon } from './icons';
 
 // ── Helper imperatif — bisa dipanggil dari mana saja tanpa React context ──
-// Mengambil state langsung dari Zustand store (aman, tidak pakai module variable)
 export function showConfirm(
   icon: string,
   title: string,
@@ -32,13 +38,55 @@ export function showConfirm(
   });
 }
 
+type Tone = 'danger' | 'info';
+interface Resolved { Icon: AnyIcon; tone: Tone }
+
+const SEMANTIC: Record<string, Resolved> = {
+  trash:    { Icon: Trash,           tone: 'danger' },
+  lock:     { Icon: Lock,            tone: 'danger' },
+  warning:  { Icon: Warning,         tone: 'danger' },
+  signout:  { Icon: SignOut,         tone: 'danger' },
+  switch:   { Icon: ArrowsLeftRight, tone: 'info'   },
+  question: { Icon: Question,        tone: 'info'   },
+  info:     { Icon: Info,            tone: 'info'   },
+};
+
+// Pemetaan nilai lama (dipakai pemanggil yang belum dimigrasi). Ditulis sebagai escape
+// unicode supaya tidak ada emoji literal di source.
+const LEGACY: Array<[string, string]> = [
+  ['\u{1F5D1}', 'trash'],   // ikon tempat sampah
+  ['[PURGE]',   'trash'],
+  ['\u{1F512}', 'lock'],    // ikon gembok
+  ['\u2194',    'switch'],  // panah dua arah
+];
+
+export function resolveConfirmIcon(icon?: string): Resolved {
+  const raw = (icon ?? '').trim();
+  const direct = SEMANTIC[raw.toLowerCase()];
+  if (direct) return direct;
+  const legacy = LEGACY.find(([needle]) => raw.includes(needle));
+  if (legacy) return SEMANTIC[legacy[1]];
+  return SEMANTIC.warning;
+}
+
 // ── Komponen modal — ditempatkan di AppShell ──
 export default function Confirm() {
   const { confirmDialog, closeConfirmDialog } = useAppStore();
   const { open, icon, title, description, highlight, highlightColor, yesLabel, cb } = confirmDialog;
   const t = useT();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    cancelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeConfirmDialog(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, closeConfirmDialog]);
 
   if (!open) return null;
+
+  const { Icon, tone } = resolveConfirmIcon(icon);
 
   function handleConfirm() {
     const saved = cb;
@@ -47,49 +95,33 @@ export default function Confirm() {
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 9999,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-      }}
-      onClick={closeConfirmDialog}
-    >
-      <div className="confirm-box" onClick={(e) => e.stopPropagation()}>
-        {icon && <div className="confirm-icon">{icon}</div>}
+    <div className="wp-backdrop" onClick={closeConfirmDialog}>
+      <div
+        className={`wp-confirm${tone === 'info' ? ' wp-confirm--info' : ''}`}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="wp-confirm-title"
+        aria-describedby={description ? 'wp-confirm-desc' : undefined}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="wp-confirm__ico" aria-hidden="true"><Icon size="1em" weight="fill" /></div>
 
         {/* title — plain text, aman dari XSS */}
-        <div className="confirm-msg">{title}</div>
+        <div id="wp-confirm-title" className="wp-confirm__title">{title}</div>
 
         {/* description — plain text opsional */}
-        {description && (
-          <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--txt3)', textAlign: 'center', marginTop: 4, lineHeight: 1.5 }}>
-            {description}
-          </div>
-        )}
+        {description && <p id="wp-confirm-desc" className="wp-confirm__desc">{description}</p>}
 
         {/* highlight — teks penting (nama member, dll) */}
         {highlight && (
-          <div style={{
-            fontSize: 'var(--fs-body)',
-            fontWeight: 700,
-            color: highlightColor || 'var(--txt)',
-            textAlign: 'center',
-            marginTop: 6,
-            padding: '4px 10px',
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 'var(--r-xs)',
-            wordBreak: 'break-all',
-          }}>
+          <div className="wp-confirm__hl" style={highlightColor ? { color: highlightColor } : undefined}>
             {highlight}
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button className="confirm-no"  onClick={closeConfirmDialog}>{t('common.cancel')}</button>
-          <button className="confirm-yes" onClick={handleConfirm}>{yesLabel}</button>
+        <div className="wp-confirm__row">
+          <Button ref={cancelRef} variant="secondary" size="lg" onClick={closeConfirmDialog}>{t('common.cancel')}</Button>
+          <Button variant={tone === 'danger' ? 'danger' : 'primary'} size="lg" onClick={handleConfirm}>{yesLabel}</Button>
         </div>
       </div>
     </div>

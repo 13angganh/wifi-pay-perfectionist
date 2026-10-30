@@ -6,7 +6,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { WarningCircle } from '@phosphor-icons/react';
 import { logger } from '@/lib/logger';
+import { t } from '@/lib/i18n';
 
 interface Props {
   error: Error & { digest?: string };
@@ -34,12 +36,12 @@ export default function GlobalError({ error, reset }: Props) {
         textAlign: 'center',
         color: '#fff',
       }}>
-        <div style={{ fontSize: 32 }}>⚠️</div>
+        <WarningCircle size={40} weight="duotone" color="#F59E0B" aria-hidden="true" />
         <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>
-          Terjadi Kesalahan
+          {t('errorpage.title')}
         </div>
         <div style={{ fontSize: 13, color: '#A1A8C1', maxWidth: 300, lineHeight: 1.6 }}>
-          Aplikasi mengalami error yang tidak terduga. Coba muat ulang halaman.
+          {t('errorpage.globalDesc')}
         </div>
         <button
           onClick={reset}
@@ -56,7 +58,7 @@ export default function GlobalError({ error, reset }: Props) {
             minHeight: 44,
           }}
         >
-          Coba Lagi
+          {t('common.retry')}
         </button>
       </body>
     </html>

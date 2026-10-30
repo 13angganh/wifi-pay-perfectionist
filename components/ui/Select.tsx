@@ -1,32 +1,18 @@
-// components/ui/Select.tsx — Styled select wrapper
+// components/ui/Select.tsx — Styled select (REDESAIN T6, CORE BLOCK v3 select.inp)
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
-import { ChevronDown } from 'lucide-react';
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { CaretDown } from '@phosphor-icons/react';
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react';
+import { Field } from './Input';
 
-const selectVariants = cva(
-  [
-    'w-full appearance-none',
-    'bg-[var(--bg3)] text-[var(--txt)]',
-    'border border-[var(--border)] rounded-[var(--r-md)]',
-    'pr-8',
-    'transition-colors duration-[var(--t-fast)] ease-[var(--ease-out)]',
-    'focus:outline-none focus:border-[var(--zc)] focus:bg-[var(--bg2)]',
-    'disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer',
-  ].join(' '),
-  {
-    variants: {
-      size: {
-        sm: 'h-8 pl-3 text-[var(--fs-caption)]',
-        md: 'h-9 pl-3 text-[var(--fs-body)]',
-        lg: 'h-10 pl-4 text-[var(--fs-heading)]',
-      },
-    },
-    defaultVariants: { size: 'md' },
-  }
-);
+const selectVariants = cva('wp-inp', {
+  variants: {
+    size: { sm: 'wp-inp--sm', md: '', lg: 'wp-inp--lg' },
+  },
+  defaultVariants: { size: 'md' },
+});
 
 export interface SelectProps
   extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'>,
@@ -37,27 +23,25 @@ export interface SelectProps
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, size, label, error, id, children, ...props }, ref) => {
-    const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const auto = useId();
+    const selectId = id ?? auto;
+    const errorId = `${selectId}-err`;
     return (
-      <div className="flex flex-col gap-1">
-        {label && (
-          <label htmlFor={selectId} className="text-[var(--fs-caption)] text-[var(--txt2)] font-medium">
-            {label}
-          </label>
-        )}
-        <div className="relative flex items-center">
+      <Field label={label} htmlFor={selectId} error={error} errorId={errorId}>
+        <div className="wp-inpw wp-inpw--sel">
           <select
             ref={ref}
             id={selectId}
-            className={clsx(selectVariants({ size }), error && 'border-[var(--c-belum)] focus:border-[var(--c-belum)]', className)}
+            className={clsx(selectVariants({ size }), error && 'wp-inp--err', className)}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
             {...props}
           >
             {children}
           </select>
-          <ChevronDown size={14} strokeWidth={2} className="absolute right-2.5 text-[var(--txt3)] pointer-events-none" />
+          <span className="wp-inpw__end" aria-hidden="true"><CaretDown size={14} weight="bold" /></span>
         </div>
-        {error && <p className="text-[var(--fs-caption)] text-[var(--c-belum)]">{error}</p>}
-      </div>
+      </Field>
     );
   }
 );

@@ -1,35 +1,45 @@
-// components/ui/Input.tsx — Primitive input dengan CVA variants
+// components/ui/Input.tsx — Input, Textarea, Field (REDESAIN T6, CORE BLOCK v3 .inp/.field)
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef, useId,
+  type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes,
+} from 'react';
 
-const inputVariants = cva(
-  [
-    'w-full bg-[var(--bg3)] text-[var(--txt)]',
-    'border border-[var(--border)] rounded-[var(--r-md)]',
-    'placeholder:text-[var(--txt4)]',
-    'transition-colors duration-[var(--t-fast)] ease-[var(--ease-out)]',
-    'focus:outline-none focus:border-[var(--zc)] focus:bg-[var(--bg2)]',
-    'disabled:opacity-40 disabled:cursor-not-allowed',
-  ].join(' '),
-  {
-    variants: {
-      variant: {
-        default: '',
-        error:  'border-[var(--c-belum)] focus:border-[var(--c-belum)]',
-        search: 'bg-[var(--bg2)] border-[var(--border2)] focus:bg-[var(--bg3)]',
-      },
-      size: {
-        sm: 'h-8 px-3 text-[var(--fs-caption)]',
-        md: 'h-9 px-3 text-[var(--fs-body)]',
-        lg: 'h-10 px-4 text-[var(--fs-heading)]',
-      },
+const inputVariants = cva('wp-inp', {
+  variants: {
+    variant: {
+      default: '',
+      error:   'wp-inp--err',
+      search:  'wp-inp--search',
     },
-    defaultVariants: { variant: 'default', size: 'md' },
-  }
-);
+    size: {
+      sm: 'wp-inp--sm',
+      md: '',
+      lg: 'wp-inp--lg',
+    },
+  },
+  defaultVariants: { variant: 'default', size: 'md' },
+});
+
+/** Pembungkus label + pesan error/hint — dipakai Input, Select, Textarea. */
+export function Field({
+  label, htmlFor, error, hint, errorId, hintId, className, children,
+}: {
+  label?: string; htmlFor?: string; error?: string; hint?: string;
+  errorId?: string; hintId?: string; className?: string; children: ReactNode;
+}) {
+  return (
+    <div className={clsx('wp-field', className)}>
+      {label && <label htmlFor={htmlFor}>{label}</label>}
+      {children}
+      {error && <span id={errorId} className="wp-msg" role="alert">{error}</span>}
+      {hint && !error && <span id={hintId} className="wp-hint-txt">{hint}</span>}
+    </div>
+  );
+}
 
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>,
@@ -39,42 +49,70 @@ export interface InputProps
   hint?: string;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
+  /** Angka/nominal: font mono + tabular. */
+  numeric?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, size, label, error, hint, leftIcon, rightIcon, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  ({ className, variant, size, label, error, hint, leftIcon, rightIcon, numeric, id, ...props }, ref) => {
+    const auto = useId();
+    const inputId = id ?? auto;
+    const errorId = `${inputId}-err`;
+    const hintId = `${inputId}-hint`;
     const effectiveVariant = error ? 'error' : variant;
+    const input = (
+      <input
+        ref={ref}
+        id={inputId}
+        className={clsx(inputVariants({ variant: effectiveVariant, size }), numeric && 'wp-inp--num', className)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : hint ? hintId : undefined}
+        {...props}
+      />
+    );
     return (
-      <div className="flex flex-col gap-1">
-        {label && (
-          <label htmlFor={inputId} className="text-[var(--fs-caption)] text-[var(--txt2)] font-medium">
-            {label}
-          </label>
-        )}
-        <div className="relative flex items-center">
-          {leftIcon && (
-            <span className="absolute left-3 text-[var(--txt3)] pointer-events-none flex items-center">
-              {leftIcon}
-            </span>
-          )}
-          <input
-            ref={ref}
-            id={inputId}
-            className={clsx(inputVariants({ variant: effectiveVariant, size }), leftIcon && 'pl-9', rightIcon && 'pr-9', className)}
-            {...props}
-          />
-          {rightIcon && (
-            <span className="absolute right-3 text-[var(--txt3)] flex items-center">{rightIcon}</span>
-          )}
-        </div>
-        {error && <p className="text-[var(--fs-caption)] text-[var(--c-belum)]">{error}</p>}
-        {hint && !error && <p className="text-[var(--fs-caption)] text-[var(--txt3)]">{hint}</p>}
-      </div>
+      <Field label={label} htmlFor={inputId} error={error} hint={hint} errorId={errorId} hintId={hintId}>
+        {leftIcon || rightIcon ? (
+          <div className="wp-inpw">
+            {leftIcon && <span className="wp-inpw__ico" aria-hidden="true">{leftIcon}</span>}
+            {input}
+            {rightIcon && <span className="wp-inpw__end" style={{ pointerEvents: 'none' }}>{rightIcon}</span>}
+          </div>
+        ) : input}
+      </Field>
     );
   }
 );
 Input.displayName = 'Input';
 
-export { Input, inputVariants };
+export interface TextareaProps
+  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string;
+  error?: string;
+  hint?: string;
+}
+
+const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, label, error, hint, id, ...props }, ref) => {
+    const auto = useId();
+    const areaId = id ?? auto;
+    const errorId = `${areaId}-err`;
+    const hintId = `${areaId}-hint`;
+    return (
+      <Field label={label} htmlFor={areaId} error={error} hint={hint} errorId={errorId} hintId={hintId}>
+        <textarea
+          ref={ref}
+          id={areaId}
+          className={clsx('wp-inp', error && 'wp-inp--err', className)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : hint ? hintId : undefined}
+          {...props}
+        />
+      </Field>
+    );
+  }
+);
+Textarea.displayName = 'Textarea';
+
+export { Input, Textarea, inputVariants };
 export default Input;

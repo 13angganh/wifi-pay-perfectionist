@@ -1,145 +1,102 @@
 // ══════════════════════════════════════════
-// components/features/dashboard/DashboardView.RecentActivity.tsx
-// Dipecah dari DashboardView.tsx (task 1.15)
-// Top tunggakan + operasional + backup + WA summary cards
+// components/features/dashboard/DashboardView.RecentActivity.tsx (REDESAIN T7)
+// A12 Aktivitas Terbaru: 5 entri terakhir dari appData.activityLog (tanpa field DB baru),
+// tautan "Lihat Semua" ke Log. File ini sebelumnya yatim (isinya kartu tunggakan/backup/WA yang
+// kini ada di .Unpaid/.Tools); namanya dipakai ulang untuk fitur yang memang sesuai namanya.
 // ══════════════════════════════════════════
 'use client';
 
-import { AlertTriangle, CheckCircle2, ChevronRight, Wallet, Database, Share2 } from 'lucide-react';
-import { rp } from '@/lib/helpers';
-import { doJSONBackup, doJSONShare, isShareSupported } from '@/lib/export.json';
-import { doWASummary } from '@/lib/export.wa';
-import { showToast } from '@/components/ui/Toast';
+import { clsx } from 'clsx';
+import { useState, type CSSProperties, type ElementType } from 'react';
+import {
+  ArrowCounterClockwise, ArrowsClockwise, CaretRight, FileText, Gift, Globe, Lock,
+  Money, PencilSimple, SignIn, SignOut, Trash, UserPlus,
+} from '@phosphor-icons/react';
+import { Card } from '@/components/ui/Card';
+import { IconTile, type TileTone } from '@/components/ui/IconTile';
 import { useT } from '@/hooks/useT';
-import type { AppData } from '@/types';
+import type { ActivityLog } from '@/types';
+import s from './dashboard.module.css';
 
-interface ArrearItem { z: string; name: string; count: number; oldest: string; }
+const MAX_ITEMS = 5;
+const rise = (i: number) => ({ ['--i' as string]: i }) as CSSProperties;
 
-interface Props {
-  top5:        ArrearItem[];
-  totalTunggak: number;
-  bulanLbl:    string;
-  totalOps:    number;
-  backupLbl:   string;
-  appData:     AppData;
-  dy:          number;
-  dm:          number;
-  onNavTunggakan: () => void;
-  onNavOperasional: () => void;
+/** Ikon + warna per jenis aksi (aturan pencocokan sama dengan LogView di zip). */
+export function getActivityMeta(action: string): { icon: ElementType; tone: TileTone } {
+  const a = action || '';
+  if (a.startsWith('[PAY]') || a.includes('Quick Pay') || a.includes('bayar') || a.includes('Bayar')) return { icon: Money, tone: 'lunas' };
+  if (a.startsWith('[DEL]') || a.includes('Hapus')) return { icon: Trash, tone: 'belum' };
+  if (a.startsWith('[EDIT]') || a.includes('Edit') || a.includes('Ubah')) return { icon: PencilSimple, tone: 'blue' };
+  if (a.startsWith('[ADD]') || a.includes('Tambah')) return { icon: UserPlus, tone: 'blue' };
+  if (a.startsWith('[RESTORE]') || a.startsWith('[UNDO]') || a.includes('Pulihkan') || a.includes('Batalkan')) return { icon: ArrowCounterClockwise, tone: 'orange' };
+  if (a.startsWith('[IP]') || a.includes('Konversi IP')) return { icon: Globe, tone: 'purple' };
+  if (a.startsWith('[FREE]') || a.includes('Gratis')) return { icon: Gift, tone: 'purple' };
+  if (a.includes('Login') || a.includes('Masuk')) return { icon: SignIn, tone: 'teal' };
+  if (a.includes('Logout') || a.includes('Keluar')) return { icon: SignOut, tone: 'slate' };
+  if (a.includes('Kunci') || a.includes('Lock')) return { icon: Lock, tone: 'warn' };
+  if (a.startsWith('[SYNC]') || a.includes('Sync')) return { icon: ArrowsClockwise, tone: 'blue' };
+  return { icon: FileText, tone: 'soft' };
 }
 
-export default function DashboardRecentActivity(p: Props) {
+/** Buang penanda "[PAY] " di awal; teks aksi selebihnya persis seperti di Log. */
+export function stripActionTag(action: string): string {
+  return (action || '').replace(/^\[[A-Z_]+\]\s*/, '');
+}
+
+/** Nominal "Rp 100.000" dari detail aksi bayar (hanya bila ada di teks log; tidak dihitung ulang). */
+export function extractAmount(action: string, detail?: string): string | null {
+  if (!action.startsWith('[PAY]') || !detail) return null;
+  const m = detail.match(/Rp\s?[\d.,]+/);
+  return m ? m[0] : null;
+}
+
+/** "Hari ini, 10:24" / "Kemarin, 18:30" / tanggal lokal (format tanggal sama dengan Log). */
+export function formatActivityTime(ts: number, now: Date, labels: { today: string; yesterday: string }): string {
+  const d = new Date(ts);
+  const hm = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(now) - startOf(d)) / 86_400_000);
+  if (diffDays === 0) return `${labels.today}, ${hm}`;
+  if (diffDays === 1) return `${labels.yesterday}, ${hm}`;
+  return `${d.toLocaleDateString()} ${hm}`;
+}
+
+export function RecentActivity({ logs, onSeeAll }: { logs: ActivityLog[]; onSeeAll: () => void }) {
   const t = useT();
-
-  const card = {
-    background: 'var(--bg2)',
-    border: '1px solid rgba(255,255,255,0.05)',
-    borderRadius: 'var(--r-md)',
-    padding: 16,
-    marginBottom: 10,
-    boxShadow: 'var(--shadow-sm)',
-  } as const;
-
+  const [now] = useState(() => new Date());
+  const items = [...(logs || [])].sort((a, b) => b.ts - a.ts).slice(0, MAX_ITEMS);
+  const labels = { today: t('dashboard.today'), yesterday: t('dashboard.yesterday') };
   return (
-    <>
-      {/* Top tunggakan */}
-      <div style={card}>
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', marginBottom:10 }}>
-          <AlertTriangle size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.topArrears')}
+    <Card padding="none" className={clsx(s.act, s.rise)} style={rise(11)}>
+      <div className={s.actHead}>
+        <b>{t('dashboard.recentActivity')}</b>
+        <button type="button" className="wp-lnk" onClick={onSeeAll}>
+          {t('dashboard.seeAll')} <CaretRight size={11} aria-hidden="true" />
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <div className={s.actItem} style={{ justifyContent: 'center', color: 'var(--txt3)', fontSize: 'var(--fs-caption)' }}>
+          {t('dashboard.noActivity')}
         </div>
-        {p.top5.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'16px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
-            <CheckCircle2 size={24} style={{ color:'var(--c-lunas)' }} />
-            <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-body)' }}>{t('dashboard.allPaid')}</span>
-          </div>
-        ) : (
-          p.top5.map((item, i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom: i < p.top5.length - 1 ? '1px solid var(--border2)' : 'none' }}>
-              <div>
-                <span style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{item.name}</span>
-                <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginLeft:6 }}>{item.z}</span>
+      ) : (
+        items.map(l => {
+          const meta = getActivityMeta(l.action);
+          const amount = extractAmount(l.action, l.detail);
+          return (
+            <div key={`${l.ts}-${l.action}`} className={s.actItem}>
+              <IconTile icon={meta.icon} tone={meta.tone} />
+              <div className={s.actTx}>
+                <b>{stripActionTag(l.action)}</b>
+                <span>{l.detail || l.user || ''}</span>
               </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700 }}>{item.count} {t('common.months')}</div>
-                <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)' }}>{t('common.since')} {item.oldest}</div>
+              <div className={s.actEnd}>
+                <time dateTime={new Date(l.ts).toISOString()}>{formatActivityTime(l.ts, now, labels)}</time>
+                {amount && <b className="wp-num">{amount}</b>}
               </div>
             </div>
-          ))
-        )}
-        {p.totalTunggak > 5 && (
-          <div
-            style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', textAlign:'center', marginTop:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}
-            onClick={p.onNavTunggakan}
-            role="button"
-          >
-            +{p.totalTunggak - 5} {t('common.more')}
-            <ChevronRight size={12} />
-          </div>
-        )}
-      </div>
-
-      {/* Operasional */}
-      <div style={{ ...card, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer' }} onClick={p.onNavOperasional} role="button" aria-label={t('nav.operasional')}>
-        <div>
-          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
-            <Wallet size={14} style={{ color:'var(--txt3)' }} /> {t('nav.operasional')} {p.bulanLbl}
-          </div>
-          <div style={{ fontSize:'var(--fs-caption)', color: p.totalOps > 0 ? 'var(--c-belum)' : 'var(--txt4)', marginTop:3 }}>
-            {p.totalOps > 0 ? rp(p.totalOps) : t('common.noData')}
-          </div>
-        </div>
-        <ChevronRight size={16} style={{ color:'var(--txt4)', flexShrink:0 }} />
-      </div>
-
-      {/* Backup — 2 pilihan: Download + Share */}
-      <div style={card}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
-            <Database size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.lastBackup')}
-          </div>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.backupLbl}</div>
-        </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <button
-            style={{ flex:1, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
-            onClick={() => { doJSONBackup(p.appData); showToast('Backup berhasil diunduh'); }}
-          >
-            <Database size={12} /> Download
-          </button>
-          {isShareSupported() && (
-            <button
-              style={{ flex:1, background:'rgba(201,149,42,0.08)', border:'1px solid rgba(201,149,42,0.25)', color:'var(--zc)', padding:'9px 8px', borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}
-              onClick={async () => {
-                const ok = await doJSONShare(p.appData);
-                if (ok) showToast('Backup berhasil dibagikan');
-                else showToast('Share dibatalkan', 'err');
-              }}
-            >
-              <Share2 size={12} /> Bagikan
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* WA Summary */}
-      <div style={card}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)', display:'flex', alignItems:'center', gap:6 }}>
-            <Share2 size={14} style={{ color:'var(--txt3)' }} /> {t('dashboard.waSummary')}
-          </div>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{p.bulanLbl}</div>
-        </div>
-        <button
-          style={{ width:'100%', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.2)', color:'var(--c-lunas)', padding:12, borderRadius:'var(--r-sm)', cursor:'pointer', fontSize:'var(--fs-body)', fontWeight:600, transition:'all var(--t-fast)', minHeight:44, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
-          onClick={() => doWASummary(p.appData, p.dy, p.dm)}
-        >
-          <Share2 size={15} />
-          {t('dashboard.sendWA')} {p.bulanLbl}
-        </button>
-        <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:6, textAlign:'center' }}>
-          {t('dashboard.periodNote')}
-        </div>
-      </div>
-    </>
+          );
+        })
+      )}
+    </Card>
   );
 }

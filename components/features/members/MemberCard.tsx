@@ -1,35 +1,51 @@
-// components/features/members/MemberCard.tsx — Fase 4 + UX Fix
-// UX: haptic feedback · loading state · inputMode decimal · long press ring
-//     double-submit prevention · undo payment · success flash · auto-focus
+// components/features/members/MemberCard.tsx — REDESAIN T7 (prototype T2 keputusan 3, 4, 5, 6, 7, 8, 8b, 9, 14)
+// Logika (persist/undo/rollback selektif/double-submit guard/long press/period snapshot) DIPERTAHANKAN dari
+// v11.7.1; yang berubah: tampilan (primitive T6 + MemberCard.module.css), ikon Lucide → Phosphor, teks literal →
+// i18n, kunci showConfirm semantik, dan guard batch (kartu lunas/gratis tidak bisa dipilih).
+// UX: haptic feedback · loading state · inputMode decimal · long press ring · double-submit prevention ·
+//     undo payment · success flash · auto-focus
 'use client';
 
+import { Vis } from '@/components/ui/CardFilter';
 import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { clsx } from 'clsx';
+import {
+  CaretDown, CaretUp, CalendarBlank, CreditCard, Check, Lock, Prohibit, Scroll, Trash, Lightning,
+} from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
-import { getPay, isFree, rp, resolveEntryCardPeriod, resolveDisplayStatus } from '@/lib/helpers';
+import { getPay, isFree, rp, resolveEntryCardPeriod, resolveDisplayStatus, getMonthStatus, isNotApplicable } from '@/lib/helpers';
+import { resolvePayDate, setPayDate, payDatePatch, applyPayDatePatch, readPayDate, restorePayDate, type PayDatePatch } from '@/lib/payDate';
 import { saveDB, persistPaymentGranular } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { showToast, showToastUndo } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { IdChip } from '@/components/ui/Chip';
+import { RoundCheckbox } from '@/components/ui/Checkbox';
+import { IconButton } from '@/components/ui/IconButton';
+import { QuickPayGrid } from '@/components/ui/QuickPayGrid';
+import { Select } from '@/components/ui/Select';
+import { Spinner } from '@/components/ui/Spinner';
 import RiwayatModal from '@/components/modals/RiwayatModal';
 import { haptic } from '@/lib/haptic';
 import type { Zone } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
-import {
-  ChevronUp, ChevronDown, CheckCircle2, XCircle, Gift,
-  Trash2, Clock, Lock, History, Zap, Check, Loader2,
-} from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
+import m from './MemberCard.module.css';
 
 interface Props {
   name:          string;
   index:         number;
   batchMode?:    boolean;
   batchSelected?: boolean;
-  onLongPress?:  () => void;
+  /** T7 keputusan 8b: dalam mode pilih hanya member BELUM BAYAR yang bisa dipilih (dihitung EntryView lewat batch.ts) */
+  batchEligible?: boolean;
   onBatchToggle?: () => void;
 }
 
@@ -41,10 +57,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark style={{
-        background: 'var(--zcdim)', color: 'var(--zc)',
-        borderRadius: 2, padding: '0 1px', fontWeight: 700, fontStyle: 'normal',
-      }}>
+      <mark className={m.mark}>
         {text.slice(idx, idx + query.trim().length)}
       </mark>
       {text.slice(idx + query.trim().length)}
@@ -52,7 +65,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-export default function MemberCard({ name, index, batchMode = false, batchSelected = false, onLongPress, onBatchToggle }: Props) {
+export default function MemberCard({ name, index, batchMode = false, batchSelected = false, batchEligible = true, onBatchToggle }: Props) {
   const {
     appData, setAppData, uid, userEmail,
     activeZone, selYear, selMonth,
@@ -68,19 +81,21 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   // UX: loading state saat save (double-submit prevention)
   const [isSaving,      setIsSaving]      = useState(false);
   // UX: long press visual ring
-  const [isLongPressing, setIsLongPressing] = useState(false);
   // UX: success flash setelah payment tersimpan
   const [showSuccess,   setShowSuccess]   = useState(false);
+  // T7 keputusan 14: validasi nominal inline (input merah + pesan) selain toast
+  const [amtErr,        setAmtErr]        = useState(false);
   // v11.5.2: counter untuk force re-trigger animasi checkmark (lihat .mc-success-check) —
   // tanpa ini, klik bayar dua kali cepat berturut-turut bisa membuat browser skip replay
   // animasi karena elemen dianggap "tidak berubah" (key sama).
   const [successKey,    setSuccessKey]    = useState(0);
+  // REDESAIN T12 (D5/D3): bulan Belum-terdaftar/Nonaktif tanpa pembayaran — mencatat pembayaran BARU butuh konfirmasi.
+  // Disimpan sebagai kunci periode kartu (bukan boolean) supaya otomatis "tertutup lagi" begitu bulan kartu berganti.
+  const [naOkKey,       setNaOkKey]       = useState('');
 
   const isSavingRef    = useRef(false);  // sync guard
   const inputDirty     = useRef(false);
   const isCollapsing   = useRef(false);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isLongPress    = useRef(false);
   // v11.5.9: true jika user SENGAJA mengubah dropdown BULAN di kartu ini selama sesi
   // expand saat ini (bukan dari toggle period luar). Dipakai untuk membedakan override
   // manual (harus tetap dilindungi meski kartu ditutup) dari snapshot otomatis (aman
@@ -108,6 +123,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   const entryVal  = getPay(appData, activeZone, name, cardYear, cardMonth);
   const freeCur   = isFree(appData, activeZone, name, selYear, selMonth);
   const freeEntry = isFree(appData, activeZone, name, cardYear, cardMonth);
+  // REDESAIN T12: N/A = Belum terdaftar / Nonaktif TANPA pembayaran (dengan pembayaran = "lunas", D3).
+  const curNA   = (s => (isNotApplicable(s) ? s : null))(getMonthStatus(appData, activeZone, name, selYear, selMonth));
+  const entryNA = (s => (isNotApplicable(s) ? s : null))(getMonthStatus(appData, activeZone, name, cardYear, cardMonth));
+  const naKey   = `${activeZone}|${name}|${cardYear}|${cardMonth}`;
   const isLocked  = globalLocked || (lockedEntries[activeZone + '__' + name] === true);
   const isExp     = expandedCard === name;
 
@@ -121,8 +140,9 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   // atas sudah menangani ini); begitu kartu dibuka, header switch mengikuti cardYear/
   // cardMonth kartu itu sendiri — termasuk saat user mengubah dropdown BULAN di dalamnya.
   // Logic diekstrak ke resolveDisplayStatus (lib/payment.ts) agar bisa di-unit-test.
-  const { val: displayVal, free: displayFree, statusBorder: displayStatusBorder } =
+  const { val: displayVal, free: displayFree } =
     resolveDisplayStatus(isExp, val, freeCur, entryVal, freeEntry);
+  const displayNA = isExp ? entryNA : curNA;
 
   const cardRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -222,6 +242,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     paymentValue: number | null,
     action: string,
     detail: string,
+    payDate?: PayDatePatch, // REDESAIN T12 (F4): tanggal bayar ikut ditulis dalam update() granular yang sama
   ): Promise<boolean> {
     if (isSavingRef.current) return false;
     isSavingRef.current = true;
@@ -233,7 +254,8 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     // — termasuk yang tertunda — otomatis benar tanpa perlu masing-masing mengurus staleness.
     const current   = useAppStore.getState().appData;
     const prevValue = current.payments[paymentKey] ?? null; // untuk rollback selektif
-    const newData = { ...current, payments: { ...current.payments } };
+    const prevDate  = payDate ? readPayDate(current, payDate) : undefined;
+    const newData = applyPayDatePatch({ ...current, payments: { ...current.payments } }, payDate);
     if (paymentValue === null) delete newData.payments[paymentKey];
     else newData.payments[paymentKey] = paymentValue;
     setAppData(newData);
@@ -247,6 +269,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
           globalLocked: useAppStore.getState().globalLocked,
           lockedEntries: useAppStore.getState().lockedEntries,
         }),
+        payDate,
       );
       setSyncStatus('ok');
       setShowSuccess(true);
@@ -264,7 +287,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       const rolledBack = { ...latest, payments: { ...latest.payments } };
       if (prevValue === null) delete rolledBack.payments[paymentKey];
       else rolledBack.payments[paymentKey] = prevValue;
-      setAppData(rolledBack);
+      setAppData(payDate ? restorePayDate(rolledBack, payDate, prevDate) : rolledBack);
       haptic.error();
       return false;
     } finally {
@@ -290,22 +313,24 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       if (ok) showToast(`${name} ${t('common.deleted')}`, 'err');
     } else {
       const amt = +rawVal;
-      if (isNaN(amt)) { showToast('Nominal tidak valid', 'err'); return; }
+      if (isNaN(amt)) { setAmtErr(true); showToast(t('entry.invalidNominal'), 'err'); return; }
       const ok = await persistPaymentOnly(
         k, amt,
         `[PAY] ${tLog('log.action.pay')} ${activeZone} - ${name}`,
         `${MONTH_NAMES[cardMonth]} ${cardYear}: ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`,
+        // REDESAIN T12 (F4): mode otomatis = tanggal LOKAL hari ini ikut tercatat; mode manual = kolom "Tgl Bayar" di bawah.
+        payDatePatch(activeZone, name, cardYear, cardMonth, resolvePayDate(settings?.autoDate)),
       );
       if (ok) {
         // UX: undo selama 4 detik
-        const undoMsg = `${name} → ${amt === 0 ? 'Akumulasi' : rp(amt)}`;
+        const undoMsg = `${name} → ${amt === 0 ? t('rekap.accumulation') : rp(amt)}`;
         // FIX v11.5.7: persistPaymentOnly membaca appData terbaru secara internal saat
         // dipanggil (bukan dari closure di sini), jadi undo callback ini otomatis aman
         // terhadap staleness tanpa perlu getState() manual — lihat penjelasan lengkap di
         // doQuickPay untuk kenapa closure staleness ini penting.
         showToastUndo(undoMsg, async () => {
           await persistPaymentOnly(k, prevVal, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
-          showToast(`${name} dibatalkan`, 'info');
+          showToast(`${name} ${t('entry.cancelled')}`, 'info');
         });
       }
     }
@@ -315,16 +340,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   function doQuickPay(amt: number) {
     const k         = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
     const prevVal   = entryVal; // simpan untuk undo
-    const newData = { ...appData, payments: { ...appData.payments, [k]: amt } };
-    if (settings?.autoDate) {
-      const today   = new Date().toISOString().slice(0, 10);
-      const infoKey = `${activeZone}__${name}`;
-      const dateKey = `date_${cardYear}_${cardMonth}`;
-      newData.memberInfo = {
-        ...(newData.memberInfo || {}),
-        [infoKey]: { ...(newData.memberInfo?.[infoKey] || {}), [dateKey]: today },
-      };
-    }
+    // REDESAIN T12 (F4): tanggal bayar lewat SATU helper (lib/payDate.ts) — otomatis = tanggal LOKAL, bukan UTC.
+    const newData = setPayDate(
+      { ...appData, payments: { ...appData.payments, [k]: amt } },
+      activeZone, name, cardYear, cardMonth, resolvePayDate(settings?.autoDate),
+    );
     // FIX 8: Optimistic UI — update state + toast LANGSUNG, Firebase async di background
     setAppData(newData);
     setExpandedCard(null);
@@ -345,7 +365,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
       await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
-      showToast(`${name} dibatalkan`, 'info');
+      showToast(`${name} ${t('entry.cancelled')}`, 'info');
     });
     // Firebase write di background
     // FIX: jika gagal, beri toast eksplisit + hapus HANYA payment ini dari state TERBARU
@@ -373,12 +393,12 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   }
 
   async function quickPay(amt: number) {
-    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); haptic.error(); return; }
+    if (isLocked) { showToast(t('entry.locked'), 'err'); haptic.error(); return; }
     const tarifMember = info.tarif as number | undefined;
     if (tarifMember && amt > tarifMember) {
       haptic.light();
       showConfirm(
-        '!',
+        'info',
         t('entry.confirmHighNominal'),
         t('action.confirm'),
         () => doQuickPay(amt),
@@ -391,12 +411,12 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   }
 
   async function clearPay() {
-    if (isLocked) { showToast('Data terkunci! Unlock dulu', 'err'); haptic.error(); return; }
+    if (isLocked) { showToast(t('entry.locked'), 'err'); haptic.error(); return; }
     if (entryVal === null) return;
     haptic.light();
     showConfirm(
-      '🗑️',
-      `Hapus pembayaran ${name}?`,
+      'trash',
+      `${t('entry.deletePayTitle')} ${name}?`,
       t('membercard.deleteYes'),
       async () => {
         const k = `${activeZone}__${name}__${cardYear}__${cardMonth}`;
@@ -405,7 +425,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
           `[DEL] ${tLog('log.action.deletePay')} ${activeZone} - ${name}`,
           `${MONTH_NAMES[cardMonth]} ${cardYear}: ${tLog('log.detail.deleted')}`,
         );
-        if (ok) showToast(`${name} dihapus`, 'err');
+        if (ok) showToast(`${name} ${t('common.deleted')}`, 'err');
       },
       { description: `${MONTH_NAMES[cardMonth]} ${cardYear} · ${entryVal > 0 ? rp(entryVal) : t('rekap.accumulation')}` },
     );
@@ -432,8 +452,11 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
   }
 
   function handleToggle() {
-    if (batchMode) { onBatchToggle?.(); return; }
-    if (isExp) { isCollapsing.current = true; setExpandedCard(null); }
+    // Klik yang menyusul tekan lama (mouse lepas setelah 500 ms) bukan ketukan baru: abaikan satu kali,
+    // supaya member yang baru dipilih oleh startBatch tidak langsung batal terpilih.
+    // T2 keputusan 8b: dalam mode pilih, hanya member belum bayar yang bisa diketuk.
+    if (batchMode) { if (batchEligible) onBatchToggle?.(); return; }
+    if (isExp) { isCollapsing.current = true; setNaOkKey(''); setExpandedCard(null); }
     else       { setExpandedCard(name); }
   }
 
@@ -445,329 +468,216 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     setRiwOpen(true);
   }
 
-  // ── Long press handlers — dengan haptic + visual ring ──
-  function handlePointerDown() {
-    if (batchMode) return;
-    isLongPress.current = false;
-    setIsLongPressing(true);
-    longPressTimer.current = setTimeout(() => {
-      isLongPress.current = true;
-      setIsLongPressing(false);
-      haptic.medium();   // UX: haptic saat long press aktif
-      onLongPress?.();
-    }, 500);
+  // ── Tampilan (REDESAIN T7) ──
+  // REDESAIN T12: N/A tanpa pembayaran = 'nonaktif' | 'belumTerdaftar' (redup + chip); selain itu seperti sebelumnya.
+  const payStatus: 'lunas' | 'belum' | 'free' = displayFree ? 'free' : displayVal !== null ? 'lunas' : 'belum';
+  const status = displayNA ?? payStatus;
+  const naOk = naOkKey === naKey;
+  function askRecordNA() {
+    if (!entryNA) return;
+    haptic.light();
+    showConfirm(
+      'info',
+      t('membercard.naConfirmTitle'),
+      t('action.confirm'),
+      () => setNaOkKey(naKey),
+      { description: `${name} · ${MONTH_NAMES[cardMonth]} ${cardYear} · ${t(`status.${entryNA}`)}` },
+    );
   }
-  function cancelLongPress() {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    setIsLongPressing(false);
-  }
+  const tarif = info.tarif as number | undefined;
+  const quickAmounts = settings?.quickAmounts || DEFAULT_SETTINGS.quickAmounts;
+  // T2 keputusan 4: chip tarif diurutkan pertama + disorot (QuickPayGrid menyorot `tarif`)
+  const orderedAmounts = tarif ? [tarif, ...quickAmounts.filter(a => a !== tarif)] : quickAmounts;
+  const safeId   = name.replace(/\s/g, '_');
+  const idText   = info.id ? String(info.id) : '';
+  const ipHref   = info.ip ? (String(info.ip).startsWith('http') ? String(info.ip) : 'http://' + String(info.ip)) : '';
+  const hasDel   = entryVal !== null && !isSaving;
+  const autoDate = settings?.autoDate === true;
 
-  // Badge status
-  let tagEl: React.ReactNode;
-  if (displayFree)
-    tagEl = <span className="mc-tag" style={{ background:'var(--bg3)', color:'var(--c-free)', border:'1px solid var(--border)', fontSize:'var(--fs-micro)', display:'flex', alignItems:'center', gap:3 }}><Gift size={9} /></span>;
-  else if (displayVal !== null && displayVal > 0)
-    tagEl = <span className="mc-tag tpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><CheckCircle2 size={9} /></span>;
-  else if (displayVal === 0)
-    tagEl = <span className="mc-tag" style={{ background:'rgba(34,197,94,0.08)', color:'var(--c-lunas)', border:'1px solid rgba(34,197,94,0.2)', fontSize:'var(--fs-micro)', display:'flex', alignItems:'center', gap:3 }}><Check size={9} /> 0</span>;
-  else
-    tagEl = <span className="mc-tag tunpaid" style={{ display:'flex', alignItems:'center', gap:3 }}><XCircle size={9} /></span>;
-
-  const idEl = info.id
-    ? (info.ip
-        ? <a className="mc-id" href={String(info.ip).startsWith('http') ? String(info.ip) : 'http://' + String(info.ip)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{String(info.id)}</a>
-        : <span className="mc-id" style={{ cursor:'pointer' }} onClick={openRiwayat}>{String(info.id)}</span>)
+  const idEl = idText
+    ? (ipHref
+        ? <a href={ipHref} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}><IdChip>{idText}</IdChip></a>
+        : <button type="button" className={m.idBtn} onClick={openRiwayat}><IdChip>{idText}</IdChip></button>)
     : null;
 
   return (
     <>
-      <div
-        ref={cardRef}
-        id={`card-${name.replace(/\s/g, '_')}`}
-        className={`mcard ${isExp ? 'expanded' : ''} ${isLongPressing ? 'long-pressing' : ''} ${showSuccess ? 'payment-success' : ''}`}
-        style={{
-          borderLeft:  `3px solid ${showSuccess ? 'var(--c-lunas)' : batchSelected ? 'var(--zc)' : displayStatusBorder}`,
-          borderRadius: 'var(--r-md)',
-          background:   showSuccess
-            ? 'rgba(34,197,94,0.06)'
-            : batchSelected ? 'rgba(var(--zc-rgb, 59,130,246),0.06)' : undefined,
-          transition:  'transform var(--t-fast) var(--ease-smooth), box-shadow var(--t-base) var(--ease-smooth), background 0.35s ease-out, border-left-color 0.35s ease-out',
-          opacity:     batchMode && !batchSelected ? 0.6 : 1,
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerUp={cancelLongPress}
-        onPointerLeave={cancelLongPress}
-        onPointerCancel={cancelLongPress}
-        onContextMenu={e => e.preventDefault()}
-      >
-        {/* v11.5.2: badge checkmark pojok — micro-interaction "tandai lunas" yang diperkuat.
-            key={successKey} memaksa React remount elemen ini setiap trigger baru, sehingga
-            animasi CSS (checkPop) selalu replay dari awal meski diklik cepat berturut-turut. */}
-        {showSuccess && (
-          <div key={successKey} className="mc-success-check" aria-hidden="true">
-            <Check size={13} strokeWidth={3} />
-          </div>
-        )}
-        {/* Top row */}
-        <div className="mc-top" onClick={handleToggle} style={{ userSelect:'none' }}>
-          {batchMode && (
-            <div style={{
-              width:18, height:18, borderRadius:'var(--r-xs)',
-              border: `2px solid ${batchSelected ? 'var(--zc)' : 'var(--border)'}`,
-              background: batchSelected ? 'var(--zc)' : 'transparent',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              flexShrink:0, marginRight:4, transition:'all var(--t-fast)',
-            }}>
-              {batchSelected && <Check size={11} color="#fff" />}
+      <div ref={cardRef} id={`card-${safeId}`} data-testid="member-card" data-index={index}>
+        <Card
+          padding="none"
+          className={clsx(
+            m.mc, m[status],
+            batchMode && batchSelected && m.picked,
+            batchMode && !batchEligible && m.na,
+            showSuccess && m.flash,
+          )}
+          aria-disabled={batchMode && !batchEligible ? true : undefined}
+        >
+          {/* badge centang pojok — key={successKey} memaksa remount supaya animasi replay saat dipicu cepat berturut-turut */}
+          {showSuccess && (
+            <div key={successKey} className={m.check} aria-hidden="true">
+              <Check size={13} weight="bold" />
             </div>
           )}
 
-          <span className="mc-num">{index + 1}</span>
-          {idEl}
-          {/* UX: search highlight */}
-          <span className="mc-name"><HighlightText text={name} query={search} /></span>
-
-          {/* UX: loading spinner saat isSaving */}
-          {isSaving ? (
-            <span style={{ display:'flex', alignItems:'center', color:'var(--txt4)', marginLeft:'auto' }}>
-              <Loader2 size={12} className="spin" />
-            </span>
-          ) : displayVal !== null && (
-            displayVal === 0
-              ? <span style={{ fontSize:'var(--fs-label)', color:'var(--c-lunas)' }}>{t('membercard.acm')}</span>
-              : <span style={{ fontSize:'var(--fs-caption)', color:'var(--c-lunas)' }}>{displayVal.toLocaleString('id-ID')}</span>
-          )}
-          {!isSaving && tagEl}
-          {!batchMode && (
-            <span style={{ color:'var(--txt4)', fontSize:'var(--fs-body)', marginLeft:2, display:'flex', alignItems:'center' }}>
-              {isExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </span>
-          )}
-        </div>
-
-        {/* Body expanded */}
-        {isExp && !batchMode && (
-          <div className="mc-body">
-            {/* Bulan selector */}
-            <div className="mc-row" style={{ marginBottom:6 }}>
-              <span className="mc-label">{t('common.month').toUpperCase()}</span>
-              {/* FIX v11.5.8: key={cardYear} — React 19 punya known edge case di mana
-                  <select> controlled yang value-nya berubah dari SUMBER LUAR (di sini:
-                  toggle period Entry di atas, bukan interaksi langsung user dengan
-                  dropdown ini) tidak selalu repaint tampilan visualnya. Memberi key
-                  membuat React mount ulang node <select> yang benar-benar baru saat
-                  cardYear berubah, alih-alih mengandalkan update-in-place.
-                  KOREKSI v11.5.9 (saat itu masih benar, sudah tidak akurat lagi sejak
-                  v11.5.10 — lihat di bawah): entryVal TIDAK selalu akurat sebagai bukti
-                  (ia feed ke defaultValue uncontrolled di field NOMINAL yang tidak pernah
-                  refresh tanpa key), dan waktu itu badge status header kartu masih SELALU
-                  baca val/freeCur (selYear/selMonth) tanpa syarat, tidak peduli isExp.
-                  Root cause SEBENARNYA dari bug "toggle diganti berkali-kali, dropdown
-                  BULAN tidak pernah ikut berubah" ada di useEffect di atas: snapshot
-                  entryCardYear/Month[name] tersimpan PERMANEN sejak kartu ini pertama
-                  kali dibuka — bahkan setelah ditutup — sehingga pembukaan berikutnya
-                  selalu membaca snapshot lama itu, bukan toggle terkini. Fix sesungguhnya
-                  ada di clearEntryCardFor saat kartu ditutup (lihat useEffect), key di
-                  sini tetap dipertahankan sebagai proteksi tambahan yang sah untuk kasus
-                  repaint React 19.
-                  UPDATE v11.5.10: badge/border/nominal-ringkas di header kartu (lihat
-                  displayVal/displayFree di atas deklarasi cardRef) SEKARANG memang
-                  switch ke entryVal/freeEntry saat kartu terbuka (isExp true) — supaya
-                  konsisten dengan isi form BULAN/NOMINAL di bawahnya, bukan menampilkan
-                  status bulan lain yang membingungkan saat toggle atas beda dari bulan
-                  yang sedang dipilih di dalam kartu. Untuk kartu tertutup, tetap murni
-                  val/freeCur (toggle atas) seperti semula. */}
-              <select key={cardYear} className="cs" style={{ fontSize:'var(--fs-caption)', padding:'4px 8px' }} value={cardYear}
-                onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, +e.target.value, cardMonth); }}>
-                {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              {/* key={cardMonth}-nya sendiri tidak cukup untuk memicu remount saat
-                  perubahan bersumber dari cardYear (tahun berubah, bulan bisa jadi
-                  sama persis) — key digabung agar dropdown bulan juga ikut mount ulang
-                  setiap kali BAIK tahun MAUPUN bulan berubah dari toggle luar. */}
-              <select key={`${cardYear}-${cardMonth}`} className="cs" style={{ fontSize:'var(--fs-caption)', padding:'4px 8px' }} value={cardMonth}
-                onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, cardYear, +e.target.value); }}>
-                {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-              </select>
-            </div>
-
-            {freeEntry ? (
-              <div style={{ background:'rgba(34,197,94,0.06)', border:'1px solid rgba(34,197,94,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:'var(--fs-caption)', color:'var(--c-lunas)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                <Gift size={13} /> {t('rekap.freeMember')}
-              </div>
-            ) : isLocked ? (
-              <div style={{ background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:'var(--r-sm)', padding:8, fontSize:'var(--fs-caption)', color:'var(--c-belum)', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                <Lock size={13} /> {t('rekap.dataLocked')}
-              </div>
-            ) : (
-              <>
-                {/* Input nominal — UX: inputMode decimal untuk keyboard angka di mobile.
-                    v11.5.9 FIX: key={`${cardYear}-${cardMonth}`} ditambahkan. Sebelumnya
-                    input ini defaultValue TANPA key — begitu di-mount sekali, defaultValue
-                    TIDAK PERNAH terbaca ulang meski entryVal (yang mengikuti cardYear/
-                    cardMonth) berubah dari luar (kartu ditutup-buka setelah toggle
-                    period diganti). Ini kemungkinan besar penyebab utama "seolah tidak
-                    ada perubahan apa-apa" — field NOMINAL adalah yang paling diperhatikan
-                    user, dan selalu diam di nilai kartu pertama kali dibuka. defaultValue
-                    (bukan value/controlled) SENGAJA dipertahankan — kalau diganti
-                    controlled penuh, setiap re-render akan mereset input dan mengganggu
-                    user yang sedang mengetik. key yang terikat cardYear/cardMonth memberi
-                    manfaat KEDUANYA: selama sesi mengetik (cardYear/cardMonth tidak
-                    berubah), key stabil → tidak ada remount → uncontrolled tetap bebas
-                    campur tangan React. Begitu cardYear/cardMonth berubah dari luar, key
-                    berubah → React mount node BARU → defaultValue dibaca ulang dari
-                    entryVal terkini. */}
-                <div className="mc-row">
-                  <span className="mc-label">{t('common.amount').toUpperCase()}</span>
-                  <input
-                    key={`${cardYear}-${cardMonth}`}
-                    ref={inputRef}
-                    className="mc-input"
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0"
-                    defaultValue={entryVal !== null ? String(entryVal) : ''}
-                    id={`inp-${name.replace(/\s/g, '_')}`}
-                    onChange={() => { inputDirty.current = true; }}
-                    onBlur={e => saveEntryPay(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        inputDirty.current = true;
-                        saveEntryPay((e.target as HTMLInputElement).value);
-                        setExpandedCard(null);
-                      }
-                    }}
-                    disabled={isSaving}
-                    autoComplete="off"
-                    autoCorrect="off"
-                  />
-                  {entryVal !== null && !isSaving && (
-                    <button className="delbtn" onClick={clearPay} aria-label="Hapus pembayaran">
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Tanggal */}
-                <div className="mc-row">
-                  <span className="mc-label" style={{ display:'flex', alignItems:'center', gap:4 }}>
-                    <Clock size={10} />{t('membercard.payDate').toUpperCase()}
-                  </span>
-                  {/* v11.5.9: key cardYear-cardMonth spy defaultValue terbaca ulang saat
-                      tahun/bulan berubah dari luar (sama spt field NOMINAL di atas).
-                      v11.7.0 FIX: key ditambah nilai tanggal itu sendiri
-                      (date_${cardYear}_${cardMonth}) — sebelumnya field ini SELALU bisa
-                      diedit manual walau settings.autoDate=true (doQuickPay MemberCard
-                      sudah benar isi tanggal otomatis ke appData, tapi field date INI tidak
-                      pernah dicek ke autoDate sama sekali). Ditambah `disabled` berbasis
-                      autoDate: true → field terkunci (tanggal sudah terisi sistem, tidak
-                      perlu/boleh diedit manual); false → tetap seperti semula (aktif, hanya
-                      disabled saat isSaving). Value tanggal dimasukkan ke key supaya begitu
-                      doQuickPay mengisi tanggal otomatis (dalam tahun/bulan YANG SAMA, jadi
-                      key lama tidak berubah tanpa ini), field remount & defaultValue terbaca
-                      ulang — kalau tidak, field disabled akan nampilkan tanggal basi/kosong
-                      meski appData sudah py nilai terbaru. Aman dari gangguan mengetik:
-                      remount hanya terpicu stlh saveDate's onBlur (user sudah selesai
-                      mengetik) atau dari doQuickPay (aksi terpisah, bukan sedang mengetik
-                      di field tanggal ini). */}
-                  <input
-                    key={`${cardYear}-${cardMonth}-${(info[`date_${cardYear}_${cardMonth}`] as string) || ''}`}
-                    className="mc-date"
-                    type="date"
-                    defaultValue={(info[`date_${cardYear}_${cardMonth}`] as string) || ''}
-                    onBlur={e => saveDate(e.target.value)}
-                    disabled={isSaving || settings?.autoDate === true}
-                  />
-                </div>
-
-                {/* Quick pay */}
-                <div className="mc-row">
-                  <span className="mc-label" style={{ display:'flex', alignItems:'center', gap:4 }}>
-                    <Zap size={10} />QUICK
-                  </span>
-                  <div className="qrow">
-                    {info.tarif ? (
-                      <button
-                        className="qb"
-                        style={{ borderColor:'var(--zc)', color:'var(--zc)', fontWeight:700, position:'relative', overflow:'hidden', opacity: isSaving ? 0.5 : 1 }}
-                        disabled={isSaving}
-                        onClick={e => {
-                          const btn = e.currentTarget;
-                          const ripple = document.createElement('span');
-                          const rect   = btn.getBoundingClientRect();
-                          const size   = Math.max(rect.width, rect.height);
-                          ripple.style.cssText = `position:absolute;border-radius:50%;width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple-anim 400ms ease-out forwards;pointer-events:none;`;
-                          btn.appendChild(ripple);
-                          setTimeout(() => ripple.remove(), 400);
-                          quickPay(info.tarif as number);
-                        }}
-                      >
-                        {isSaving ? <Loader2 size={11} className="spin" /> : `${info.tarif as number}`}
-                      </button>
-                    ) : (
-                      <span style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', alignSelf:'center' }}>{t('entry.noTarifShort')}</span>
-                    )}
-                    {(settings?.quickAmounts || DEFAULT_SETTINGS.quickAmounts)
-                      .filter(a => a !== info.tarif)
-                      .map(a => (
-                        <button
-                          key={a}
-                          className="qb"
-                          style={{ opacity: isSaving ? 0.5 : 1 }}
-                          disabled={isSaving}
-                          onClick={() => quickPay(a)}
-                        >
-                          {a}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-
-                {!info.tarif && (
-                  <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:-4, marginBottom:4 }}>
-                    {t('membercard.setTarifHint')}
-                  </div>
-                )}
-              </>
+          {/* Baris atas */}
+          <div
+            className={m.head}
+            role="button"
+            tabIndex={0}
+            aria-expanded={batchMode ? undefined : isExp}
+            onClick={handleToggle}
+            onKeyDown={e => {
+              if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); handleToggle(); }
+            }}
+          >
+            {batchMode && (
+              <RoundCheckbox
+                checked={batchSelected}
+                disabled={!batchEligible}
+                label={batchEligible ? `${t('entry.batchSelectedAria')} ${name}` : `${name}: ${t('entry.batchNotEligible')}`}
+                onClick={e => e.stopPropagation()}
+                onChange={() => onBatchToggle?.()}
+              />
             )}
-
-            {/* Riwayat link */}
-            <div style={{ marginTop:8, paddingTop:8, borderTop:'1px solid var(--border2)', display:'flex', justifyContent:'flex-end' }}>
-              <button
-                onClick={openRiwayat}
-                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--txt3)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:5, padding:'4px 0', minHeight:32 }}
-              >
-                <History size={13} /> {t('membercard.history')}
-              </button>
+            <span className={clsx('wp-tile', 'wp-tile--sm', displayNA ? 'wp-tile--slate' : `wp-tile--${status}`, m.letter)} aria-hidden="true">
+              {name.trim().charAt(0).toUpperCase()}
+            </span>
+            <div className={m.tx}>
+              <b className={m.name}><HighlightText text={name} query={search} /></b>
+<Vis screen="entry" id="cardinfo">              <span className={clsx('wp-t-cap', m.sub)}>
+                {idEl}
+                <span>{tarif ? `${t('entry.tarifLabel')} ${rp(tarif)}` : t('entry.noTarifShort')}</span>
+              </span></Vis>
             </div>
+            <div className={m.end}>
+              {isSaving ? (
+                <Spinner />
+              ) : (
+                <>
+                  <Badge variant={displayNA ? 'neutral' : payStatus}>{t(`status.${status}`)}</Badge>
+                  {displayVal === 0 && !displayFree && <span className="wp-t-micro">{t('membercard.acm')}</span>}
+                  {displayVal !== null && displayVal > 0 && <span className="wp-num">{rp(displayVal)}</span>}
+                </>
+              )}
+            </div>
+            {!batchMode && (
+              isExp ? <CaretUp className={m.caret} size={16} aria-hidden="true" /> : <CaretDown className={m.caret} size={16} aria-hidden="true" />
+            )}
           </div>
-        )}
+
+          {/* Isi terbuka */}
+          {isExp && !batchMode && (
+            <div className={m.body}>
+              {/* Periode kartu — key supaya React 19 me-mount ulang <select> saat nilai berubah dari luar
+                  (lihat catatan v11.5.8/v11.5.9: snapshot entryCardYear/Month dan clearEntryCardFor). */}
+              <div className={m.two}>
+                <Select key={cardYear} size="sm" aria-label={t('common.year')} value={cardYear}
+                  onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, +e.target.value, cardMonth); }}>
+                  {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+                </Select>
+                <Select key={`${cardYear}-${cardMonth}`} size="sm" aria-label={t('common.month')} value={cardMonth}
+                  onChange={e => { monthManuallyChanged.current = true; setEntryCard(name, cardYear, +e.target.value); }}>
+                  {MONTH_NAMES.map((mn, i) => <option key={i} value={i}>{mn}</option>)}
+                </Select>
+              </div>
+
+              {freeEntry ? (
+                <div className={clsx(m.note, m.noteFree)}><CreditCard aria-hidden="true" /> {t('rekap.freeMember')}</div>
+              ) : isLocked ? (
+                <div className={clsx(m.note, m.noteLock)}><Lock weight="fill" aria-hidden="true" /> {t('rekap.dataLocked')}</div>
+              ) : entryNA && !naOk ? (
+                <div className={clsx(m.note, m.noteNA)}>
+                  <Prohibit aria-hidden="true" />
+                  <span className={m.noteNAtx}>{t(entryNA === 'nonaktif' ? 'membercard.naNonaktif' : 'membercard.naBelumTerdaftar')}</span>
+                  <Button variant="secondary" size="sm" onClick={askRecordNA}>{t('membercard.naRecord')}</Button>
+                </div>
+              ) : (
+                <>
+                  {/* Nominal — input uncontrolled (defaultValue) dengan key periode: selama mengetik key stabil
+                      (tidak remount), begitu periode kartu berubah dari luar defaultValue dibaca ulang (v11.5.9). */}
+                  <div className="wp-field">
+                    <label className="wp-t-label" htmlFor={`inp-${safeId}`}>{t('common.amount').toUpperCase()}</label>
+                    <div className={m.amtWrap}>
+                      <span className={m.amtPre} aria-hidden="true">Rp</span>
+                      <input
+                        key={`${cardYear}-${cardMonth}`}
+                        ref={inputRef}
+                        id={`inp-${safeId}`}
+                        className={clsx('wp-inp', 'wp-inp--num', m.amtIn, hasDel && m.amtInDel, amtErr && 'wp-inp--err')}
+                        type="number"
+                        inputMode="decimal"
+                        placeholder="0"
+                        defaultValue={entryVal !== null ? String(entryVal) : ''}
+                        aria-invalid={amtErr || undefined}
+                        onChange={() => { inputDirty.current = true; if (amtErr) setAmtErr(false); }}
+                        onBlur={e => saveEntryPay(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            inputDirty.current = true;
+                            saveEntryPay((e.target as HTMLInputElement).value);
+                            setExpandedCard(null);
+                          }
+                        }}
+                        disabled={isSaving}
+                        autoComplete="off"
+                        autoCorrect="off"
+                      />
+                      <span className={clsx(m.amtSuf, hasDel && m.amtSufDel)} aria-hidden="true">.000</span>
+                      {hasDel && (
+                        <IconButton className={m.amtDel} icon={Trash} tone="danger" size="sm" label={t('entry.deleteAria')} onClick={clearPay} />
+                      )}
+                    </div>
+                    {amtErr && <span className="wp-msg" role="alert">{t('entry.invalidNominal')}</span>}
+                  </div>
+
+                  {/* Quick pay — nominal kustom dari pengaturan (settings.quickAmounts) */}
+                  <div className="wp-field">
+                    <span className={clsx('wp-t-label', m.lbl)}><Lightning size={12} aria-hidden="true" /> QUICK</span>
+                    <QuickPayGrid
+                      amounts={orderedAmounts}
+                      tarif={tarif}
+                      onPick={quickPay}
+                      formatLabel={a => `${a}K`}
+                      disabled={isSaving}
+                      ariaLabel={t('entry.quickAria')}
+                    />
+                    {!tarif && <span className="wp-t-cap">{t('entry.noTarifShort')}. {t('entry.setTarifHint')}</span>}
+                  </div>
+
+                  {/* Tanggal bayar — autoDate aktif: field dikunci (tanggal diisi sistem saat quick pay) */}
+                  <div className="wp-field">
+                    <label className={clsx('wp-t-label', m.lbl)} htmlFor={`dt-${safeId}`}>
+                      <CalendarBlank size={12} aria-hidden="true" /> {t('membercard.payDate').toUpperCase()}
+                      {autoDate && <Lock size={12} weight="fill" aria-label={t('entry.autoDate')} />}
+                    </label>
+                    <input
+                      key={`${cardYear}-${cardMonth}-${(info[`date_${cardYear}_${cardMonth}`] as string) || ''}`}
+                      id={`dt-${safeId}`}
+                      className="wp-inp"
+                      type="date"
+                      defaultValue={(info[`date_${cardYear}_${cardMonth}`] as string) || ''}
+                      onBlur={e => saveDate(e.target.value)}
+                      disabled={isSaving || autoDate}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Riwayat */}
+              <div className={m.foot}>
+                <span className="grow" style={{ flex: 1 }} />
+                <Button variant="ghost" size="sm" onClick={openRiwayat}>
+                  <Scroll aria-hidden="true" /> {t('membercard.history')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
 
-      {/* Keyframes inline — ripple + spin + long-press ring */}
-      <style>{`
-        @keyframes ripple-anim {
-          to { transform: scale(2.5); opacity: 0; }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .spin {
-          animation: spin 0.8s linear infinite;
-          display: inline-block;
-        }
-        @keyframes longPressRing {
-          from { box-shadow: 0 0 0 0 transparent; }
-          to   { box-shadow: 0 0 0 3px var(--zc); }
-        }
-        .mcard.long-pressing {
-          animation: longPressRing 500ms linear forwards !important;
-        }
-      `}</style>
-
-      {/* Portal: render di document.body agar tidak terpengaruh CSS transform dari
-          parent motion.div di EntryView — transform menciptakan containing block baru
-          yang mematahkan position:fixed pada semua children. */}
+      {/* Portal: render di document.body agar tidak terpengaruh CSS transform dari parent —
+          transform menciptakan containing block baru yang mematahkan position:fixed pada children. */}
       {typeof window !== 'undefined' && createPortal(
         <RiwayatModal open={riwOpen} onClose={() => setRiwOpen(false)} />,
         document.body

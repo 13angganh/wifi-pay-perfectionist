@@ -5,7 +5,7 @@
 'use client';
 
 import { Component } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { ArrowClockwise } from '@phosphor-icons/react';
 // @sentry/nextjs tidak diinstall — gunakan stub no-op agar build tidak gagal.
 // Untuk mengaktifkan Sentry, install paket: pnpm add @sentry/nextjs
 const Sentry = {
@@ -65,7 +65,7 @@ export default class AppErrorBoundary extends Component<{ children: React.ReactN
             background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.25)',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>
-            <RotateCcw size={24} color="var(--c-belum)" strokeWidth={1.5} />
+            <ArrowClockwise size={24} color="var(--c-belum)" weight="duotone" />
           </div>
           <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)' }}>
             {tStatic('app.errorTitle')}
@@ -83,15 +83,7 @@ export default class AppErrorBoundary extends Component<{ children: React.ReactN
               {this.state.error.message}
             </div>
           )}
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background:'var(--zc)', color:'#fff', border:'none',
-              borderRadius:'var(--r-md)', padding:'10px 24px',
-              fontFamily:"var(--font-sans),sans-serif", fontWeight:600,
-              fontSize:'var(--fs-body)', cursor:'pointer',
-            }}
-          >
+          <button className="wp-btn wp-btn--primary" type="button" onClick={() => window.location.reload()}>
             {tStatic('app.reload')}
           </button>
         </div>

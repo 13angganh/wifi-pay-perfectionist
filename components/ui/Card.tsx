@@ -1,35 +1,33 @@
-// components/ui/Card.tsx — Primitive card dengan CVA variants
+// components/ui/Card.tsx — Primitive card (REDESAIN T6, CORE BLOCK v3 .card)
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 import { type HTMLAttributes } from 'react';
 
-const cardVariants = cva(
-  'rounded-[var(--r-md)] transition-all duration-[var(--t-fast)] ease-[var(--ease-out)]',
-  {
-    variants: {
-      variant: {
-        default:  'bg-[var(--card)] border border-[var(--border)] shadow-[var(--shadow-sm)]',
-        elevated: 'bg-[var(--card)] border border-[var(--border)] shadow-[var(--shadow-md)]',
-        bordered: 'bg-[var(--bg2)] border-2 border-[var(--border)]',
-        flat:     'bg-[var(--bg3)]',
-        zone:     'bg-[var(--card)] border border-[var(--zc)]44 shadow-[0_0_0_1px_var(--zcdim)]',
-      },
-      padding: {
-        none: '',
-        sm:   'p-3',
-        md:   'p-4',
-        lg:   'p-5',
-      },
-      interactive: {
-        true:  'cursor-pointer hover:shadow-[var(--shadow-md)] hover:border-[var(--border2)] active:scale-[0.99]',
-        false: '',
-      },
+const cardVariants = cva('wp-card', {
+  variants: {
+    variant: {
+      default:  '',
+      elevated: 'wp-card--elevated',
+      bordered: 'wp-card--bordered',
+      flat:     'wp-card--flat',
+      zone:     'wp-card--zone',
+      hl:       'wp-card--hl',
     },
-    defaultVariants: { variant: 'default', padding: 'md', interactive: false },
-  }
-);
+    padding: {
+      none: 'wp-card--p0',
+      sm:   'wp-card--p1',
+      md:   'wp-card--p2',
+      lg:   'wp-card--p3',
+    },
+    interactive: {
+      true:  'wp-card--interactive',
+      false: '',
+    },
+  },
+  defaultVariants: { variant: 'default', padding: 'md', interactive: false },
+});
 
 export interface CardProps
   extends HTMLAttributes<HTMLDivElement>,
@@ -53,7 +51,7 @@ export function CardHeader({ className, children, ...props }: HTMLAttributes<HTM
 
 export function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={clsx('text-[var(--fs-heading)] font-semibold text-[var(--txt)]', className)} {...props}>
+    <h3 className={clsx('wp-t-head', className)} {...props}>
       {children}
     </h3>
   );

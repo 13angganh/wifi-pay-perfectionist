@@ -1,54 +1,77 @@
 /* ══════════════════════════════════════════════════════
-   styles/components.header.css — Header, Sidebar, Nav
-   Dipecah dari components.css (task 1.15)
+   styles/components.header.css — Header, SyncPill, Banner (REDESAIN T6)
+   Sidebar & Bottom Nav ada di layout.css. Kelas yang masih dipakai file lain
+   dan TIDAK boleh diganti nama: .sync-pill (MembersView), .header-lock-action-btn (MembersView
+   + tes konsistensi lib/__tests__/i18n-and-ui-consistency.test.ts).
    ══════════════════════════════════════════════════════ */
 
-/* ── Sync Pill ── */
-.sync-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-full); font-family: var(--font-sans), sans-serif; font-size: 11px; font-weight: 500; transition: all var(--t-base-smooth); min-height: 28px; }
-.sync-pill.ok      { background: rgba(34,197,94,0.10); color: var(--c-lunas); border: 1px solid rgba(34,197,94,.2); }
-.sync-pill.loading { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%); background-size: 400% 100%; color: #FACC15; border: 1px solid rgba(250,204,21,.2); animation: syncShimmer 1.4s ease-in-out infinite; }
-.sync-pill.err     { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.2); animation: syncShake .4s ease-in-out; }
-.sync-pill.error   { background: rgba(239,68,68,0.10); color: var(--c-belum); border: 1px solid rgba(239,68,68,.2); animation: syncShake .4s ease-in-out; }
-.sync-pill.offline { background: var(--bg3); color: var(--txt3); border: 1px solid var(--border); }
+/* ── Header (2 baris) ── */
+#header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 10px var(--sp-3) 8px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; z-index: 50; position: relative; box-shadow: var(--shadow-xs); }
+.hdr-row { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.hdr-sp { flex: 1; min-width: 0; }
+.hdr-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.hdr-brand b { display: block; font-weight: var(--fw-title); font-size: var(--fs-heading); letter-spacing: -.02em; line-height: 1.1; color: var(--txt); }
+.hdr-brand span { font-size: var(--fs-caption); color: var(--txt3); }
+@media (max-width: 400px) { .hdr-brand > div { display: none; } }
+.hdr-av { width: 38px; height: 38px; border-radius: 50%; border: 0; background: linear-gradient(135deg,#8A97B3,#5C6B8C); color: #fff; font: var(--fw-strong) 15px var(--font-sans), sans-serif; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+body.gold .hdr-av { background: linear-gradient(135deg,#C9952A,#7a5a1a); }
+.hdr-av:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hdr-av--sm { width: 34px; height: 34px; font-size: var(--fs-caption); cursor: inherit; }
+.hdr-bdg { position: absolute; top: 2px; right: 1px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 9px; background: var(--c-belum); color: #fff; font: 700 var(--fs-micro) var(--font-sans), sans-serif; font-style: normal; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg2); }
+
+/* Pusat Notifikasi (kerangka A3) */
+.hdr-notif { position: relative; }
+.hdr-notif__panel { position: fixed; z-index: 320; top: calc(var(--banner-h, 0px) + var(--header-h, 92px) + 4px); right: var(--sp-2); left: var(--sp-2); max-width: 400px; margin-left: auto; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; animation: wpin var(--t-base) var(--ease) both; }
+.hdr-notif__head { display: flex; align-items: center; gap: 8px; padding: 12px var(--sp-3); }
+.hdr-notif__head b { flex: 1; }
+
+/* ── Tab zona ── */
+.zone-sw { display: flex; gap: 3px; background: var(--bg3); padding: 3px; border-radius: var(--r-full); border: 1px solid var(--border); flex-shrink: 1; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.zone-sw::-webkit-scrollbar { display: none; }
+.zbtn { border: 0; background: none; color: var(--txt3); padding: 4px 12px; border-radius: var(--r-full); font: var(--fw-strong) var(--fs-caption) var(--font-sans), sans-serif; cursor: pointer; flex-shrink: 0; min-height: 28px; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+.zbtn:hover { color: var(--txt); }
+.zbtn[aria-pressed="true"] { background: var(--zbc, var(--zc)); color: #fff; box-shadow: var(--shadow-xs); }
+.zbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sync Pill (Header + MembersView) ── */
+.sync-pill { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: var(--r-full); font-family: var(--font-sans), sans-serif; font-size: var(--fs-caption); font-weight: var(--fw-strong); border: 1px solid; white-space: nowrap; flex-shrink: 0; transition: all var(--t-base) var(--ease); }
+.sync-pill.ok      { color: var(--c-lunas); background: color-mix(in srgb,var(--c-lunas) 10%,transparent); border-color: color-mix(in srgb,var(--c-lunas) 28%,transparent); }
+.sync-pill.loading { color: var(--c-warn); background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%); background-size: 400% 100%; border-color: var(--border); animation: syncShimmer 1.4s ease-in-out infinite; }
+.sync-pill.err, .sync-pill.error { color: var(--c-belum); background: color-mix(in srgb,var(--c-belum) 10%,transparent); border-color: color-mix(in srgb,var(--c-belum) 28%,transparent); animation: syncShake .4s ease-in-out; }
+.sync-pill.offline { color: var(--txt3); background: var(--bg3); border-color: var(--border); }
 .sync-pill svg     { flex-shrink: 0; }
-.sync-spin         { animation: spin .9s linear infinite; }
+.sync-spin         { display: inline-flex; animation: spin .9s linear infinite; }
+@media (max-width: 460px) {
+  #header .sync-pill { width: 28px; padding: 0; justify-content: center; }
+  #header .sync-pill__txt { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .sync-spin, .sync-pill.loading, .sync-pill.err, .sync-pill.error { animation: none; } }
 
-/* ── Header Buttons ── */
-.hbtn { padding: 6px 12px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--bg3); color: var(--txt2); cursor: pointer; font-family: var(--font-sans), sans-serif; font-size: 11px; transition: all var(--t-fast-smooth); white-space: nowrap; min-height: 32px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
-.hbtn:hover  { border-color: var(--txt4); color: var(--txt); }
-.hbtn:active { opacity: .7; transform: scale(.96); }
-
-/* ── Zone Switch ── */
-.zone-sw { display: flex; gap: 5px; }
-.zbtn { background: var(--bg3); border: 1px solid var(--border); color: var(--txt3); padding: 5px 14px; border-radius: var(--r-full); cursor: pointer; font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 500; transition: all var(--t-fast-smooth); min-height: 32px; }
-.zbtn:hover { border-color: var(--txt4); color: var(--txt2); }
-.zbtn.krs { background: rgba(59,130,246,.15); color: #3B82F6; border-color: rgba(59,130,246,.3); }
-.zbtn.slk { background: rgba(249,115,22,.15); color: #F97316; border-color: rgba(249,115,22,.3); }
-.zbtn.custom { background: rgba(var(--zc-rgb),.15); color: var(--zc); border-color: rgba(var(--zc-rgb),.3); }
-
-/* ── Tombol aksi kunci/buka entry (v11.7.0) — ikon-saja, warna solid ikut aksen tema aktif
-   supaya terasa "touchable"/kontras dgn label status di sampingnya (yg flat, tanpa fill).
-   Default (dark & light) pakai --zc-krs (biru zona KRS, sudah ada di 2 tema itu).
-   Gold override ke --gold (aksen resmi tema itu — biru terasa asing di tema "hangat
-   keemasan, bukan biru dingin", lihat komentar body.gold di tokens.css). */
-.header-lock-action-btn { background: var(--zc-krs); color: #fff; transition: all var(--t-fast-smooth); }
-.header-lock-action-btn:hover  { opacity: .85; }
+/* ── Status + tombol aksi kunci/buka entry (v11.7.0, dipertahankan) ──
+   Status = tidak bisa diklik, warna ikut kondisi (--lc di-set Header.tsx).
+   Tombol aksi = ikon-saja, warna solid ikut aksen tema aktif.
+   Dark & Light: --zc-krs (biru). Gold: --gold + ikon --bg (kontras putih di atas --gold hanya
+   2.69:1, di bawah 3:1 WCAG AA; --bg hitam hangat = 7.36:1). */
+.hdr-lock-status { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: var(--r-full); font-size: var(--fs-caption); font-weight: var(--fw-strong); white-space: nowrap; flex-shrink: 0; color: var(--lc); background: color-mix(in srgb,var(--lc) 10%,transparent); border: 1px solid color-mix(in srgb,var(--lc) 28%,transparent); }
+.header-lock-action-btn { background: var(--zc-krs); background-image: var(--grad-a); color: var(--on-accent); width: 34px; height: 34px; min-width: 34px; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: var(--glow); transition: all var(--t-fast) var(--ease); }
+.header-lock-action-btn:hover  { filter: brightness(1.07); }
 .header-lock-action-btn:active { opacity: .7; transform: scale(.94); }
-/* Ikon putih di atas --gold cuma 2.69:1 kontras (di bawah 3:1 WCAG AA utk grafis) —
-   dipakai --bg (hitam hangat tema ini) sbg ikon, kontrasnya 7.36:1. */
-body.gold .header-lock-action-btn { background: var(--gold); color: var(--bg); }
+.header-lock-action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.gold .header-lock-action-btn { background: var(--gold); background-image: var(--grad-a); color: var(--bg); }
 
-/* ── Sidebar nav active override ── */
-.sb-item.on { border-left: 2px solid var(--zc); padding-left: 14px; background: var(--zcdim); color: var(--zc); }
-.sb-user-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--txt2); cursor: pointer; padding: 6px 10px; border-radius: var(--r-sm); transition: all var(--t-fast-smooth); display: flex; align-items: center; justify-content: center; gap: 5px; font-family: var(--font-sans), sans-serif; font-size: 11px; font-weight: 500; min-height: 34px; }
-.sb-user-btn:hover { color: var(--txt); border-color: var(--txt4); background: var(--bg4); }
-.sb-user-btn:active { opacity: .7; }
-.sb-user-btn.danger { color: var(--c-belum); border-color: rgba(239,68,68,.2); background: rgba(239,68,68,.06); }
-.sb-user-btn.danger:hover { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); }
-
-/* ── Banners ── */
-.update-banner  { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--bg2); border-bottom: 1px solid rgba(34,197,94,.3); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.offline-banner { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-family: var(--font-sans), sans-serif; font-size: 12px; color: var(--txt3); flex-shrink: 0; }
-.offline-banner svg { flex-shrink: 0; }
-.inst-banner    { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,.2); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-xs); }
-.inst-txt       { flex: 1; font-family: var(--font-sans), sans-serif; font-size: 11px; color: var(--c-lunas); line-height: 1.5; }
+/* ── Banner Update / Offline / Pasang PWA ── */
+.update-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; height: var(--banner-h, 44px); padding: 0 var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); background: color-mix(in srgb,var(--c-info) 12%,var(--bg2)); border-bottom: 1px solid color-mix(in srgb,var(--c-info) 30%,transparent); font-size: var(--fs-caption); font-weight: var(--fw-strong); color: var(--txt); }
+.update-banner__ico { display: flex; color: var(--c-info); }
+.update-banner__txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.net-banner { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px var(--sp-3); font-size: var(--fs-caption); font-weight: var(--fw-strong); flex-shrink: 0; transition: background var(--t-base), border-color var(--t-base); }
+.net-banner--off { color: var(--c-belum); background: color-mix(in srgb,var(--c-belum) 12%,var(--bg2)); border-bottom: 1px solid color-mix(in srgb,var(--c-belum) 28%,transparent); }
+.net-banner--on  { color: var(--c-lunas); background: color-mix(in srgb,var(--c-lunas) 10%,var(--bg2)); border-bottom: 1px solid color-mix(in srgb,var(--c-lunas) 26%,transparent); }
+.pwa-banner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9000; background: var(--bg2); border-top: 1px solid var(--border); padding: 12px var(--sp-3) calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: var(--sp-h); box-shadow: 0 -4px 24px rgba(0,0,0,.25); }
+.pwa-banner--above-nav { bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px)); padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.pwa-banner__tx { flex: 1; min-width: 0; }
+.pwa-banner__tx b { display: block; font-size: var(--fs-body); font-weight: 700; color: var(--txt); }
+.pwa-banner__tx .gtxt-gold { color: var(--gold-bright); }
+.pwa-banner__tx span { font-size: var(--fs-caption); color: var(--txt3); }
+.pwa-banner__x { background: transparent; border: 0; color: var(--txt4); cursor: pointer; padding: 6px; display: flex; align-items: center; border-radius: var(--r-sm); }
+.pwa-banner__x:hover { color: var(--txt); }
+@media (min-width: 720px) { .pwa-banner--above-nav { bottom: calc(var(--bnav-h) + var(--sp-4)); } }

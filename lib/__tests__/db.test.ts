@@ -452,7 +452,10 @@ describe('buildClonePatch', () => {
     });
     const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }];
     const patch = buildClonePatch(source, selected);
-    expect(patch.freeMembers!['KRS__ABIL']).toEqual(freeStatus);
+    // REDESAIN T12 (D1/D11): status free kini dibawa lewat memberPeriods (rekaman lama dimigrasikan saat clone);
+    // freeMembers tidak ditulis lagi. Isi yang dibawa tetap UTUH (periode yang sama, sama-sama berlaku).
+    expect(patch.memberPeriods!['KRS__ABIL']).toEqual({ free: [{ fromY: 2026, fromM: 6, toY: 2026, toM: 8 }] });
+    expect(patch.freeMembers).toBeUndefined();
   });
 
   it('freeMembers member yang TIDAK dipilih tidak ikut, meski ada di sumber', () => {
@@ -465,8 +468,8 @@ describe('buildClonePatch', () => {
     });
     const selected: MemberRef[] = [{ zone: 'KRS', name: 'ABIL' }]; // ADIT tidak dipilih
     const patch = buildClonePatch(source, selected);
-    expect(patch.freeMembers!['KRS__ABIL']).toBeDefined();
-    expect(patch.freeMembers!['KRS__ADIT']).toBeUndefined();
+    expect(patch.memberPeriods!['KRS__ABIL']).toBeDefined();   // REDESAIN T12: freeMembers → memberPeriods
+    expect(patch.memberPeriods!['KRS__ADIT']).toBeUndefined();
   });
 
   // ── Kasus tepi ──
@@ -494,6 +497,7 @@ describe('buildClonePatch', () => {
     expect(patch.krsMembers).toEqual(['ABIL']);
     expect(patch.memberInfo).toBeUndefined();
     expect(patch.freeMembers).toBeUndefined();
+    expect(patch.memberPeriods).toBeUndefined();   // REDESAIN T12: tanpa periode → tidak ada kunci kosong
   });
 
   // ── Nama dengan karakter khusus (pola data produksi nyata, konsisten dengan test payment key di atas) ──

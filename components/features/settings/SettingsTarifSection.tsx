@@ -1,100 +1,96 @@
-// components/features/settings/SettingsTarifSection.tsx — Fase 3: dipecah dari SettingsView
-// Berisi: Export & Import Data, Share WA, Quick Pay amounts
+// ══════════════════════════════════════════
+// components/features/settings/SettingsTarifSection.tsx — Export & Import, Ringkasan WA + Share, Quick Pay (REDESAIN T10, D10)
+// Seksi: 'export' | 'wa' | 'quickpay'. Logika zip utuh: JSON Backup (doJSONBackup), PDF/Excel (generatePDF/generateExcel),
+// Import (ImportInput + triggerImport), Ringkasan WA (doWASummary), Share PDF/Excel (Web Share API, cadangan unduh),
+// Quick Pay 2–8 nominal. PERBAIKAN ZONA KUSTOM: pilihan zona = zona aktif + ALL (zoneChoices), tipe `zone: string`;
+// Share Excel tanpa ALL (perilaku zip). File yatim .Form/.List dihapus (ExportSelectors kini PeriodPicker di sini).
+// ══════════════════════════════════════════
 'use client';
 
 import { useState } from 'react';
+import { ChatCircleDots, Check, DownloadSimple, FileArrowDown, FilePdf, FileXls, Lightning, ShareNetwork, UploadSimple } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
-import { showToast } from '@/components/ui/Toast';
 import { useT } from '@/hooks/useT';
+import { showToast } from '@/components/ui/Toast';
 import { MONTHS_EN, MONTHS, getYears } from '@/lib/constants';
-import type React from 'react';
 import { doJSONBackup, doWASummary, generatePDF, generateExcel } from '@/lib/export';
 import ImportInput, { triggerImport } from '@/components/modals/ImportModal';
-import {
-  Download, FileText, Table2, Share2, MessageCircle, ChevronDown, ChevronUp, Check, Zap, Upload, ArrowUpDown,
-} from 'lucide-react';
+import { ActionCard, ActionGrid } from '@/components/ui/ActionCard';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { FilterChip } from '@/components/ui/Chip';
+import { IconTile } from '@/components/ui/IconTile';
+import { Input } from '@/components/ui/Input';
+import { Notice } from '@/components/ui/Notice';
+import { Segmented } from '@/components/ui/Segmented';
+import { Select } from '@/components/ui/Select';
+import { zoneChoices } from './settings.logic';
+import s from './settings.module.css';
 
-// ── Top-level sub-components (task 4.11: react-hooks/static-components) ──
+type PeriodType = 'monthly' | 'yearly';
 
-function ToggleChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{
-      flex:1, padding:'8px', borderRadius:'var(--r-sm)',
-      border:`1px solid ${active ? 'var(--zc)' : 'var(--border)'}`,
-      background: active ? 'var(--zcdim)' : 'var(--bg3)',
-      color: active ? 'var(--zc)' : 'var(--txt2)',
-      cursor:'pointer', fontSize:'var(--fs-body)', fontWeight: active ? 600 : 400,
-      transition:'all var(--t-fast)', display:'flex', alignItems:'center', justifyContent:'center', gap:4,
-    }}>
-      {active && <Check size={11} />}
-      {label}
-    </button>
-  );
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-const selStyleBase: React.CSSProperties = {
-  background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-  padding:'8px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', flex:1,
-};
-
-function ExportSelectors({ zone, setZone, type, setType, year, setYear, month, setMonth, showAll, monthNames }: {
-  zone: 'KRS'|'SLK'|'ALL'; setZone: (z: 'KRS'|'SLK'|'ALL') => void;
-  type: 'monthly'|'yearly'; setType: (t: 'monthly'|'yearly') => void;
+interface PickerProps {
+  zones: string[]; zone: string; setZone: (z: string) => void;
+  type: PeriodType; setType: (t: PeriodType) => void;
   year: number; setYear: (y: number) => void;
   month: number; setMonth: (m: number) => void;
-  showAll?: boolean;
   monthNames: string[];
-}) {
+}
+
+/** Pilih zona + jenis periode + bulan + tahun (zip: ExportSelectors). Komponen tingkat atas. */
+function PeriodPicker({ zones, zone, setZone, type, setType, year, setYear, month, setMonth, monthNames }: PickerProps) {
   const t = useT();
   return (
-    <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:10 }}>
-      <select style={{ ...selStyleBase, flex:'none', minWidth:70 }} value={zone} onChange={e => setZone(e.target.value as 'KRS'|'SLK'|'ALL')}>
-        <option value="KRS">KRS</option>
-        <option value="SLK">SLK</option>
-        {showAll && <option value="ALL">ALL</option>}
-      </select>
-      <select style={{ ...selStyleBase, flex:'none', minWidth:90 }} value={type} onChange={e => setType(e.target.value as 'monthly'|'yearly')}>
+    <div className={s.row2}>
+      <Select aria-label={t('common.zone')} value={zone} onChange={e => setZone(e.target.value)}>
+        {zones.map(z => <option key={z} value={z}>{z}</option>)}
+      </Select>
+      <Select aria-label={t('settings.periodType')} value={type} onChange={e => setType(e.target.value as PeriodType)}>
         <option value="monthly">{t('share.monthly')}</option>
         <option value="yearly">{t('share.yearly')}</option>
-      </select>
+      </Select>
       {type === 'monthly' && (
-        <select style={{ ...selStyleBase, flex:'none', minWidth:80 }} value={month} onChange={e => setMonth(+e.target.value)}>
-          {monthNames.map((m: string, i: number) => <option key={i} value={i}>{m}</option>)}
-        </select>
+        <Select aria-label={t('common.month')} value={month} onChange={e => setMonth(+e.target.value)}>
+          {monthNames.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        </Select>
       )}
-      <select style={{ ...selStyleBase, flex:'none', minWidth:68 }} value={year} onChange={e => setYear(+e.target.value)}>
+      <Select aria-label={t('common.year')} value={year} onChange={e => setYear(+e.target.value)}>
         {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-      </select>
+      </Select>
     </div>
   );
 }
 
-interface TarifProps { section?: 'export' | 'wa' | 'quickpay' | 'all' }
-
-export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
+export default function SettingsTarifSection({ section }: { section: 'export' | 'wa' | 'quickpay' }) {
   const { settings, updateSettings, appData } = useAppStore();
   const t = useT();
-  const lang = settings.language ?? 'id';
-  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
+  const MONTH_NAMES = (settings.language ?? 'id') === 'en' ? MONTHS_EN : MONTHS;
+  const zonesPlain = zoneChoices(settings, false);   // zona aktif
+  const zonesAll = zoneChoices(settings, true);      // zona aktif + ALL
+  const now = new Date();
 
   const [newAmounts, setNewAmounts] = useState(settings.quickAmounts.join(', '));
-  const [expOpen,  setExpOpen]  = useState(false);
-  const [expZone,  setExpZone]  = useState<'KRS'|'SLK'|'ALL'>('KRS');
-  const [expType,  setExpType]  = useState<'monthly'|'yearly'>('monthly');
-  const [expYear,  setExpYear]  = useState(new Date().getFullYear());
-  const [expMonth, setExpMonth] = useState(new Date().getMonth());
-  const [waOpen,   setWaOpen]   = useState(false);
-  const [waYear,   setWaYear]   = useState(new Date().getFullYear());
-  const [waMonth,  setWaMonth]  = useState(new Date().getMonth());
-  const [sfOpen,   setSfOpen]   = useState(false);
-  const [sfZone,   setSfZone]   = useState<'KRS'|'SLK'|'ALL'>('KRS');
-  const [sfType,   setSfType]   = useState<'monthly'|'yearly'>('monthly');
-  const [sfYear,   setSfYear]   = useState(new Date().getFullYear());
-  const [sfMonth,  setSfMonth]  = useState(new Date().getMonth());
-  const [sfFmt,    setSfFmt]    = useState<'pdf'|'excel'>('pdf');
+  const [expOpen, setExpOpen] = useState(false);
+  const [expZone, setExpZone] = useState<string>(zonesAll[0]);
+  const [expType, setExpType] = useState<PeriodType>('monthly');
+  const [expYear, setExpYear] = useState(now.getFullYear());
+  const [expMonth, setExpMonth] = useState(now.getMonth());
+  const [waYear, setWaYear] = useState(now.getFullYear());
+  const [waMonth, setWaMonth] = useState(now.getMonth());
+  const [sfZone, setSfZone] = useState<string>(zonesAll[0]);
+  const [sfType, setSfType] = useState<PeriodType>('monthly');
+  const [sfYear, setSfYear] = useState(now.getFullYear());
+  const [sfMonth, setSfMonth] = useState(now.getMonth());
+  const [sfFmt, setSfFmt] = useState<'pdf' | 'excel'>('pdf');
 
   function saveAmounts() {
-    const parsed = newAmounts.split(/[,\s]+/).map(s => +s.trim()).filter(n => n > 0 && !isNaN(n));
+    const parsed = newAmounts.split(/[,\s]+/).map(x => +x.trim()).filter(n => n > 0 && !isNaN(n));
     if (parsed.length < 2) { showToast(t('settings.quickPay.minError'), 'err'); return; }
     if (parsed.length > 8) { showToast(t('settings.quickPay.maxError'), 'err'); return; }
     updateSettings({ quickAmounts: parsed }); showToast(t('settings.quickPay.saved'));
@@ -103,209 +99,122 @@ export default function SettingsTarifSection({ section = 'all' }: TarifProps) {
   async function handleDownloadPDF() {
     try {
       showToast(t('settings.export.makingPDF'), 'info');
-      const month = expType === 'yearly' ? null : expMonth;
-      const { blob, filename } = await generatePDF(appData, expZone, expYear, month);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const { blob, filename } = await generatePDF(appData, expZone, expYear, expType === 'yearly' ? null : expMonth, zonesPlain);
+      saveBlob(blob, filename);
       showToast(t('settings.export.pdfDone'));
     } catch { showToast(t('settings.export.pdfError'), 'err'); }
   }
   function handleDownloadExcel() {
     try {
       showToast(t('settings.export.makingExcel'), 'info');
-      const month = expType === 'yearly' ? null : expMonth;
-      const { blob, filename } = generateExcel(appData, expZone, expYear, month);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const { blob, filename } = generateExcel(appData, expZone, expYear, expType === 'yearly' ? null : expMonth, zonesPlain);
+      saveBlob(blob, filename);
       showToast(t('settings.export.excelDone'));
     } catch { showToast(t('settings.export.excelError'), 'err'); }
   }
-  function handleWASummary() { doWASummary(appData, waYear, waMonth); }
   async function handleShareFile() {
     try {
       showToast(t('settings.export.makingFile'), 'info');
       const month = sfType === 'yearly' ? null : sfMonth;
-      if (sfFmt === 'pdf') {
-        const { blob, filename } = await generatePDF(appData, sfZone, sfYear, month);
-        const file = new File([blob], filename, { type: 'application/pdf' });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: filename });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-          showToast(t('settings.export.fileDownloaded'));
-        }
+      const isPdf = sfFmt === 'pdf';
+      const { blob, filename } = isPdf
+        ? await generatePDF(appData, sfZone, sfYear, month, zonesPlain)
+        : generateExcel(appData, sfZone, sfYear, month, zonesPlain);
+      const file = new File([blob], filename, { type: isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
       } else {
-        const { blob, filename } = generateExcel(appData, sfZone, sfYear, month);
-        const file = new File([blob], filename, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: filename });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-          showToast(t('settings.export.fileDownloaded'));
-        }
+        saveBlob(blob, filename);
+        showToast(t('settings.export.fileDownloaded'));
       }
     } catch (e: unknown) {
       const name = e && typeof e === 'object' && 'name' in e ? (e as { name: string }).name : '';
       if (name !== 'AbortError') showToast(t('settings.export.fileError'), 'err');
     }
   }
+  // Share Excel tanpa ALL (perilaku zip): pindah ke zona pertama bila ALL terpilih saat berganti format.
+  function changeFmt(v: 'pdf' | 'excel') {
+    setSfFmt(v);
+    if (v === 'excel' && sfZone === 'ALL') setSfZone(zonesPlain[0]);
+  }
 
-  const selStyle: React.CSSProperties = {
-    background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-    padding:'7px 10px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', flex:1,
-  };
-  const cardStyle: React.CSSProperties = {
-    background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)',
-    padding:16, marginBottom:10, boxShadow:'var(--shadow-xs)',
-  };
+  if (section === 'quickpay') {
+    return (
+      <Card className={s.card}>
+        <div className={s.chd}>
+          <IconTile icon={Lightning} tone="orange" />
+          <div><b>{t('settings.quickPay')}</b><div className={s.cap}>{t('settings.quickPayDesc')}</div></div>
+        </div>
+        <Input label={t('settings.quickPayLabel')} className={s.mono} autoComplete="off" placeholder="50, 80, 90, 100, 150, 200"
+          value={newAmounts} onChange={e => setNewAmounts(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveAmounts()} />
+        <div className={s.chips} aria-label={t('settings.quickPay')}>
+          {settings.quickAmounts.map(a => <FilterChip key={a} active aria-pressed="true" tabIndex={-1}>{a}</FilterChip>)}
+        </div>
+        <Button variant="primary" block onClick={saveAmounts}><Check aria-hidden="true" /> {t('settings.quickPaySave')}</Button>
+        <span className={s.capSm}>{t('settings.quickPayNote')}</span>
+      </Card>
+    );
+  }
 
+  if (section === 'export') {
+    return (
+      <>
+        <ActionGrid>
+          <ActionCard icon={DownloadSimple} tone="blue" title={t('settings.jsonBackup')} description={t('settings.jsonBackupDesc')}
+            onClick={() => { doJSONBackup(appData); showToast(t('settings.jsonBackupDone')); }} />
+          <ActionCard icon={UploadSimple} tone="orange" title={t('settings.importData')} description={t('settings.importDataDesc')} onClick={triggerImport} />
+        </ActionGrid>
+        <ImportInput />
+        <Button variant={expOpen ? 'primary' : 'secondary'} block aria-expanded={expOpen} onClick={() => setExpOpen(v => !v)}>
+          <FileArrowDown aria-hidden="true" /> {t('settings.pdfExcel')}
+        </Button>
+        {expOpen && (
+          <div className={s.panel}>
+            <PeriodPicker monthNames={MONTH_NAMES} zones={zonesAll} zone={expZone} setZone={setExpZone} type={expType} setType={setExpType}
+              year={expYear} setYear={setExpYear} month={expMonth} setMonth={setExpMonth} />
+            <div className={s.rowBtns}>
+              <Button variant="primary" onClick={handleDownloadPDF}><FilePdf aria-hidden="true" /> PDF</Button>
+              <Button variant="success" onClick={handleDownloadExcel}><FileXls aria-hidden="true" /> Excel</Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // section === 'wa' — Ringkasan WA + Share PDF/Excel
   return (
     <>
-      {/* Export & Import Data */}
-      {(section === 'all' || section === 'export') && <div style={cardStyle}>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
-          <div style={{ color:'var(--zc)', marginTop:2 }}><ArrowUpDown size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.export')}</div>
+      <Card className={s.card}>
+        <div className={s.chd}>
+          <IconTile icon={ChatCircleDots} tone="lunas" />
+          <div><b>{t('dashboard.sendWA')}</b><div className={s.cap}>{t('settings.waPeriod')}</div></div>
         </div>
-
-        <button
-          onClick={() => { doJSONBackup(appData); showToast(t('settings.jsonBackupDone')); }}
-          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}
-        >
-          <span style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <Download size={13} /> {t('settings.jsonBackup')}
-          </span>
-          <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('settings.jsonBackupDesc')}</span>
-        </button>
-
-        <button
-          onClick={() => setExpOpen(v => !v)}
-          style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${expOpen ? 'var(--zc)' : 'var(--border)'}`, background: expOpen ? 'var(--zcdim)' : 'var(--bg3)', color: expOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}
-        >
-          <span style={{ display:'flex', alignItems:'center', gap:8 }}><FileText size={13} /> PDF / Excel</span>
-          {expOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-        {expOpen && (
-          <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <ExportSelectors monthNames={MONTH_NAMES} zone={expZone} setZone={setExpZone} type={expType} setType={setExpType} year={expYear} setYear={setExpYear} month={expMonth} setMonth={setExpMonth} showAll />
-            <div style={{ display:'flex', gap:6, marginTop:10 }}>
-              <button onClick={handleDownloadPDF} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                <FileText size={12} /> PDF
-              </button>
-              <button onClick={handleDownloadExcel} style={{ flex:1, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#1d6f42', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                <Table2 size={12} /> Excel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* v11.5.13: Import Data — pasangan dari Export Data di atas, permintaan
-            eksplisit sebagai jaring pengaman preventif (kesalahan login, data terhapus,
-            dll). Ditempatkan di card yang sama dengan Export supaya mudah ditemukan
-            berdampingan. ImportInput di-mount di sini (bukan global di AppShell) karena
-            hanya dipicu dari satu tempat ini — file input tersembunyi itu sendiri tidak
-            menimbulkan efek visual apapun sampai triggerImport() dipanggil. */}
-        <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--border)' }}>
-          <button
-            onClick={triggerImport}
-            style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:'1px solid var(--border)', background:'var(--bg3)', color:'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', transition:'all var(--t-fast)' }}
-          >
-            <span style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <Upload size={13} /> {t('settings.importData')}
-            </span>
-            <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)' }}>{t('settings.importDataDesc')}</span>
-          </button>
-          <ImportInput />
+        <div className={s.row2}>
+          <Select aria-label={t('common.year')} value={waYear} onChange={e => setWaYear(+e.target.value)}>
+            {getYears().map(y => <option key={y} value={y}>{y}</option>)}
+          </Select>
+          <Select aria-label={t('common.month')} value={waMonth} onChange={e => setWaMonth(+e.target.value)}>
+            {MONTH_NAMES.map((m, i) => <option key={i} value={i}>{m}</option>)}
+          </Select>
         </div>
-      </div>}
+        <Button variant="success" block onClick={() => doWASummary(appData, waYear, waMonth, zonesPlain)}>
+          <ChatCircleDots aria-hidden="true" /> {t('settings.sendToWA')}
+        </Button>
+      </Card>
 
-      {/* Share & WA */}
-      {(section === 'all' || section === 'wa') && <div style={cardStyle}>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
-          <div style={{ color:'var(--zc)', marginTop:2 }}><Share2 size={16} strokeWidth={1.5} /></div>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('dashboard.waSummary')}</div>
+      <Card className={s.card}>
+        <div className={s.chd}>
+          <IconTile icon={ShareNetwork} tone="blue" />
+          <div><b>{t('settings.sharePdfExcel')}</b><div className={s.cap}>{t('settings.format')}</div></div>
         </div>
-
-        <button onClick={() => setWaOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${waOpen ? 'var(--zc)' : 'var(--border)'}`, background: waOpen ? 'var(--zcdim)' : 'var(--bg3)', color: waOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}>
-          <span style={{ display:'flex', alignItems:'center', gap:8 }}><MessageCircle size={13} /> {t('dashboard.sendWA')}</span>
-          {waOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-        {waOpen && (
-          <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.waPeriod')}</div>
-            <div style={{ display:'flex', gap:6 }}>
-              <select style={selStyle} value={waYear} onChange={e => setWaYear(+e.target.value)}>
-                {getYears().map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <select style={selStyle} value={waMonth} onChange={e => setWaMonth(+e.target.value)}>
-                {MONTH_NAMES.map((m,i) => <option key={i} value={i}>{m}</option>)}
-              </select>
-            </div>
-            <button onClick={handleWASummary} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'#25D366', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <MessageCircle size={13} /> {t('settings.sendToWA')}
-            </button>
-          </div>
-        )}
-
-        <button onClick={() => setSfOpen(v => !v)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', padding:'10px 12px', borderRadius:'var(--r-sm)', border:`1px solid ${sfOpen ? 'var(--zc)' : 'var(--border)'}`, background: sfOpen ? 'var(--zcdim)' : 'var(--bg3)', color: sfOpen ? 'var(--zc)' : 'var(--txt2)', cursor:'pointer', fontSize:'var(--fs-body)', marginBottom:6, transition:'all var(--t-fast)' }}>
-          <span style={{ display:'flex', alignItems:'center', gap:8 }}><Share2 size={13} /> {t('settings.sharePdfExcel')}</span>
-          {sfOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-        {sfOpen && (
-          <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:12, marginBottom:6 }}>
-            <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.format')}</div>
-            <div style={{ display:'flex', gap:6, marginBottom:10 }}>
-              <ToggleChip label="PDF" active={sfFmt==='pdf'} onClick={() => setSfFmt('pdf')} />
-              <ToggleChip label="Excel" active={sfFmt==='excel'} onClick={() => setSfFmt('excel')} />
-            </div>
-            <ExportSelectors monthNames={MONTH_NAMES} zone={sfZone} setZone={setSfZone} type={sfType} setType={setSfType} year={sfYear} setYear={setSfYear} month={sfMonth} setMonth={setSfMonth} showAll={sfFmt==='pdf'} />
-            <button onClick={handleShareFile} style={{ width:'100%', marginTop:10, padding:'9px', borderRadius:'var(--r-sm)', border:'none', background:'var(--zc)', color:'#fff', fontWeight:600, fontSize:'var(--fs-body)', cursor:'pointer', boxShadow:'var(--shadow-z)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <Share2 size={13} /> {t('settings.generateShare')}
-            </button>
-          </div>
-        )}
-      </div>}
-
-      {/* Quick Pay amounts */}
-      {(section === 'all' || section === 'quickpay') && <div style={cardStyle}>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:14 }}>
-          <div style={{ color:'var(--zc)', marginTop:2 }}><Zap size={16} strokeWidth={1.5} /></div>
-          <div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{t('settings.quickPay')}</div>
-            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:2 }}>{t('settings.quickPayDesc')}</div>
-          </div>
-        </div>
-        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:8 }}>{t('settings.quickPayLabel')}</div>
-        <input
-          className="lf-input"
-          style={{ marginBottom:0, textAlign:'left', letterSpacing:'normal', fontFamily:"var(--font-mono),monospace" }}
-          value={newAmounts}
-          onChange={e => setNewAmounts(e.target.value)}
-          placeholder="50, 80, 90, 100, 150, 200"
-        />
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:8 }}>
-          {settings.quickAmounts.map(a => (
-            <span key={a} style={{ background:'var(--bg3)', border:'1px solid var(--zc)', color:'var(--zc)', padding:'3px 10px', borderRadius:'var(--r-xs)', fontSize:'var(--fs-caption)', fontFamily:"var(--font-mono),monospace" }}>{a}</span>
-          ))}
-        </div>
-        <button onClick={saveAmounts} style={{
-          width:'100%', padding:'10px 14px', borderRadius:'var(--r-sm)', cursor:'pointer',
-          fontSize:'var(--fs-body)', fontWeight:600, marginTop:8, border:'none',
-          background:'var(--zc)', color:'#fff', boxShadow:'var(--shadow-z)',
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-        }}>
-          <Check size={13} /> {t('settings.quickPaySave')}
-        </button>
-        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:8, lineHeight:1.6, padding:'8px', background:'var(--bg3)', borderRadius:'var(--r-xs)' }}>
-          {t('settings.quickPayNote')}
-        </div>
-      </div>}
+        <Segmented<'pdf' | 'excel'> ariaLabel={t('settings.format')} value={sfFmt} onChange={changeFmt}
+          options={[{ value: 'pdf', label: 'PDF' }, { value: 'excel', label: 'Excel' }]} />
+        <PeriodPicker monthNames={MONTH_NAMES} zones={sfFmt === 'pdf' ? zonesAll : zonesPlain} zone={sfZone} setZone={setSfZone}
+          type={sfType} setType={setSfType} year={sfYear} setYear={setSfYear} month={sfMonth} setMonth={setSfMonth} />
+        <Button variant="primary" block onClick={handleShareFile}><ShareNetwork aria-hidden="true" /> {t('settings.generateShare')}</Button>
+        <Notice tone="info">{t('settings.shareNote')}</Notice>
+      </Card>
     </>
   );
 }

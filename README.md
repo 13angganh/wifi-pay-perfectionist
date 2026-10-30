@@ -1,3 +1,104 @@
+# WiFi Pay Next — Update v11.10.1
+
+> Redesain UI/UX menyeluruh (tahap T6–T11): tampilan baru dengan 3 tema (Terang/Gelap/Emas), Mode Navigasi (Bottom/Sidebar), Posisi Toast, Pusat Notifikasi, dan layar Log, Operasional, Pengaturan versi baru. **Logika bisnis zip v11.7.1 dipertahankan**; perubahan logika hanya yang disetujui user (Register Tambahan A1–A3 dan A27–A29, serta perbaikan zona kustom). Rincian lengkap per tahap: `docs/REDESAIN-MANIFEST.md`.
+
+## v11.10.1 — pembaruan keamanan Next.js 16.3.5 → 16.4.3
+
+Hanya pembaruan dependensi: TIDAK ada perubahan kode aplikasi, data, atau tampilan.
+
+- `next` dan `eslint-config-next` dipin eksak ke **16.4.3** (rilis stable terbaru per 2026-10-29; 16.3.4 lebih lama dari 16.3.5 yang terpasang sebelumnya). `pnpm-lock.yaml` diperbarui terarah: yang bergeser hanya keluarga Next (`next`, `@next/*`, `eslint-config-next`) dan `sharp` 0.35.4 → 0.35.5 (+ libvips 1.3.3 → 1.3.4, dependensi Next untuk Image Optimization). Tidak ada paket lain yang digeser.
+- `pnpm audit`: 54 → 42 advisori; **12 ditutup**, termasuk 3 critical Next (RCE di `next/og`, di Image Optimization, di `use cache`), 2 high Next (SSRF Image Optimization, DoS Server Actions), 1 high `sharp`. Sisa 42 BUKAN dari Next; 10 di jalur produksi (dompurify via jspdf, grpc-js dan re2js via firebase/firestore, source-map-js via postcss, zod) dan tidak terjangkau kode app (tidak ada `jsPDF.html()`, tidak ada Firestore); sisanya alat test/dev (vite, vitest, jsdom, dst.). Ditangani di tahap terpisah.
+- Diukur (build uji Next 16.3.5 vs 16.4.3): 14 rute + Proxy identik; bundel JS −2,5% (−72 KB mentah, −17,7 KB gzip), CSS −8,3% mentah (−0,4 KB gzip; semua selector global tetap ada); header HTTP, cache-control, dan perilaku `/_next/image` identik (gambar hasil optimasi identik byte-per-byte). Test 1101 / 58 file lulus tanpa perubahan; `eslint .` bersih dengan eslint-config-next 16.4.3.
+- `vercel.json`, `next.config.ts`, `proxy.ts`, `app/layout.tsx`, `database.rules.json` tidak berubah. Node minimum Next 16.4.3: >= 20.9.0.
+
+## Tahap T13: penerapan hasil uji prototipe (R1–R17) — v11.10.0
+
+Tahap ini menerapkan semua perubahan yang sudah disetujui dari uji prototipe di HP. BUKAN fitur baru dan BUKAN redesain baru; data pelanggan tidak berubah.
+
+- **Tabel Rekap:** header kolom batch tidak tembus; tabel punya DUA scroll terpisah dan terkunci satu arah (horizontal ATAU vertikal, tanpa menyambung ke halaman di ujung tabel) lewat hook `useAxisLock`.
+- **Semua menu:** isi tidak lagi tertutup bottom nav saat scroll ke bawah (`template.tsx`: `minHeight`); period bar standar (Tahun | Bulan | ikon) dan jarak antar blok seragam; ukuran teks mengikuti skala token.
+- **Pilih Banyak:** tekan lama di Entry dan Rekap DIHAPUS (disengaja); diganti tombol "Pilih Banyak". Di Entry tombol itu ada di kartu ringkasan dan mulai tanpa pilihan; sheet batch menampilkan nama terpilih dan "Bayar (n)", dan tidak lagi menutup kartu terakhir.
+- **Atur Tampilan:** ikon filter di Dashboard, Grafik, Entry, Rekap, Tunggakan, Member, dan Operasional untuk menyembunyikan kartu (hanya tampilan, tersimpan per perangkat).
+- **Pengaturan → Tampilan → Ukuran Teks:** Normal (bawaan) atau Besar (untuk lansia), tersimpan per perangkat.
+- **Member:** ikut tab zona Header (tab zona di halaman dihapus); tombol "Status" berlabel menggantikan ikon hadiah; FAB "+" di kanan bawah. **Operasional:** FAB "Tambah Item" dan ikon item bisa dipilih (otomatis dari nama bila tidak dipilih).
+- **Desain V2 permanen**, label Log "Pembayaran", ikon chip status seragam, tab zona Header lebih ringkas (pudar tepi kanan HANYA bila masih ada tab tersembunyi).
+- **Perbaikan saat penerapan (T13):** pudar tepi kanan tab zona tidak lagi memotong tab terakhir saat semua tab muat; warna angka lencana filter mengikuti `--on-accent` (terbaca di tema Emas); `wp_hidden_cards` yang rusak/diubah tangan dibersihkan saat dimuat (sebelumnya struktur salah bisa membuat tombol Atur Tampilan error).
+- **Data lama:** tidak ada migrasi baru, tidak ada penulisan massal saat upgrade. Satu-satunya field data baru: `OpsItem.icon?` (opsional). `wp_text_size` dan `wp_hidden_cards` hanya di perangkat (tidak ikut Backup JSON).
+- **PENTING sebelum deploy:** unduh Backup JSON dulu (Pengaturan → Export & Import).
+- **Test:** 1101 test / 58 file (T12: 1048 / 51).
+
+## Tahap T12 (fitur): Periode Member + perbaikan tanggal bayar
+
+Tahap ini FITUR, bukan redesain. Perubahan logika bisnis hanya untuk 4 butir yang disetujui (F1–F4); semua aturan lain tetap.
+
+- **Free multi-periode (F1):** satu member bisa punya BANYAK periode Free (contoh: Jan 2023 – Apr 2026 gratis, Mei – Agu 2026 berbayar, Sep – Okt 2026 gratis, mulai Nov 2026 berbayar lagi). Bulan Free tetap kategori Free (Rp 0), bukan Belum, di semua layar.
+- **Terdaftar sejak (F2):** kolom baru di form Tambah/Edit Member (bulan + tahun). Member baru diisi bulan berjalan (boleh lebih awal); member lama kosong = "sejak awal" sehingga angka lama TIDAK berubah. Bulan sebelum terdaftar = N/A: tidak masuk Tunggakan, penyebut persen, hitungan Belum, Ringkasan WA, dan ekspor; sel Rekap diberi penanda khusus.
+- **Nonaktif / Reaktivasi berulang (F3):** satu sheet "Status & Periode" per member (ikon hadiah di kartu Member — satu pintu, menggantikan modal Free lama): "Nonaktifkan mulai {bulan}" dan "Aktifkan kembali mulai {bulan}" (hanya bila ada periode nonaktif terbuka), plus Tambah/Ubah/Hapus periode Free dan Nonaktif. Daftar Member punya chip + filter "Nonaktif" dan hitungan aktif/nonaktif di header.
+- **Pembayaran di bulan N/A:** pembayaran yang SUDAH tercatat tetap dihitung dan tampil Lunas (uang nyata tidak disembunyikan); mencatat pembayaran BARU di bulan Nonaktif/Belum terdaftar meminta konfirmasi ("Tetap catat"); batch melewatinya.
+- **Tanggal bayar (F4):** SATU helper (`lib/payDate.ts`) untuk semua jalur: Entry (QuickPay, diketik, batch) dan Rekap (QuickPay, diketik, batch). Mode otomatis = tanggal LOKAL perangkat (sebelumnya UTC, mundur sehari di WIB dini hari); mode manual = pemilih tanggal (default hari ini) di sheet batch Entry, sheet batch Rekap, dan modal Rekap (padanan kolom "Tgl Bayar" kartu Entry). Pembayaran lama tanpa tanggal tetap kosong.
+- **Data:** sumber kebenaran baru `AppData.memberPeriods["ZONA__NAMA"]`. Rekaman `freeMembers` lama dimigrasikan otomatis dan idempoten saat load, impor, dan clone; tidak ditulis lagi. Rename memindahkan periode, hapus membawanya ke Recycle Bin, pulihkan mengembalikannya, clone ke akun penagih menyalinnya. Backup JSON v11.8.0 lama tetap bisa diimpor. `database.rules.json` tidak berubah.
+- **PENTING sebelum deploy:** rollback ke v11.8.0 tidak membaca `memberPeriods` — unduh Backup JSON dulu (Pengaturan → Export & Import).
+- **Perbaikan kecil (mengikuti "Free bukan Belum"):** status ekspor bulanan PDF/Excel untuk member Free kini "Gratis" (sebelumnya tercetak "Belum").
+- **Test:** 1048 test / 51 file (T11: 738 / 44). Baru: `memberPeriods`, `payment-status` (skenario S1–S3 dan paritas status atas fixture acak), `memberPeriods-db`, `t12-consumers`, `t12-parity` (paritas T11 untuk Dashboard, Grafik, Rekap, Tunggakan, WA, ekspor atas 20 dataset acak), `members.periods`, `t12-screens`. Empat test lama disesuaikan karena struktur data baru (2 di T9 modal Free → sheet Status & Periode; 2 di clone `db.test` → `memberPeriods`), asersinya setara dan tidak dilemahkan; 734 test lama lainnya tidak diubah.
+
+| File | Perubahan |
+|------|-----------|
+| `lib/memberPeriods.ts` (baru) | Model periode: rentang inklusif, sanitasi, migrasi `freeMembers`, tulis/rename/ambil, Tambah/Ubah/Hapus, Nonaktifkan/Aktifkan kembali |
+| `lib/payDate.ts` (baru) | Satu helper tanggal bayar (lokal), penerapan ke data dan ke patch granular, rollback |
+| `lib/payment.ts` | Resolver `getMonthStatus`, iterator `billableMonths`; `isFree/isLunas/getArrears/getEffectivePay` diturunkan darinya |
+| `lib/db.ts`, `types/index.ts` | `memberPeriods` (default `{}`), migrasi di listenDB/impor/clone, patch granular + tanggal |
+| `lib/export.excel.ts`, `lib/export.wa.ts`, `lib/helpers.ts` | Label status ekspor, hitungan WA tanpa N/A, barrel |
+| `hooks/useDashboard.ts`, `hooks/useTunggakan.ts`, `components/features/grafik/grafik.logic.ts` | N/A tidak terhitung (penyebut persen, Belum, Rajin) |
+| `components/features/rekap/*` | Sel N/A, hitungan chip, modal (konfirmasi + tanggal), batch (tanggal) |
+| `components/features/entry/*`, `components/features/members/MemberCard.*` | Batch mengecualikan N/A + tanggal; kartu N/A redup + konfirmasi; tanggal bayar lewat helper |
+| `components/features/members/*` | Kolom Terdaftar sejak, chip Nonaktif, hitungan, rename/hapus/pulihkan membawa periode |
+| `components/modals/FreeMemberModal*.tsx` | Diperluas menjadi sheet "Status & Periode" (+ `.Status.tsx` baru), `RiwayatModal*`, `GlobalSearch*` menampilkan N/A |
+| `lib/locales/{id,en}.ts`, `SettingsAppSection.tsx` | Blok "REDESAIN T12" (append-only); catatan pengaturan Tanggal Bayar kini berlaku untuk semua jalur |
+| `lib/constants.ts` | Versi → v11.9.0 |
+
+## Tahap T11: verifikasi, pembersihan, zip final
+
+- **Verifikasi:** diff terhadap zip asli v11.7.1, Daftar Wajib-Ada (102 butir) dan Register A1–A29 diperiksa satu per satu di kode; semua ada. Hasil lengkap di laporan audit T11 (di luar zip).
+- **Pengaturan → Akun:** baris kembali bernama seperti zip dan prototype: "Akun Saya" (isi: Email & Reset Password) dan "Akun Penagih" (isi: Buat Akun Penagih).
+- **Cari member (GlobalSearch):** tampilan baru (primitive Sheet, token, ikon Phosphor; tanpa lucide-react/framer-motion); lencana zona kustom memakai warna zonanya (dulu jatuh ke gaya SLK); hasil berupa tombol yang bisa difokus keyboard.
+- **Auto-backup:** member di zona MANA PUN (termasuk zona kustom) memicu cek auto-backup (dulu hanya `krsMembers`).
+- **Layar galat/404:** `error.tsx` dan `not-found.tsx` memakai primitive + kamus id/en + Phosphor; `global-error.tsx` tanpa emoji dan teksnya dari kamus.
+- **Aksesibilitas:** Esc menutup drawer Sidebar.
+- **Pembersihan:** CSS global mati dibuang (`styles/*.css` 1.294 → 784 baris; `components.entry.css` dan `components.modal.css` dihapus; 21 `@keyframes` yatim), 56 kunci i18n yatim dihapus (id+en), `hooks/useEntry.ts` (yatim sejak zip asli) serta ekspor mati `PAGE_TITLES`/`PAGE_ICON_MAP` di `lib/constants.ts` dihapus.
+- **Dokumentasi:** `REDESAIN-MANIFEST.md` dipindah ke `docs/`.
+- **Test:** 738 test / 44 file (T10: 701 / 39). Baru: `redesign-t11-guard` (emoji, impor terlarang, percabangan zona, a11y statis, CSS mati), `GlobalSearch`, `shellLogic`, `boundary`, `SettingsAccountRows`.
+
+| File | Perubahan |
+|------|-----------|
+| `components/modals/GlobalSearch.tsx` (+ `globalSearch.module.css`) | Tampilan baru; lencana zona kustom; logika pencarian zip utuh |
+| `components/features/settings/SettingsView.tsx` | Judul baris Akun: "Akun Saya" / "Akun Penagih" |
+| `components/layout/AppShell.tsx` (+ `shellLogic.ts`) | Pemicu auto-backup lintas zona; Esc menutup drawer Sidebar |
+| `app/(app)/{error,not-found}.tsx`, `app/global-error.tsx` (+ `boundary.module.css`) | Primitive + i18n; tanpa emoji/lucide |
+| `lib/locales/{id,en}.ts` | Blok "REDESAIN T11" (6 key) + 56 key yatim dihapus |
+| `lib/constants.ts` | Ekspor mati dan impor lucide dihapus (versi tetap v11.8.0) |
+| `styles/*.css` | Kelas dan keyframes mati dibuang; 2 berkas kosong dihapus |
+
+## Tahap T10: Log, Operasional, Pengaturan, Notifikasi, Akun/Import/PIN/Panduan
+
+- **Log:** pencarian (aksi + detail), tab Semua / Hanya Bayar / Data / Sistem (A27), filter Tahun + Bulan + Reset, daftar per hari, Detail Aktivitas (A28), Statistik Log (A29, dari `activityLog`), batas 150 baris.
+- **Operasional:** edit langsung di baris (simpan saat blur, rollback selektif), Tambah/Edit Item lewat sheet, menu titik tiga, ringkasan pendapatan per zona aktif (zona kustom ikut) dan pendapatan bersih.
+- **Pengaturan:** 6 grup yang bisa dilipat, baris berlencana status membuka halaman isi (Akun Saya, Akun Penagih, PIN, Biometrik, Zona, Konversi IP, Quick Pay, Tanggal Otomatis, Export & Import, Ringkasan WA + Share, Tema, Mode Navigasi, Posisi Toast, Bahasa, Info Aplikasi).
+- **Pusat Notifikasi (A3):** 8 aktivitas terbaru + ajakan backup + status sinkron/offline, penanda dibaca per akun, lencana lonceng.
+- **Akun, Import, PIN Lock, Panduan awal:** tampilan primitive baru; teks masuk i18n; ikon Phosphor tanpa emoji; konfirmasi memakai kunci semantik.
+- **Perbaikan zona kustom (disetujui):** Import membawa member zona kustom dan mendaftarkan zonanya; Export PDF/Excel dan Ringkasan WA per zona aktif; Quick Pay/Zona/Akun Penagih memakai satu jalur daftar zona.
+- **File yatim dihapus:** `OperasionalView.Form`, `SettingsPinSection.Setup/Change`, `SettingsTarifSection.Form/List`, `SettingsZoneSection.Form/List`, `CollapsibleGroup/Section`, `ExportModal`, `ShareModal`, `PinLock.Numpad`, `lib/onboardingSteps`.
+
+| File | Perubahan |
+|------|-----------|
+| `lib/constants.ts` | Versi → v11.8.0 |
+| `components/features/{log,operasional,settings,notifications}/*` | Layar baru (logika murni + tampilan + CSS Modules + test) |
+| `components/modals/{AccountModal,ImportModal}.tsx`, `components/ui/{PinLock,OnboardingHint}.tsx` | Tampilan baru, logika zip utuh |
+| `lib/db.ts`, `lib/export.excel.ts`, `lib/export.wa.ts` | Perbaikan zona kustom (Import, Export, Ringkasan WA) |
+| `lib/locales/{id,en}.ts` | Blok "REDESAIN T10" (key baru, append-only) + 8 nilai kamus dibersihkan dari simbol/emoji |
+| `components/layout/Header.tsx`, `Header.Notifications.tsx`, `store/slices/viewSlice.ts` | Revisi eksplisit kecil (lihat MANIFEST bagian 13) |
+
+---
+
 # WiFi Pay Next — Update v11.7.1
 
 > Permintaan user, 3 pesan terpisah: (1) badge "Tersimpan" beda ukuran dgn "Terkunci"/"Terbuka", toast "Entry dikunci/dibuka" menimpa status+tombol & kata "dibuka" harusnya "terbuka"; (2) audit ukuran teks lintas SEMUA menu (bukan cuma Dashboard/Pengaturan) agar konsisten spt app profesional, plus temuan tambahan: judul "Dashboard" duplikat dgn Sidebar, harus dihapus & pola disamakan ke menu lain yg tidak py judul.
@@ -1308,7 +1409,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.7.1 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.10.1 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

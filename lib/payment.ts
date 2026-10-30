@@ -3,9 +3,11 @@
 // Dipecah dari helpers.ts (task 1.15)
 // ══════════════════════════════════════════
 
-import { AppData, FreeMember } from '@/types';
+import { AppData, MemberPeriods } from '@/types';
 import { MONTHS, getYears } from './constants';
 import { fbKey } from './firebase-key';
+import { getMembersForZone } from './member';
+import { getMemberPeriods, inAnyPeriod, isBeforeJoined } from './memberPeriods';
 
 // ── Payment key ──
 export function getKey(zone: string, name: string, year: number, month: number): string {
@@ -17,47 +19,87 @@ export function getPay(data: AppData, zone: string, name: string, year: number, 
   return data.payments?.[getKey(zone, name, year, month)] ?? null;
 }
 
-// ── Check free member ──
-export function isFree(data: AppData, zone: string, name: string, year: number, month: number): boolean {
-  const key = zone + '__' + name;
-  const fm: FreeMember | undefined = data.freeMembers?.[key];
-  if (!fm || !fm.active) return false;
-  const ym = year * 12 + month;
-  const fromYm = fm.fromYear * 12 + fm.fromMonth;
-  const toYm = (fm.toYear != null && fm.toMonth != null) ? fm.toYear * 12 + fm.toMonth : Infinity;
-  return ym >= fromYm && ym <= toYm;
+// ══════════════════════════════════════════
+// REDESAIN T12 — status satu bulan satu member (SATU resolver; isFree/isLunas/getArrears diturunkan darinya)
+//   'belumTerdaftar' : sebelum "Terdaftar sejak" dan tanpa pembayaran → N/A (tidak terhitung)
+//   'nonaktif'       : di dalam periode nonaktif dan tanpa pembayaran → N/A (tidak terhitung)
+//   'free'           : di dalam periode free (Rp 0; tetap kategori Free, BUKAN Belum)
+//   'lunas' / 'belum': ada / tidak ada pembayaran
+// Prioritas bila periode tumpang tindih: Belum terdaftar > Nonaktif > Free > (Lunas/Belum dari pembayaran).
+// Pengecualian: pembayaran yang SUDAH tercatat di bulan Belum-terdaftar/Nonaktif tetap dihitung dan tampil
+// 'lunas' (uang nyata tidak disembunyikan). Free tetap menang atas pembayaran, persis seperti sebelum T12.
+// Data lama (satu periode free, tanpa terdaftar/nonaktif) menghasilkan keluaran yang sama dengan sebelum T12.
+// ══════════════════════════════════════════
+export type MonthStatus = 'belumTerdaftar' | 'nonaktif' | 'free' | 'lunas' | 'belum';
+
+/** Resolver murni: `paid` = ada nilai pembayaran (termasuk 0) pada bulan itu. */
+export function resolveMonthStatus(mp: MemberPeriods | undefined, paid: boolean, year: number, month: number): MonthStatus {
+  if (mp) {
+    if (isBeforeJoined(mp, year, month)) return paid ? 'lunas' : 'belumTerdaftar';
+    if (inAnyPeriod(mp.inactive, year, month)) return paid ? 'lunas' : 'nonaktif';
+    if (inAnyPeriod(mp.free, year, month)) return 'free';
+  }
+  return paid ? 'lunas' : 'belum';
 }
 
-// ── Check lunas (val !== null OR free) ──
+export function getMonthStatus(data: AppData, zone: string, name: string, year: number, month: number): MonthStatus {
+  return resolveMonthStatus(getMemberPeriods(data, zone, name), getPay(data, zone, name, year, month) !== null, year, month);
+}
+
+/** N/A = bulan yang TIDAK terhitung sama sekali (Belum terdaftar / Nonaktif tanpa pembayaran). */
+export function isNotApplicable(s: MonthStatus): s is 'belumTerdaftar' | 'nonaktif' {
+  return s === 'belumTerdaftar' || s === 'nonaktif';
+}
+
+// ── Check free member (diturunkan dari resolver) ──
+export function isFree(data: AppData, zone: string, name: string, year: number, month: number): boolean {
+  return getMonthStatus(data, zone, name, year, month) === 'free';
+}
+
+// ── Check lunas (val !== null OR free). N/A tanpa pembayaran = false; penghitung WAJIB menyaring N/A lewat isNotApplicable(getMonthStatus) ──
 export function isLunas(data: AppData, zone: string, name: string, year: number, month: number): boolean {
-  if (isFree(data, zone, name, year, month)) return true;
-  return getPay(data, zone, name, year, month) !== null;
+  const s = getMonthStatus(data, zone, name, year, month);
+  return s === 'free' || s === 'lunas';
 }
 
 // ── Get effective pay (free = 0) ──
 export function getEffectivePay(data: AppData, zone: string, name: string, year: number, month: number): number | null {
-  if (isFree(data, zone, name, year, month)) return 0;
+  if (getMonthStatus(data, zone, name, year, month) === 'free') return 0;
   return data.payments?.[getKey(zone, name, year, month)] ?? null;
 }
 
 // ── Get zone total income ──
+// REDESAIN T9 (serah-terima T4 bagian 3 butir 1): daftar anggota lewat getMembersForZone, sehingga zona
+// kustom dihitung dari anggotanya sendiri (sebelumnya semua zona selain KRS jatuh ke anggota SLK).
 export function getZoneTotal(data: AppData, zone: string, year: number, month: number): number {
-  const mems = zone === 'KRS' ? data.krsMembers : data.slkMembers;
+  const mems = getMembersForZone(zone, data);
   return mems.reduce((s, m) => s + (data.payments?.[getKey(zone, m, year, month)] || 0), 0);
 }
 
-// ── Get member arrears ──
-export function getArrears(data: AppData, zone: string, name: string, upToYear: number, upToMonth: number) {
-  const unpaid: { label: string; y: number; mi: number }[] = [];
+// ── REDESAIN T12: iterator bulan-tertagih — dari tahun pertama sampai (upToYear, upToMonth), hanya bulan yang
+//    TERHITUNG (Free/Lunas/Belum); bulan N/A (Belum terdaftar / Nonaktif tanpa pembayaran) dilewati. ──
+export interface BillableMonth { label: string; y: number; mi: number; status: 'free' | 'lunas' | 'belum' }
+
+export function billableMonths(data: AppData, zone: string, name: string, upToYear: number, upToMonth: number): BillableMonth[] {
+  const out: BillableMonth[] = [];
+  const mp = getMemberPeriods(data, zone, name);
   for (const y of getYears()) {
     if (y > upToYear) break;
     const maxM = y === upToYear ? upToMonth : 11;
     for (let mi = 0; mi <= maxM; mi++) {
-      // task 1.01: cek isLunas (termasuk free member)
-      if (!isLunas(data, zone, name, y, mi)) {
-        unpaid.push({ label: `${MONTHS[mi]} ${y}`, y, mi });
-      }
+      const status = resolveMonthStatus(mp, getPay(data, zone, name, y, mi) !== null, y, mi);
+      if (status === 'belumTerdaftar' || status === 'nonaktif') continue;
+      out.push({ label: `${MONTHS[mi]} ${y}`, y, mi, status });
     }
+  }
+  return out;
+}
+
+// ── Get member arrears: bulan tertagih berstatus 'belum' (Free = lunas; N/A tidak ditagih) ──
+export function getArrears(data: AppData, zone: string, name: string, upToYear: number, upToMonth: number) {
+  const unpaid: { label: string; y: number; mi: number }[] = [];
+  for (const b of billableMonths(data, zone, name, upToYear, upToMonth)) {
+    if (b.status === 'belum') unpaid.push({ label: b.label, y: b.y, mi: b.mi });
   }
   return unpaid;
 }

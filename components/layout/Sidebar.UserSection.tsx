@@ -1,10 +1,10 @@
 // ══════════════════════════════════════════
 // components/layout/Sidebar.UserSection.tsx
-// v11.3: Satu tombol akun → buka AccountModal
+// v11.3: Satu tombol akun → buka AccountModal (REDESAIN T6: restyle + Phosphor)
 // ══════════════════════════════════════════
 'use client';
 
-import { User } from 'lucide-react';
+import { CaretRight } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
 
 interface Props {
@@ -17,40 +17,13 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
   const t = useT();
   return (
     <div className="sb-user-section">
-      <button
-        onClick={onOpenAccount}
-        aria-label={t('sidebar.accountAria')}
-        style={{
-          width:'100%', display:'flex', alignItems:'center', gap:10,
-          background:'none', border:'1px solid var(--border)',
-          borderRadius:'var(--r-sm)', padding:'9px 12px',
-          cursor:'pointer', transition:'all var(--t-fast)',
-          textAlign:'left',
-        }}
-        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background='var(--bg3)'}
-        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background='none'}
-      >
-        {/* Avatar */}
-        <div style={{
-          width:30, height:30, borderRadius:'50%', flexShrink:0,
-          background:'linear-gradient(135deg,var(--zc),color-mix(in srgb,var(--zc) 60%,#000))',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          fontFamily:"var(--font-mono),monospace", fontWeight:500, fontSize:'var(--fs-caption)', color:'#fff',
-        }}>
-          {initials}
-        </div>
-        {/* Nama */}
-        <div style={{ flex:1, overflow:'hidden' }}>
-          <div style={{
-            fontSize:'var(--fs-body)', fontWeight:600, color:'var(--txt)',
-            fontFamily:"var(--font-sans),sans-serif",
-            whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-          }}>
-            {displayName}
-          </div>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:1 }}>{t('sidebar.manageAccount')}</div>
-        </div>
-        <User size={13} strokeWidth={1.5} style={{ color:'var(--txt4)', flexShrink:0 }} />
+      <button type="button" className="sb-user-card" onClick={onOpenAccount} aria-label={t('sidebar.accountAria')}>
+        <span className="hdr-av hdr-av--sm" aria-hidden="true">{initials}</span>
+        <span className="sb-user-card__tx">
+          <b>{displayName}</b>
+          <span>{t('sidebar.manageAccount')}</span>
+        </span>
+        <CaretRight size={16} aria-hidden="true" />
       </button>
     </div>
   );

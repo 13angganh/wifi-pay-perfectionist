@@ -1,0 +1,52 @@
+/* components/features/grafik/grafik.module.css — layar Grafik (REDESAIN T9)
+   Padanan kelas prototype T4: .ctrl .kpi2 .chc .chh .cv .lgd .dn .dnl .stt .projc .per2 .pdiff. Hanya token. */
+
+.root { display: flex; flex-direction: column; gap: var(--sp-h); }
+.ctrl { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.ctrlSel { width: auto; min-width: 96px; }
+
+/* 1 kolom di ponsel, 2 kolom di desktop */
+.g2 { display: grid; grid-template-columns: 1fr; gap: var(--sp-2); }
+@media (min-width: 720px) { .g2 { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+.kl  { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chc { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.chh { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.frame { position: relative; width: 100%; min-width: 0; touch-action: manipulation; }
+
+.lgd   { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: var(--fs-micro); color: var(--txt3); }
+.lgdIt { display: inline-flex; align-items: center; }
+.lgdSw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+
+.proj    { border-color: color-mix(in srgb, var(--c-lunas) 28%, var(--border)); }
+.projRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; }
+.projVal { font-size: var(--fs-display); font-weight: 800; color: var(--c-lunas); }
+.projR   { text-align: right; }
+
+.mselw { display: flex; align-items: center; gap: var(--sp-2); }
+.mselw > :last-child { width: auto; min-width: 110px; }
+
+/* komposisi status (donat) */
+.stt   { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+.sttIt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; background: var(--bg3); border-radius: var(--r-sm); }
+.sttN  { font-size: var(--fs-display); font-weight: 800; }
+.dn    { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; justify-content: center; }
+.dnCv  { position: relative; flex: 0 0 150px; width: 150px; height: 150px; }
+.dnl   { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.dnlIt { display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); }
+.dnlSw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.dnlIt b { flex: 1; font-weight: var(--fw-strong); }
+.dnlIt > span:nth-last-child(2) { min-width: 2.4em; text-align: right; font-variant-numeric: tabular-nums; }
+.dnlIt > span:last-child { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* dua periode */
+.per2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-h); }
+.per  { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.perSel { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.perVal { font-size: var(--fs-display); font-weight: 800; }
+.pdiff  { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 0; font-size: var(--fs-body); font-weight: 700; }
+.up { color: var(--c-lunas); }
+.dn2 { color: var(--c-belum); }
+
+.g2:empty { display: none; }
+.g2 > :only-child { grid-column: 1 / -1; }

@@ -10,6 +10,8 @@ export interface MemberInfo {
   [key: string]: string | number | undefined; // date_YYYY_M fields
 }
 
+// LEGACY (≤ v11.8.0): satu rekaman free per member. REDESAIN T12: hanya DIBACA untuk migrasi otomatis ke
+// AppData.memberPeriods (lib/memberPeriods.ts) dan tidak ditulis lagi oleh kode aplikasi.
 export interface FreeMember {
   active: boolean;
   fromYear: number;
@@ -18,9 +20,27 @@ export interface FreeMember {
   toMonth?: number;
 }
 
+// ── REDESAIN T12 — Periode member (sumber kebenaran baru) ──
+// Bulan 0–11, batas inklusif. Periode tanpa toY/toM = terbuka (tanpa akhir). Kunci peta = `${zona}__${nama}`
+// (sama dengan memberInfo/freeMembers). Zona kustom berperilaku sama dengan KRS/SLK (tanpa percabangan zona).
+export interface YearMonth { y: number; m: number }
+export interface MemberPeriod {
+  fromY: number;
+  fromM: number;
+  toY?:  number;
+  toM?:  number;
+}
+export interface MemberPeriods {
+  joined?:   YearMonth;      // "Terdaftar sejak"; kosong = sejak awal (member lama, angka lama tidak berubah)
+  free?:     MemberPeriod[]; // periode gratis (boleh banyak, sejenis tidak boleh tumpang tindih)
+  inactive?: MemberPeriod[]; // periode nonaktif (boleh banyak; periode terbuka = belum direaktivasi)
+}
+
 export interface OpsItem {
   label: string;
   nominal: number;
+  /** Ikon pilihan user (opsional; kosong = otomatis dari kata kunci nama). Data lama tanpa field ini tetap valid. */
+  icon?: string;
 }
 
 export interface OpsData {
@@ -39,6 +59,7 @@ export interface DeletedMember {
   name: string;
   deletedAt: number;
   payments: Record<string, number>;
+  periods?: MemberPeriods; // REDESAIN T12: periode member ikut ke Recycle Bin dan dikembalikan saat dipulihkan
 }
 
 // v11.6 — Fitur Penagih: satu entry di daftar penagih milik owner.
@@ -65,7 +86,7 @@ export interface AppData {
   payments: Record<string, number>;
   memberInfo: Record<string, MemberInfo>;
   activityLog: ActivityLog[];
-  freeMembers: Record<string, FreeMember>;
+  freeMembers: Record<string, FreeMember>; // LEGACY (T12): hanya dibaca untuk migrasi; sumber baru = memberPeriods
   deletedMembers: Record<string, DeletedMember>;
   operasional: Record<string, OpsData>;
   _globalLocked?: boolean;
@@ -76,6 +97,9 @@ export interface AppData {
   // Firebase Auth penagih itu. HANYA daftar/metadata di sisi owner —
   // TIDAK terhubung otomatis ke akun Firebase Auth-nya (lihat TenantInfo).
   tenants?: Record<string, TenantInfo>;
+  // REDESAIN T12: periode per member (Terdaftar sejak, Free multi-periode, Nonaktif/Reaktivasi). Opsional pada
+  // tipe agar fixture lama tetap valid; DEFAULT_APP_DATA tetap menyertakan nilai default `{}`.
+  memberPeriods?: Record<string, MemberPeriods>;
 }
 
 export type Zone = string; // v11.2: zona dinamis, tidak lagi terbatas KRS|SLK

@@ -1,182 +1,150 @@
 // ══════════════════════════════════════════
-// components/features/dashboard/DashboardView.Stats.tsx
-// Dipecah dari DashboardView.tsx (task 1.15)
-// Hero metric + KRS/SLK zone cards + belum bayar card
-// UI FIX: Framer Motion entrance + gradient progress bar + enhanced belum card
+// components/features/dashboard/DashboardView.Stats.tsx (REDESAIN T7)
+// Statistik: 3 stat (Lunas/Belum/Gratis), Pendapatan + Bersih + grafik 6 bulan (A14),
+// Insight, kartu per zona (KRS, SLK, zona kustom aktif).
+// Dipakai DashboardView.tsx (file ini sebelumnya yatim; ditulis ulang, tanpa framer-motion/lucide).
 // ══════════════════════════════════════════
 'use client';
 
-import { TrendingUp, TrendingDown, Clock, Gift, Minus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import type { CSSProperties } from 'react';
+import { ArrowRight, CreditCard, Receipt, Wallet } from '@phosphor-icons/react';
+import { Card } from '@/components/ui/Card';
+import { IconTile } from '@/components/ui/IconTile';
+import { DeltaPct, ProgressBar } from '@/components/ui/ProgressBar';
+import { useAppStore } from '@/store/useAppStore';
+import { zoneCssColor } from '@/lib/design-tokens';
 import { rp } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
+import type { useDashboard } from '@/hooks/useDashboard';
+import s from './dashboard.module.css';
 
-interface ZoneStats {
-  zone:   string;
-  color:  string;
-  total:  number;
-  pct2:   number | null;
-  lunas:  number;
-  allLen: number;
-  pct:    number;
-}
+type VM = ReturnType<typeof useDashboard>;
+const rise = (i: number) => ({ ['--i' as string]: i }) as CSSProperties;
 
-interface Props {
-  bulanLbl:    string;
-  totalIncome: number;
-  totalOps:    number;
-  netIncome:   number;
-  totalPct:    number | null;
-  krsStats:    ZoneStats;
-  slkStats:    ZoneStats;
-  krsBelum:    number;
-  slkBelum:    number;
-  krsLunas:    number;
-  slkLunas:    number;
-  totalFree:   number;
-  krsFree:     number;
-  slkFree:     number;
-}
-
-function PctBadge({ pct, prevLabel }: { pct: number | null; prevLabel?: string }) {
-  if (pct === null) return null;
-  const up = pct >= 0;
+export function StatTiles({ d }: { d: VM }) {
+  const t = useT();
+  const items = [
+    { icon: Wallet,     tone: 'lunas' as const, v: d.totalLunas, l: t('status.lunas') },
+    { icon: Receipt,    tone: 'belum' as const, v: d.totalBelum, l: t('status.belum') },
+    { icon: CreditCard, tone: 'free'  as const, v: d.totalFree,  l: t('status.free') },
+  ];
   return (
-    <span style={{ fontSize:'var(--fs-micro)', fontWeight:600, color: up ? 'var(--c-lunas)' : 'var(--c-belum)', marginLeft:4, display:'inline-flex', alignItems:'center', gap:2 }}>
-      {up ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-      {Math.abs(pct)}%{prevLabel ? ` vs ${prevLabel}` : ''}
-    </span>
-  );
-}
-
-// Animated progress bar dengan gradient fill
-function ProgressBar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div style={{ height:6, background:'var(--bg3)', borderRadius:3, overflow:'hidden' }}>
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }}
-        transition={{ duration: 0.7, ease: 'easeOut', delay: 0.15 }}
-        style={{
-          height: '100%',
-          background: `linear-gradient(90deg, ${color}99, ${color})`,
-          borderRadius: 3,
-          boxShadow: pct < 100 ? `0 0 6px ${color}66` : 'none',
-        }}
-      />
+    <div className={clsx(s.grid3, s.rise)} style={rise(1)}>
+      {items.map(it => (
+        <Card key={it.tone} className={s.stat}>
+          <IconTile icon={it.icon} tone={it.tone} />
+          <div style={{ minWidth: 0 }}>
+            <div className={clsx('wp-num', s.statNum)}>{it.v}</div>
+            <div className="wp-t-cap">{it.l}</div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
 
-const cardBase = {
-  background: 'var(--bg2)',
-  border: '1px solid rgba(255,255,255,0.05)',
-  borderRadius: 'var(--r-md)',
-  padding: 16,
-  marginBottom: 10,
-  boxShadow: 'var(--shadow-sm)',
-} as const;
-
-// Stagger container untuk entrance animation
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
-};
-const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
-};
-
-export default function DashboardStats(p: Props) {
+export function IncomeCard({ d }: { d: VM }) {
   const t = useT();
-
+  const max = Math.max(...d.history.map(h => h.total), 0);
+  const prevName = d.MONTH_NAMES[d.prevDm];
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show">
-      {/* Hero Metric */}
-      <motion.div variants={itemVariants} style={{
-        ...cardBase,
-        background:'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(24,28,39,0) 60%)',
-        borderColor:'rgba(34,197,94,0.15)',
-        padding:'20px 16px',
-      }}>
-        <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:4 }}>
-          {t('dashboard.thisMonth')}
-        </div>
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'clamp(22px,6vw,32px)', fontWeight:800, color:'var(--c-lunas)', lineHeight:1.1, marginBottom:6 }}>
-          {rp(p.totalIncome)}
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <PctBadge pct={p.totalPct} />
-          {p.totalOps > 0 && (
-            <span style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', display:'flex', alignItems:'center', gap:4 }}>
-              <Minus size={10} /> Ops: {rp(p.totalOps)} →
-              <span style={{ color: p.netIncome >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)', fontWeight:600, marginLeft:2 }}>
-                {t('dashboard.net')}: {rp(p.netIncome)}
-              </span>
+    <Card variant="hl" className={clsx(s.hero, s.rise)} style={rise(2)}>
+      <div className={s.heroMain}>
+        <div className="wp-t-cap" style={{ color: 'var(--txt2)' }}>{t('dashboard.thisMonth')}</div>
+        <div className={clsx('wp-num wp-num--xl wp-gtxt', s.heroVal)}>{rp(d.totalIncome)}</div>
+        <div className={s.heroMeta}>
+          {d.totalPct !== null && (
+            <>
+              <DeltaPct value={d.totalPct} />
+              <span className="wp-t-micro">{t('dashboard.vs')} {prevName}</span>
+            </>
+          )}
+          {d.totalOps > 0 && (
+            <span className="wp-t-cap" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+              {t('dashboard.ops')}: {rp(d.totalOps)}
+              <ArrowRight size={11} aria-hidden="true" />
+              <b style={{ color: d.netIncome >= 0 ? 'var(--c-lunas)' : 'var(--c-belum)' }}>
+                {t('dashboard.net')}: {rp(d.netIncome)}
+              </b>
             </span>
           )}
         </div>
-      </motion.div>
-
-      {/* KRS + SLK zone cards */}
-      <motion.div variants={itemVariants} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
-        {[p.krsStats, p.slkStats].map(z => (
-          <div key={z.zone} style={{ ...cardBase, boxShadow:'var(--shadow-md)', padding:'14px 14px', marginBottom:0 }}>
-            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:4, display:'flex', alignItems:'center', gap:4 }}>
-              {z.zone} <PctBadge pct={z.pct2} />
-            </div>
-            <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'clamp(12px,3.8vw,15px)', fontWeight:800, color:z.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', marginBottom:8 }}>
-              {rp(z.total)}
-            </div>
-            {/* Animated gradient progress bar */}
-            <ProgressBar pct={z.pct} color={z.color} />
-            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:4 }}>
-              {z.lunas}/{z.allLen} {t('status.lunas')} ({z.pct}%)
-            </div>
-          </div>
+      </div>
+      <div className={s.bars} role="img" aria-label={t('dashboard.incomeTrend')}>
+        {d.history.map((h, i) => (
+          <i
+            key={`${h.y}-${h.m}`}
+            style={{
+              height: `${max > 0 ? Math.round((h.total / max) * 100) : 0}%`,
+              opacity: +(0.4 + i * 0.12).toFixed(2),
+            }}
+          />
         ))}
-      </motion.div>
+      </div>
+    </Card>
+  );
+}
 
-      {/* Belum bayar — enhanced */}
-      <motion.div variants={itemVariants} style={{
-        ...cardBase,
-        borderColor: p.krsBelum + p.slkBelum > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
-      }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:'var(--fs-body)', fontWeight:700, color:'var(--txt)' }}>
-            <Clock size={14} style={{ color:'var(--c-belum)' }} /> {t('dashboard.unpaidTitle')} {p.bulanLbl}
+export function InsightCard({ d }: { d: VM }) {
+  const t = useT();
+  const prevName = d.MONTH_NAMES[d.prevDm];
+  return (
+    <Card className={s.rise} style={rise(3)}>
+      <div className="wp-t-label" style={{ marginBottom: 10 }}>{t('dashboard.insightTitle')}</div>
+      <div className={s.mini}>
+        <div>
+          <div className="wp-t-micro">{t('dashboard.insightTunggakan')}</div>
+          <div className={s.miniV} style={{ color: d.totalBelum > 0 ? 'var(--c-belum)' : 'var(--c-lunas)' }}>
+            {d.totalBelum} <span className="wp-t-cap">{t('common.members')}</span>
           </div>
-          <div style={{
-            fontSize:'var(--fs-body)', color:'var(--c-belum)', fontWeight:700,
-            background: p.krsBelum + p.slkBelum > 0 ? 'var(--c-belum-tint)' : 'transparent',
-            padding: '2px 8px', borderRadius: 'var(--r-full)',
-          }}>
-            {p.krsBelum + p.slkBelum} {t('common.members')}
-          </div>
+          {d.tunggakanDelta !== null ? (
+            <>
+              <DeltaPct value={d.tunggakanDelta} invert />{' '}
+              <span className="wp-t-micro">{t('dashboard.vs')} {prevName}</span>
+            </>
+          ) : (
+            <span className="wp-t-micro">{t('dashboard.insightNoBaseline')}</span>
+          )}
         </div>
-        <div style={{ display:'flex', gap:8, marginBottom: p.totalFree > 0 ? 8 : 0 }}>
-          {[
-            ['KRS', p.krsBelum, 'var(--c-belum)'],
-            ['SLK', p.slkBelum, 'var(--c-belum)'],
-            [t('status.lunas'), p.krsLunas + p.slkLunas, 'var(--c-lunas)'],
-          ].map(([label, val, color]) => (
-            <div key={String(label)} style={{ flex:1, background:'var(--bg3)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center', border:'1px solid var(--border)' }}>
-              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:2 }}>{label}</div>
-              <div style={{ fontSize:'var(--fs-display)', fontWeight:800, fontFamily:"var(--font-sans),sans-serif", color: String(color), lineHeight:1 }}>{val}</div>
+        <div>
+          <div className="wp-t-micro">{t('dashboard.insightLunasRatio')}</div>
+          <div className={s.miniV} style={{ color: 'var(--c-lunas)' }}>{d.lunasPctNow}%</div>
+          {d.lunasPctDelta === 0 ? (
+            <span className="wp-pct wp-pct--n">{t('dashboard.insightSame')}</span>
+          ) : (
+            <>
+              <DeltaPct value={d.lunasPctDelta} suffix={` ${t('dashboard.pointsShort')}`} />{' '}
+              <span className="wp-t-micro">{t('dashboard.vs')} {prevName}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+export function ZoneCards({ d }: { d: VM }) {
+  const t = useT();
+  const customZones = useAppStore(st => st.settings.customZones);
+  return (
+    <div className={clsx(s.zones, s.rise)} style={rise(4)}>
+      {d.zones.map(z => {
+        const color = zoneCssColor(z.zone, customZones);
+        return (
+          <Card key={z.zone}>
+            <div className={clsx('wp-t-cap', s.zoneHead)}>
+              <b style={{ color }}>{z.zone}</b>
+              {z.pct !== null && <DeltaPct value={z.pct} />}
             </div>
-          ))}
-        </div>
-        {p.totalFree > 0 && (
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--zcdim)', border:'1px solid var(--border)', borderRadius:'var(--r-sm)', padding:'7px 10px' }}>
-            <span style={{ fontSize:'var(--fs-label)', color:'var(--c-free)', display:'flex', alignItems:'center', gap:5 }}>
-              <Gift size={12} /> {t('status.free')} {p.bulanLbl}
-            </span>
-            <span style={{ fontSize:'var(--fs-body)', fontWeight:700, color:'var(--c-free)' }}>
-              {p.totalFree} {t('common.members')} <span style={{ fontSize:'var(--fs-micro)', opacity:.7 }}>(KRS:{p.krsFree} SLK:{p.slkFree})</span>
-            </span>
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
+            <div className={clsx('wp-num', s.zoneVal)} style={{ color }}>{rp(z.total)}</div>
+            <ProgressBar value={z.lunasPct} label={`${z.zone} ${t('dashboard.zoneProgress')}`} color={color} />
+            <div className="wp-t-micro" style={{ marginTop: 6 }}>
+              {z.lunas}/{z.members} {t('status.lunas')} ({z.lunasPct}%)
+            </div>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

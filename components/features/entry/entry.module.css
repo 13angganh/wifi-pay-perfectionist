@@ -1,0 +1,54 @@
+/* components/features/entry/entry.module.css — layar Entry (REDESAIN T7)
+   Padanan kelas prototype T2: .lkb .fchips .mlist .bsheet .note + selector periode. Hanya token. */
+
+.page { display: flex; flex-direction: column; gap: var(--sp-h); }
+.rise { animation: enrise .5s var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 55ms); }
+@keyframes enrise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+/* banner terkunci (T2 keputusan 7) — ketuk = buka (meneruskan ke tombol kunci Header) */
+.lkb { display: flex; align-items: center; gap: var(--sp-h); width: 100%; padding: var(--sp-h); border-radius: var(--r-lg); border: 1px solid color-mix(in srgb, var(--c-belum) 35%, var(--border)); background: color-mix(in srgb, var(--c-belum) 10%, var(--card)); color: var(--c-belum); font: inherit; font-weight: var(--fw-strong); font-size: var(--fs-caption); text-align: left; cursor: pointer; }
+.lkb svg { font-size: 20px; flex-shrink: 0; }
+.lkb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* bar atas: pemilih periode + Bayar Semua */
+.top { align-items: center; display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.period { flex: 1; min-width: 160px; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+
+/* ringkasan periode (dipertahankan dari zip: sum-bar) */
+.sum { display: flex; align-items: center; gap: var(--sp-h); }
+.sumMain { flex: 1; min-width: 0; }
+.sumVal { font-size: var(--fs-display); font-weight: 600; display: block; }
+.sumCounts { display: flex; gap: 10px; font-size: var(--fs-caption); align-items: center; flex-shrink: 0; }
+.sumCounts span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* potensi belum masuk */
+.pot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-h); border-color: color-mix(in srgb, var(--c-belum) 35%, var(--border)); }
+
+.count { font-size: var(--fs-label); color: var(--txt4); }
+
+/* daftar kartu: 1 kolom di mobile, 2 kolom di layar lebar */
+.mlist { display: flex; flex-direction: column; gap: var(--sp-2); }
+@media (min-width: 720px) { .mlist { display: grid; grid-template-columns: 1fr 1fr; align-items: start; } }
+.span2 { grid-column: 1 / -1; }
+
+/* mode pilih banyak */
+.bbar { display: flex; align-items: center; gap: 10px; padding: 10px; }
+.bbarTx { flex: 1; min-width: 0; }
+.bbarTx b { display: block; }
+.selAll { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-caption); color: var(--txt2); cursor: pointer; background: none; border: 0; font-family: inherit; padding: 4px; }
+
+/* sheet total batch: menempel di bawah area konten; di atas Bottom Nav bila navMode bottom (T6 §2 butir 7) */
+.bsheet { position: sticky; z-index: 20; margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-2); box-shadow: var(--shadow-lg); }
+.bsheetRow { display: flex; align-items: center; gap: 10px; }
+.bsheetTx { flex: 1; min-width: 0; }
+.bsheetTx .wp-num { font-size: var(--fs-heading); }
+.bnames { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: var(--sp-2); width: 100%; cursor: pointer; font-size: var(--fs-caption); color: var(--txt2); }
+.bnames:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+.bnamesTx { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl { max-height: 120px; overflow: auto; }
+.bli { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-top: 1px solid var(--border2); font-size: var(--fs-caption); }
+.bsheetNote { font-size: var(--fs-caption); color: var(--txt3); }
+/* REDESAIN T12 (F4): pemilih tanggal bayar pada mode manual */
+.bsheetDate { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bsheetDate > :last-child { flex: 0 1 11rem; min-width: 0; }

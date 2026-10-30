@@ -203,19 +203,35 @@ describe('3-tema warna tombol aksi kunci/buka (header-lock-action-btn)', () => {
 
 describe('Label versi APP_VERSION_FULL — Sidebar vs Header harus pakai fontSize+warna sama', () => {
   const ROOT = path.resolve(__dirname, '../..');
+  // REDESAIN T6: gaya label versi pindah dari inline-style ke CSS (prototype T1: `.brand span` =
+  // --fs-caption + --txt3). Aturan yang dijaga TETAP sama (bug v11.6.7→v11.6.8: Sidebar lebih redup
+  // dari Header): kedua label memakai ukuran + warna IDENTIK dan berasal dari token, bukan literal.
+  const rule = (css: string, selector: string) => {
+    const m = css.match(new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
+    return m ? m[1] : '';
+  };
+  const layoutCss = fs.readFileSync(path.join(ROOT, 'styles/layout.css'), 'utf8');
+  const headerCss = fs.readFileSync(path.join(ROOT, 'styles/components.header.css'), 'utf8');
 
-  it('Sidebar: label versi harus pakai var(--fs-micro) + var(--txt4), BUKAN fontSize:8 + txt5', () => {
+  it('Sidebar: label versi harus pakai token (--fs-caption + --txt3), BUKAN fontSize:8 + txt5', () => {
     const content = fs.readFileSync(path.join(ROOT, 'components/layout/Sidebar.tsx'), 'utf8');
-    // Sebelum fix v11.6.8, ini fontSize:8 (literal) + color:'var(--txt5)' — txt5 lebih redup
-    // dari txt4 yang dipakai Header, menyebabkan versi Sidebar tampak lebih gelap meski teks
-    // (APP_VERSION_FULL) sudah identik sejak awal — murni gap styling, bukan gap teks.
-    expect(content).toMatch(/fontSize:\s*'var\(--fs-micro\)'\s*,\s*color:\s*'var\(--txt4\)'\s*\}\}>\{APP_VERSION_FULL\}/);
-    expect(content).not.toMatch(/fontSize:\s*8\s*,\s*color:\s*'var\(--txt5\)'/);
+    expect(content).toMatch(/className="sb-app-ver">\{APP_VERSION_FULL\}/);
+    const r = rule(layoutCss, '.sb-app-ver');
+    expect(r).toMatch(/font-size:\s*var\(--fs-caption\)/);
+    expect(r).toMatch(/color:\s*var\(--txt3\)/);
+    expect(r).not.toMatch(/font-size:\s*8px/);
+    expect(r).not.toMatch(/--txt5/);
   });
 
-  it('Header: label versi tetap var(--fs-micro) + var(--txt4) (acuan yang disalin Sidebar)', () => {
+  it('Header: label versi memakai ukuran + warna yang SAMA dengan Sidebar (acuan: `.brand span` prototype T1)', () => {
     const content = fs.readFileSync(path.join(ROOT, 'components/layout/Header.tsx'), 'utf8');
-    expect(content).toMatch(/fontSize:\s*'var\(--fs-micro\)'\s*,\s*color:\s*'var\(--txt4\)'\s*\}\}>\{APP_VERSION_FULL\}/);
+    expect(content).toMatch(/<span>\{APP_VERSION_FULL\}<\/span>/);
+    const header = rule(headerCss, '.hdr-brand span');
+    const sidebar = rule(layoutCss, '.sb-app-ver');
+    expect(header).toMatch(/font-size:\s*var\(--fs-caption\)/);
+    expect(header).toMatch(/color:\s*var\(--txt3\)/);
+    expect(header.match(/font-size:[^;]+/)?.[0]).toBe(sidebar.match(/font-size:[^;]+/)?.[0]);
+    expect(header.match(/color:[^;]+/)?.[0]).toBe(sidebar.match(/color:[^;]+/)?.[0]);
   });
 });
 

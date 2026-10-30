@@ -1,73 +1,73 @@
 // ══════════════════════════════════════════
 // components/features/auth/RegisterForm.tsx
-// Dipecah dari app/login/page.tsx (task 1.15)
+// Dipecah dari app/login/page.tsx (task 1.15). REDESAIN T6: tampilan baru, logika di page.tsx.
 // ══════════════════════════════════════════
 'use client';
 
+import { EnvelopeSimple, User } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
+import Button from '@/components/ui/Button';
+import GoogleButton from './GoogleButton';
+import PasswordField from './PasswordField';
 
 interface Props {
-  rEmail:   string;
-  rPass:    string;
-  rName:    string;
-  rErr:     string;
-  rLoading: boolean;
-  onREmail:    (v: string) => void;
-  onRPass:     (v: string) => void;
-  onRName:     (v: string) => void;
-  onRegister:  () => void;
-  onBackToLogin: () => void;
+  name:          string;
+  email:         string;
+  pass:          string;
+  error:         string;
+  loading:       boolean;
+  googleLoading: boolean;
+  onName:        (v: string) => void;
+  onEmail:       (v: string) => void;
+  onPass:        (v: string) => void;
+  onSubmit:      () => void;
+  onGoogle:      () => void;
+  onLogin:       () => void;
 }
 
-const inputStyle: React.CSSProperties = {
-  width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
-  color:'var(--txt)', padding:'10px 14px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
-  marginBottom:14, fontFamily:"var(--font-mono),monospace", outline:'none',
-  transition:'border .2s', boxSizing:'border-box',
-};
-
-export default function RegisterForm({ rEmail, rPass, rName, rErr, rLoading, onREmail, onRPass, onRName, onRegister, onBackToLogin }: Props) {
+export default function RegisterForm(p: Props) {
   const t = useT();
-  const fields = [
-    { label: t('login.email').toUpperCase(),       type:'email'    as const, val:rEmail, set:onREmail, ph:'email@gmail.com',       ac:'email'            as const },
-    { label: t('login.passwordMin6').toUpperCase(), type:'password' as const, val:rPass,  set:onRPass,  ph:'••••••••',               ac:'current-password' as const },
-    { label: t('login.username').toUpperCase(),    type:'text'     as const, val:rName,  set:onRName,  ph:t('login.namePlaceholder'), ac:'name'            as const },
-  ];
-
   return (
-    <div>
-      <div style={{ textAlign:'center', marginBottom:20 }}>
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-display)', color:'var(--txt)', letterSpacing:'-0.02em' }}>
-          {t('login.createAccount')}
-        </div>
+    <div className="auth-form">
+      <div className="auth-head">
+        <b className="wp-t-display">{t('login.createAccount')}</b>
       </div>
 
-      {fields.map(f => (
-        <div key={f.label}>
-          <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.07em', marginBottom:6 }}>{f.label}</div>
-          <input
-            style={inputStyle} type={f.type} autoComplete={f.ac} placeholder={f.ph}
-            value={f.val} onChange={e => f.set(e.target.value)}
-            onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--zc)')}
-            onBlur={e  => ((e.target as HTMLInputElement).style.borderColor = 'var(--border)')}
-          />
-        </div>
-      ))}
-
-      {rErr && <div className="lf-err">{rErr}</div>}
-      <button className="lf-btn" onClick={onRegister} disabled={rLoading}>
-        {rLoading ? t('common.loading') : t('login.registerSubmit')}
-      </button>
-
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-label)', color:'var(--txt5)', position:'relative' }}>
-        <div style={{ position:'absolute', left:0, top:'50%', right:0, height:1, background:'var(--border)' }} />
-        <span style={{ background:'var(--bg2)', padding:'0 10px', position:'relative' }}>{t('login.or')}</span>
+      <div className="wp-inpw">
+        <span className="wp-inpw__ico" aria-hidden="true"><User size="1em" /></span>
+        <input
+          className="wp-inp" type="text" autoComplete="name"
+          placeholder={t('login.namePlaceholder')} aria-label={t('login.username')}
+          value={p.name} onChange={e => p.onName(e.target.value)}
+        />
       </div>
-      <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', textAlign:'center' }}>
+      <div className="wp-inpw">
+        <span className="wp-inpw__ico" aria-hidden="true"><EnvelopeSimple size="1em" /></span>
+        <input
+          className="wp-inp" type="email" inputMode="email" autoComplete="email"
+          placeholder="email@gmail.com" aria-label={t('login.email')}
+          value={p.email} onChange={e => p.onEmail(e.target.value)}
+        />
+      </div>
+      <PasswordField
+        value={p.pass} onChange={p.onPass} onEnter={p.onSubmit}
+        autoComplete="new-password" ariaLabel={t('login.passwordMin6')}
+      />
+
+      {p.error && <div className="auth-err" role="alert">{p.error}</div>}
+
+      <Button variant="primary" size="lg" block onClick={p.onSubmit} loading={p.loading}>
+        {p.loading ? t('common.loading') : t('login.registerSubmit')}
+      </Button>
+
+      <div className="wp-sep">{t('login.orRegisterWith')}</div>
+      <GoogleButton onClick={p.onGoogle} loading={p.googleLoading} />
+
+      <div className="auth-switch">
         {t('login.hasAccount')}{' '}
-        <span style={{ color:'var(--zc)', cursor:'pointer' }} onClick={onBackToLogin}>
+        <button type="button" className="wp-lnk" style={{ fontSize: 'var(--fs-body)' }} onClick={p.onLogin}>
           {t('login.loginHere')}
-        </span>
+        </button>
       </div>
     </div>
   );

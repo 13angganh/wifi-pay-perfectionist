@@ -1,0 +1,21 @@
+/* components/modals/riwayat.module.css — RiwayatModal (REDESAIN T8, prototype T3 keputusan 8). Hanya token. */
+.yrNav { display: flex; justify-content: space-between; align-items: center; }
+.yrTx { font-size: var(--fs-body); font-weight: 700; }
+.sum { display: flex; align-items: center; gap: var(--sp-2); padding: 10px; }
+.sumTx { flex: 1; }
+.sumVal { color: var(--zc); flex: none; font-weight: 700; }
+.stt { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+.stt > div { background: var(--bg3); border-radius: var(--r-md); padding: 8px 6px; text-align: center; min-width: 0; }
+.stl { display: flex; gap: 3px; align-items: center; justify-content: center; margin-bottom: 3px; }
+.stv { display: block; font-weight: 800; }
+.stSm { font-size: var(--fs-caption); }
+.rows { display: flex; flex-direction: column; }
+.rwr { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: 0; border-top: 1px solid var(--border2); background: none; color: var(--txt); font: inherit; text-align: left; cursor: pointer; }
+.rwr:hover { background: var(--bg3); }
+.rwr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.rwMon { font-size: var(--fs-body); }
+.rwTgl { display: block; margin-top: 1px; }
+.st { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-caption); }
+.stLunas { color: var(--c-lunas); }
+.stBelum { color: var(--c-belum); }
+.stAmt { color: var(--c-lunas); font-size: var(--fs-caption); font-weight: 600; }

@@ -1,0 +1,25 @@
+/* components/modals/globalSearch.module.css — GlobalSearch (REDESAIN T11). Semua nilai dari token tema. */
+.field { position: sticky; top: 0; z-index: 1; background: var(--bg2); padding-bottom: var(--sp-2); }
+.clear { display: flex; background: none; border: 0; color: inherit; cursor: pointer; padding: var(--sp-1); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.item {
+  width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); text-align: left;
+  background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--c-belum);
+  border-radius: var(--r-md); color: var(--txt); font: inherit; cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.item:hover { border-color: var(--border2); box-shadow: var(--shadow-sm); }
+.item:focus-visible { outline: 2px solid var(--zc); outline-offset: 2px; }
+.item[data-status='free'] { border-left-color: var(--c-free); }
+.item[data-status='paid'] { border-left-color: var(--c-lunas); }
+.item[data-status='na'] { border-left-color: var(--txt4); }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.name { font-family: var(--font-mono), monospace; font-size: var(--fs-data); font-weight: 600; overflow-wrap: anywhere; }
+.sub { font-family: var(--font-mono), monospace; font-size: var(--fs-micro); color: var(--txt4); }
+.end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.st { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-label); font-weight: 600; }
+.st[data-status='free'] { color: var(--c-free); }
+.st[data-status='paid'] { color: var(--c-lunas); }
+.st[data-status='unpaid'] { color: var(--c-belum); }
+.st[data-status='na'] { color: var(--txt3); }
+.tarif { font-size: var(--fs-micro); color: var(--txt4); }

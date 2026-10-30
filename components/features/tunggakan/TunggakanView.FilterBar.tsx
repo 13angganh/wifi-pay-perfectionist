@@ -1,57 +1,61 @@
 // ══════════════════════════════════════════
-// components/features/tunggakan/TunggakanView.FilterBar.tsx
-// Dipecah dari TunggakanView.tsx (task 1.15)
-// Mode tabs + aging filter bar
+// components/features/tunggakan/TunggakanView.FilterBar.tsx — REDESAIN T8 (T3 keputusan 9, 11)
+// Dipakai ulang (sebelumnya yatim): pilih mode (Nunggak / Rajin / Gratis, dengan jumlah) dan, hanya di mode
+// Nunggak, chip aging (Total / Baru / Segera / Kritis + jumlah). Komponen presentasi: state dimiliki TunggakanView.
 // ══════════════════════════════════════════
 'use client';
 
-import { AlertTriangle, Star, Gift, AlertCircle, Flame, Clock } from 'lucide-react';
+import { Vis } from '@/components/ui/CardFilter';
+import { Clock, Fire, Gift, Star, Warning, WarningCircle } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
-
-export type TMode = 'nakal' | 'rajin' | 'free';
-export type AgingFilter = 'total' | 'baru' | 'segera' | 'kritis';
+import { Segmented } from '@/components/ui/Segmented';
+import { FilterChip, FilterChips } from '@/components/ui/Chip';
+import type { AgingFilter, TunggakanMode } from '@/hooks/useTunggakan';
 
 interface Props {
-  mode:         TMode;
-  agingFilter:  AgingFilter;
-  counts:       { nakal: number; rajin: number; free: number };
-  agingCounts:  { total: number; baru: number; segera: number; kritis: number };
-  onMode:       (m: TMode) => void;
-  onAging:      (f: AgingFilter) => void;
+  mode: TunggakanMode;
+  aging: AgingFilter;
+  counts: Record<TunggakanMode, number>;
+  agingCounts: Record<AgingFilter, number>;
+  onMode: (m: TunggakanMode) => void;
+  onAging: (f: AgingFilter) => void;
 }
 
-export default function TunggakanFilterBar({ mode, agingFilter, counts, agingCounts, onMode, onAging }: Props) {
+const AGING_COLOR = { baru: 'var(--c-warn)', segera: 'var(--zc-slk)', kritis: 'var(--c-belum)' } as const;
+
+export default function TunggakanFilterBar({ mode, aging, counts, agingCounts, onMode, onAging }: Props) {
   const t = useT();
   return (
     <>
-      {/* Mode tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:10, background:'var(--bg3)', padding:3, borderRadius:'var(--r-xl)', border:'1px solid var(--border)' }}>
-        {([
-          ['nakal', <AlertCircle size={12} key="a" />, t('tunggakan.nakal'), counts.nakal, 'var(--c-belum)'],
-          ['rajin', <Star        size={12} key="b" />, t('tunggakan.rajin'), counts.rajin, 'var(--c-lunas)'],
-          ['free',  <Gift        size={12} key="c" />, t('status.free'),    counts.free,  'var(--c-free)'],
-        ] as [TMode, React.ReactNode, string, number, string][]).map(([m, icon, label, cnt, color]) => (
-          <button key={m} onClick={() => onMode(m)} style={{ flex:1, padding:'7px 4px', borderRadius:'var(--r-lg)', border:'none', cursor:'pointer', fontSize:'var(--fs-caption)', fontWeight:600, minHeight:36, background: mode === m ? color : 'transparent', color: mode === m ? (m === 'rajin' ? '#0a0c12' : '#fff') : 'var(--txt3)', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all var(--t-fast)' }}>
-            {icon} {label} ({cnt})
-          </button>
-        ))}
-      </div>
+      <Segmented<TunggakanMode>
+        ariaLabel={t('tunggakan.modeAria')}
+        value={mode}
+        onChange={onMode}
+        options={[
+          { value: 'nakal', label: <><WarningCircle aria-hidden="true" /> {t('tunggakan.nakal')}</>, count: counts.nakal, color: 'var(--c-belum)' },
+          { value: 'rajin', label: <><Star aria-hidden="true" /> {t('tunggakan.rajin')}</>,           count: counts.rajin, color: 'var(--c-lunas)' },
+          { value: 'free',  label: <><Gift aria-hidden="true" /> {t('status.free')}</>,               count: counts.free,  color: 'var(--c-free)' },
+        ]}
+      />
 
-      {/* Aging filter — hanya di mode nakal */}
       {mode === 'nakal' && (
-        <div style={{ display:'flex', gap:6, marginBottom:10, overflowX:'auto', paddingBottom:2 }}>
+        <Vis screen="tunggakan" id="chips">
+        <FilterChips ariaLabel={t('tunggakan.agingAria')}>
+          <FilterChip active={aging === 'total'} count={agingCounts.total} onClick={() => onAging('total')}>
+            <Warning aria-hidden="true" /> {t('tunggakan.filter.total')}
+          </FilterChip>
           {([
-            ['total',  <AlertTriangle size={11} key="at" />, t('tunggakan.filter.total'),    agingCounts.total,  'var(--txt2)',   'var(--bg3)',                 'var(--border)'],
-            ['baru',   <Clock         size={11} key="cl" />, t('tunggakan.filter.new'),      agingCounts.baru,   '#FFC107',      '#1a1500',                   '#FFC10733'],
-            ['segera', <AlertCircle   size={11} key="ac" />, t('tunggakan.filter.soon'),     agingCounts.segera, '#F97316',      '#1a0d00',                   '#F9731633'],
-            ['kritis', <Flame         size={11} key="fl" />, t('tunggakan.filter.critical'), agingCounts.kritis, 'var(--c-belum)','rgba(239,68,68,0.08)',     'rgba(239,68,68,0.25)'],
-          ] as [AgingFilter, React.ReactNode, string, number, string, string, string][]).map(([key, icon, label, cnt, textColor, bgColor, borderColor]) => (
-            <button key={key} onClick={() => onAging(key)} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:'var(--r-full)', border:`1px solid ${agingFilter === key ? borderColor : 'var(--border)'}`, background: agingFilter === key ? bgColor : 'transparent', color: agingFilter === key ? textColor : 'var(--txt4)', fontSize:'var(--fs-caption)', fontWeight: agingFilter === key ? 700 : 500, cursor:'pointer', whiteSpace:'nowrap', minHeight:36, transition:'all var(--t-fast)', flexShrink:0 }}>
-              {icon} {label}
-              <span style={{ background: agingFilter === key ? 'rgba(0,0,0,0.2)' : 'var(--bg3)', borderRadius:'var(--r-full)', padding:'1px 7px', fontSize:'var(--fs-label)', fontWeight:700 }}>{cnt}</span>
-            </button>
+            ['baru', Clock, t('tunggakan.filter.new')],
+            ['segera', WarningCircle, t('tunggakan.filter.soon')],
+            ['kritis', Fire, t('tunggakan.filter.critical')],
+          ] as const).map(([key, Icon, label]) => (
+            <FilterChip key={key} color={AGING_COLOR[key]} active={aging === key}
+              count={agingCounts[key]} onClick={() => onAging(key)}>
+              <Icon aria-hidden="true" /> {label}
+            </FilterChip>
           ))}
-        </div>
+        </FilterChips>
+        </Vis>
       )}
     </>
   );

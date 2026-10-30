@@ -80,9 +80,9 @@ export interface ViewSlice {
 
   // Log
   logSearch:    string;
-  logType:      'all' | 'pay';
+  logType:      'all' | 'pay' | 'data' | 'sys';
   setLogSearch: (s: string) => void;
-  setLogType:   (t: 'all' | 'pay') => void;
+  setLogType:   (t: 'all' | 'pay' | 'data' | 'sys') => void;
 
   // Batch action (Entry)
   batchMode:        boolean;

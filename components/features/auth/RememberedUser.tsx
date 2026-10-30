@@ -1,41 +1,42 @@
 // ══════════════════════════════════════════
 // components/features/auth/RememberedUser.tsx
-// Dipecah dari app/login/page.tsx (task 1.15)
+// Dipecah dari app/login/page.tsx (task 1.15). REDESAIN T6: tampilan baru, logika di page.tsx.
 // ══════════════════════════════════════════
 'use client';
 
-import Image from 'next/image';
 import { useT } from '@/hooks/useT';
+import Button from '@/components/ui/Button';
+import GoogleButton from './GoogleButton';
 
 interface Props {
-  greeterName: string | null | undefined;
-  loading:     boolean;
-  error:       string;
-  onContinue:  () => void;
-  onSwitch:    () => void;
+  greeterName:   string | null | undefined;
+  loading:       boolean;
+  googleLoading: boolean;
+  error:         string;
+  onContinue:    () => void;
+  onGoogle:      () => void;
+  onSwitch:      () => void;
 }
 
-export default function RememberedUser({ greeterName, loading, error, onContinue, onSwitch }: Props) {
+export default function RememberedUser({ greeterName, loading, googleLoading, error, onContinue, onGoogle, onSwitch }: Props) {
   const t = useT();
   return (
-    <div>
-      <div style={{ textAlign:'center', marginBottom:24 }}>
-        <div style={{ width:56, height:56, borderRadius:14, overflow:'hidden', margin:'0 auto 14px', boxShadow:'0 4px 16px rgba(201,149,42,0.25)' }}>
-          <Image src="/icon-512.png" alt="WiFi Pay" width={512} height={512} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-        </div>
-        {/* v11.7.1: 22px literal disengaja — sama kelas ukuran dgn LoadingScreen.tsx, lihat penjelasan lengkap di sana */}
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:22, color:'var(--txt)', letterSpacing:'-0.02em', lineHeight:1.2, marginBottom:6 }}>
+    <div className="auth-form">
+      <div className="auth-head">
+        <b className="wp-t-display">
           {greeterName ? <>{t('login.greeting')}, {greeterName}</> : <>{t('login.greetingNew')}</>}
-        </div>
+        </b>
       </div>
-      <button className="lf-btn" onClick={onContinue} disabled={loading}>
+
+      <Button variant="primary" size="lg" block onClick={onContinue} loading={loading}>
         {loading ? t('common.loading') : t('login.continue')}
-      </button>
-      <div style={{ textAlign:'center', margin:'12px 0', fontSize:'var(--fs-caption)', color:'var(--txt4)' }}>{t('login.or')}</div>
-      <button className="lf-btn secondary" onClick={onSwitch} style={{ fontSize:'var(--fs-body)' }}>
-        {t('login.changeAccount')}
-      </button>
-      {error && <div className="lf-err">{error}</div>}
+      </Button>
+
+      <div className="wp-sep">{t('login.or')}</div>
+      <GoogleButton onClick={onGoogle} loading={googleLoading} />
+      <Button variant="secondary" size="lg" block onClick={onSwitch}>{t('login.changeAccount')}</Button>
+
+      {error && <div className="auth-err" role="alert">{error}</div>}
     </div>
   );
 }

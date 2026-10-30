@@ -8,7 +8,7 @@ import { test, expect, type Page } from '@playwright/test';
 const SEL = {
   emailInput: 'input[type="email"]',
   passInput:  'input[type="password"]',
-  loginBtn:   'button.lf-btn',
+  loginBtn:   '[data-testid="login-submit"]', // REDESAIN T6: .lf-btn diganti Button primitive
 } as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ test.describe('Login gagal', () => {
 
     // Pesan error harus muncul (teks error atau aria-live)
     const errorVisible =
-      (await page.locator('p.lf-err').count()) > 0 ||
+      (await page.locator('[data-testid="login-error"]').count()) > 0 ||
       (await page.getByText(/salah|tidak|gagal|invalid|wrong/i).count()) > 0;
     expect(errorVisible).toBe(true);
   });

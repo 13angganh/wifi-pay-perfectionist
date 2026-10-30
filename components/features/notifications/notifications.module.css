@@ -1,0 +1,14 @@
+/* components/features/notifications/notifications.module.css — Pusat Notifikasi (REDESAIN T10, prototype T5). Hanya token. */
+.wrap { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 60vh; overflow-y: auto; }
+.tools { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: 0 var(--sp-1); }
+.cap { color: var(--txt3); font-size: var(--fs-caption); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.item { display: flex; align-items: center; gap: var(--sp-h); width: 100%; padding: var(--sp-2) var(--sp-1); background: none; border: 0; border-bottom: 1px solid var(--border2); color: inherit; text-align: left; cursor: pointer; font: inherit; border-radius: var(--r-sm); }
+.item:hover { background: var(--bg3); }
+.item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.unread .tx b { font-weight: var(--fw-title); }
+.tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tx b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-body); font-weight: var(--fw-strong); }
+.tx small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--txt3); font-size: var(--fs-caption); }
+.time { color: var(--txt4); font-size: var(--fs-label); flex-shrink: 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }

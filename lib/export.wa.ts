@@ -5,32 +5,42 @@
 
 import type { AppData } from '@/types';
 import { MONTHS } from './constants';
-import { getPay, isFree, getZoneTotal, isLunas, getArrears } from './payment';
+import { isFree, getZoneTotal, getMonthStatus, getArrears } from './payment';
+import { getMembersForZone } from './member';
+import { zonesFromData } from './export.excel';
 
 // ── WA Summary ──
-export function doWASummary(data: AppData, year?: number, month?: number): void {
+// REDESAIN T10 (perbaikan zona kustom): ringkasan satu blok per zona aktif (bukan KRS/SLK tetap).
+// `zones` = zona aktif (getAllActiveZones); bila tidak diberikan dipakai zonesFromData(data).
+// Teks pesan WA ke luar aplikasi tetap persis format zip (termasuk penanda di pesan) — hanya bagian per-zona yang dinamis.
+// REDESAIN T12: member Belum terdaftar / Nonaktif pada bulan itu (tanpa pembayaran) = N/A: tidak masuk "Belum Bayar"
+// maupun "Ada Tunggakan" (getArrears hanya menghitung bulan berstatus "belum"). Pendapatan tetap dari pembayaran.
+export function doWASummary(data: AppData, year?: number, month?: number, zones?: string[]): void {
   const now = new Date();
   const dy  = year  ?? now.getFullYear();
   const dm  = month ?? now.getMonth();
   const bulan = `${MONTHS[dm]} ${dy}`;
+  const list = zones && zones.length ? zones : zonesFromData(data);
 
-  const krsTotal = getZoneTotal(data,'KRS',dy,dm);
-  const slkTotal = getZoneTotal(data,'SLK',dy,dm);
-  const total    = krsTotal + slkTotal;
-
-  const krsLunas  = (data.krsMembers||[]).filter(m => isLunas(data,'KRS',m,dy,dm) && !isFree(data,'KRS',m,dy,dm)).length;
-  const slkLunas  = (data.slkMembers||[]).filter(m => isLunas(data,'SLK',m,dy,dm) && !isFree(data,'SLK',m,dy,dm)).length;
-  const krsBelum  = (data.krsMembers||[]).filter(m => getPay(data,'KRS',m,dy,dm)===null && !isFree(data,'KRS',m,dy,dm)).length;
-  const slkBelum  = (data.slkMembers||[]).filter(m => getPay(data,'SLK',m,dy,dm)===null && !isFree(data,'SLK',m,dy,dm)).length;
+  const rows = list.map(z => {
+    const mems = getMembersForZone(z, data);
+    return {
+      z,
+      total:  getZoneTotal(data, z, dy, dm),
+      lunas:  mems.filter(m => getMonthStatus(data, z, m, dy, dm) === 'lunas').length,
+      belum:  mems.filter(m => getMonthStatus(data, z, m, dy, dm) === 'belum').length,
+      tunggak: mems.filter(m => getArrears(data, z, m, dy, dm).filter(u => !isFree(data, z, m, u.y, u.mi)).length > 0).length,
+    };
+  });
+  const total = rows.reduce((s, r) => s + r.total, 0);
 
   const opsData   = data.operasional?.[`${dy}_${dm}`] || { items:[] };
   const totalOps  = (opsData.items||[]).reduce((s,it) => s+(+it.nominal||0), 0);
   const netIncome = total - totalOps;
+  const fmt = (v: number) => (v * 1000).toLocaleString('id-ID');
+  const perZone = (pick: (r: typeof rows[number]) => string | number) => rows.map(r => `${r.z}: ${pick(r)}`).join(' | ');
 
-  const tunggakKRS = (data.krsMembers||[]).filter(m => getArrears(data,'KRS',m,dy,dm).filter(u => !isFree(data,'KRS',m,u.y,u.mi)).length > 0).length;
-  const tunggakSLK = (data.slkMembers||[]).filter(m => getArrears(data,'SLK',m,dy,dm).filter(u => !isFree(data,'SLK',m,u.y,u.mi)).length > 0).length;
-
-  const msg = `📶 *WiFi Pay – Rekap ${bulan}*\n\n💰 *Pendapatan*\n  KRS : Rp ${(krsTotal*1000).toLocaleString('id-ID')}\n  SLK : Rp ${(slkTotal*1000).toLocaleString('id-ID')}\n  Total: Rp ${(total*1000).toLocaleString('id-ID')}\n\n✅ *Lunas*\n  KRS: ${krsLunas} | SLK: ${slkLunas}\n\n⚠️ *Belum Bayar ${bulan}*\n  KRS: ${krsBelum} | SLK: ${slkBelum}\n\n🔴 *Ada Tunggakan*\n  KRS: ${tunggakKRS} | SLK: ${tunggakSLK}\n\n💸 Operasional : Rp ${(totalOps*1000).toLocaleString('id-ID')}\n✨ Bersih         : Rp ${(netIncome*1000).toLocaleString('id-ID')}\n\n_WiFi Pay – ${new Date().toLocaleString('id-ID')}_`;
+  const msg = `📶 *WiFi Pay – Rekap ${bulan}*\n\n💰 *Pendapatan*\n${rows.map(r => `  ${r.z} : Rp ${fmt(r.total)}`).join('\n')}\n  Total: Rp ${fmt(total)}\n\n✅ *Lunas*\n  ${perZone(r => r.lunas)}\n\n⚠️ *Belum Bayar ${bulan}*\n  ${perZone(r => r.belum)}\n\n🔴 *Ada Tunggakan*\n  ${perZone(r => r.tunggak)}\n\n💸 Operasional : Rp ${fmt(totalOps)}\n✨ Bersih         : Rp ${fmt(netIncome)}\n\n_WiFi Pay – ${new Date().toLocaleString('id-ID')}_`;
 
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }

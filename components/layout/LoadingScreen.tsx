@@ -1,118 +1,21 @@
 // components/layout/LoadingScreen.tsx
-// FIX 5: Loading screen dengan logo WiFi Pay + nama + animasi loading di bawah
+// REDESAIN T6: Splash/Loading — logo asli (AppLogo), nama, versi, tagline, progres + teks.
 'use client';
 
-import Image from 'next/image';
+import AppLogo from '@/components/ui/AppLogo';
 import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
+import { useT } from '@/hooks/useT';
 
 export default function LoadingScreen() {
+  const t = useT();
   return (
-    <div style={{
-      position:'fixed', inset:0,
-      background:'var(--bg)',
-      zIndex:9999,
-      display:'flex', flexDirection:'column',
-      alignItems:'center', justifyContent:'center',
-      gap:0,
-    }}>
-      {/* Logo */}
-      <div style={{
-        width:72, height:72,
-        borderRadius:'var(--r-xl)',
-        overflow:'hidden',
-        border:'1px solid rgba(201,149,42,0.25)',
-        boxShadow:'0 4px 24px rgba(201,149,42,0.18)',
-        marginBottom:14,
-        animation:'lsLogo 0.5s ease-out both',
-      }}>
-        <Image
-          src="/icon-192.png"
-          alt={APP_NAME}
-          width={192}
-          height={192}
-          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
-          priority
-        />
-      </div>
-
-      {/* App name */}
-      <div style={{
-        fontFamily:'var(--font-sans),sans-serif',
-        fontWeight:800,
-        // v11.7.1: sengaja TIDAK dipetakan ke --fs-display (18px) — selisih 4px terlalu
-        // jauh utk dianggap "sama". 22px ini konsisten dipakai di 3 tempat serupa (splash
-        // screen, PinLock, RememberedUser "Selamat Datang Kembali") — kelas ukuran khusus
-        // utk nama/judul besar di layar full-screen standalone, bukan konten biasa.
-        fontSize:22,
-        color:'var(--txt)',
-        letterSpacing:'.02em',
-        animation:'lsFade 0.5s 0.1s ease-out both',
-        opacity:0,
-      }}>
-        {APP_NAME}
-      </div>
-
-      {/* Tagline */}
-      <div style={{
-        fontSize:'var(--fs-caption)',
-        color:'var(--txt4)',
-        marginTop:4,
-        marginBottom:32,
-        letterSpacing:'.06em',
-        animation:'lsFade 0.5s 0.2s ease-out both',
-        opacity:0,
-      }}>
-        {APP_VERSION_FULL}
-      </div>
-
-      {/* Progress bar */}
-      <div style={{
-        width:96, height:3,
-        background:'var(--bg3)',
-        borderRadius:'var(--r-full)',
-        overflow:'hidden',
-        animation:'lsFade 0.4s 0.3s ease-out both',
-        opacity:0,
-      }}>
-        <div style={{
-          height:'100%',
-          background:'linear-gradient(90deg,#C9952A,#E8B84B)',
-          borderRadius:'var(--r-full)',
-          animation:'lsBar 1.8s 0.4s var(--ease-smooth,ease) forwards',
-          width:0,
-        }} />
-      </div>
-
-      {/* Dots */}
-      <div style={{ display:'flex', gap:5, marginTop:12, animation:'lsFade 0.4s 0.4s ease-out both', opacity:0 }}>
-        {[0,1,2].map(i => (
-          <div key={i} style={{
-            width:4, height:4, borderRadius:'50%',
-            background:'#C9952A',
-            animation:`lsDot 1.2s ease-in-out ${i * 0.2}s infinite`,
-            opacity:.3,
-          }} />
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes lsLogo {
-          from { opacity: 0; transform: scale(0.8) translateY(8px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes lsFade {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes lsBar {
-          0%   { width: 0%; }
-          100% { width: 100%; }
-        }
-        @keyframes lsDot {
-          0%, 100% { opacity: .3; transform: translateY(0); }
-          50%       { opacity: 1;  transform: translateY(-3px); }
-        }
-      `}</style>
+    <div className="splash" role="status" aria-live="polite" aria-label={t('splash.loading')}>
+      <AppLogo size="xl" priority className="splash__logo" />
+      <div className="splash__name">{APP_NAME}</div>
+      <div className="splash__ver">{APP_VERSION_FULL}</div>
+      <div className="splash__tag">{t('splash.tagline')}</div>
+      <div className="wp-prog" aria-hidden="true"><i /></div>
+      <div className="splash__txt">{t('splash.loading')}</div>
     </div>
   );
 }

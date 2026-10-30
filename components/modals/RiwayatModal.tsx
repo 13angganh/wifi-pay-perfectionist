@@ -1,14 +1,25 @@
-// components/modals/RiwayatModal.tsx — Fase 3: Framer Motion bottom sheet
+// components/modals/RiwayatModal.tsx — REDESAIN T8 (prototype T3 keputusan 8): bottom sheet pada primitive Sheet.
+// Perilaku zip dipertahankan: state dari store (riwayatZone/Name/Year), tab tahun + prev/next, ringkasan tahun,
+// statistik lintas tahun (total bulan, total bayar, mulai), 12 baris bulan; ketuk baris = buka kartu member itu
+// di Entry (setZone → setView → setEntryCard → setExpandedCard → /entry). Dipakai MemberCard, MembersView,
+// RekapView, TunggakanView (satu komponen, tanpa duplikasi).
+// REDESAIN T12: bulan Belum terdaftar / Nonaktif tanpa pembayaran tampil netral dan tidak masuk penyebut "x/n bulan lunas".
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { CalendarBlank, CaretLeft, CaretRight, Medal, TrendUp, Wallet } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { MONTHS, getYears, MONTHS_EN } from '@/lib/constants';
-import { getPay, isFree, isLunas, rp } from '@/lib/helpers';
-import { ChevronLeft, ChevronRight, X, Gift, CheckCircle2, XCircle, Calendar, TrendingUp, Banknote, Award } from 'lucide-react';
+import { getPay, isFree, isLunas, rp, getMonthStatus, isNotApplicable } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { AnimatePresence, motion } from 'framer-motion';
+import { FilterChip, FilterChips } from '@/components/ui/Chip';
+import { IconButton } from '@/components/ui/IconButton';
+import { IconTile } from '@/components/ui/IconTile';
+import { Sheet } from '@/components/ui/Sheet';
+import RiwayatMonthRow from './RiwayatModal.MonthRow';
+import s from './riwayat.module.css';
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -20,16 +31,19 @@ export default function RiwayatModal({ open, onClose }: Props) {
   } = useAppStore();
 
   const lang = settings.language ?? 'id';
+  const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;
   const t = useT();
 
   if (!riwayatName) return null;
 
-  const info     = appData.memberInfo?.[riwayatZone+'__'+riwayatName] || {};
-  const minYear  = getYears()[0];
-  const maxYear  = getYears()[getYears().length - 1];
+  const info    = appData.memberInfo?.[riwayatZone + '__' + riwayatName] || {};
+  const years   = getYears();
+  const minYear = years[0];
+  const maxYear = years[years.length - 1];
 
-  let lunas = 0; let totalVal = 0;
+  let lunas = 0; let totalVal = 0; let tracked = 0;
   for (const mi of MONTHS.keys()) {
+    if (!isNotApplicable(getMonthStatus(appData, riwayatZone, riwayatName, riwayatYear, mi))) tracked++;
     if (isLunas(appData, riwayatZone, riwayatName, riwayatYear, mi)) {
       lunas++;
       const v = getPay(appData, riwayatZone, riwayatName, riwayatYear, mi);
@@ -37,203 +51,85 @@ export default function RiwayatModal({ open, onClose }: Props) {
     }
   }
 
-  const rows = MONTHS.map((mName, mi) => {
-    const displayName = (lang === 'en' ? MONTHS_EN : MONTHS)[mi] || mName;
-    const v    = getPay(appData, riwayatZone, riwayatName, riwayatYear, mi);
-    const free = isFree(appData, riwayatZone, riwayatName, riwayatYear, mi);
-    const tgl  = (info[`date_${riwayatYear}_${mi}`] as string) || '';
-
-    let statusEl: React.ReactNode;
-    if (free) {
-      statusEl = (
-        <span style={{ color:'var(--c-free)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-          <Gift size={12} /> {t('status.free')}
-        </span>
-      );
-    } else if (v !== null && v > 0) {
-      statusEl = (
-        <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', fontWeight:600, fontFamily:"var(--font-mono),monospace" }}>
-          {rp(v)}
-        </span>
-      );
-    } else if (v === 0) {
-      statusEl = (
-        <span style={{ color:'var(--c-lunas)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-          <CheckCircle2 size={12} /> {t('rekap.accumulation')}
-        </span>
-      );
-    } else {
-      statusEl = (
-        <span style={{ color:'var(--c-belum)', fontSize:'var(--fs-caption)', display:'flex', alignItems:'center', gap:4 }}>
-          <XCircle size={12} /> {t('status.belum')}
-        </span>
-      );
-    }
-
-    return (
-      <div key={mi} className="rw-month-row" style={{ cursor:'pointer' }}
-        onClick={() => {
-          setZone(riwayatZone);
-          setView('entry');
-          setEntryCard(riwayatName, riwayatYear, mi);
-          setExpandedCard(riwayatName);
-          router.push('/entry');
-          onClose();
-        }}>
-        <div>
-          <div style={{ fontSize:'var(--fs-body)', color:'var(--txt)', fontFamily:"var(--font-mono),monospace" }}>{displayName} {riwayatYear}</div>
-          {tgl && <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginTop:1 }}>{tgl}</div>}
-        </div>
-        {statusEl}
-      </div>
-    );
-  });
-
-  const totalMonths = 12;
-
   // Statistik lintas tahun
-  let statLunas   = 0;
-  let statNominal = 0;
-  let statFirst   = '';
-  for (const yr of getYears()) {
+  let statLunas = 0; let statNominal = 0; let statFirst = '';
+  for (const yr of years) {
     for (let mi = 0; mi < 12; mi++) {
       const sv  = getPay(appData, riwayatZone, riwayatName, yr, mi);
       const sfr = isFree(appData, riwayatZone, riwayatName, yr, mi);
       if (sv !== null || sfr) {
         statLunas++;
         if (sv && sv > 0) statNominal += sv;
-        if (!statFirst) statFirst = `${(lang === 'en' ? MONTHS_EN : MONTHS)[mi]} ${yr}`;
+        if (!statFirst) statFirst = `${MONTH_NAMES[mi]} ${yr}`;
       }
     }
   }
 
+  function openInEntry(mi: number) {
+    setZone(riwayatZone);
+    setView('entry');
+    setEntryCard(riwayatName, riwayatYear, mi);
+    setExpandedCard(riwayatName);
+    router.push('/entry');
+    onClose();
+  }
+
   return (
-    <AnimatePresence>
-      {open && (
-    <motion.div
-      id="riwayat-modal"
-      style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(8px)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
-      onClick={onClose}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      leading={<IconTile icon={CalendarBlank} size="sm" />}
+      title={<>{riwayatName} <span className="wp-t-cap">({riwayatZone})</span></>}
     >
-      <motion.div
-        className="riwayat-box"
-        id="riwayat-box-inner"
-        style={{
-          background:'rgba(24,28,39,0.96)', backdropFilter:'blur(16px)',
-          border:'1px solid rgba(255,255,255,0.08)',
-          borderRadius:'var(--r-lg) var(--r-lg) 0 0',
-          boxShadow:'var(--shadow-lg)',
-          /* FIX: flex column agar header tidak ikut scroll */
-          display:'flex',
-          flexDirection:'column',
-          maxHeight:'85vh',
-          /* Override overflow-y dari CSS class — scroll ada di inner container */
-          overflowY:'hidden',
-        }}
-        onClick={e => e.stopPropagation()}
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        {/* Drag handle */}
-        <div style={{ display:'flex', justifyContent:'center', paddingTop:10, paddingBottom:6, flexShrink:0 }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
-        </div>
+      <FilterChips ariaLabel={t('common.year')}>
+        {years.map(y => (
+          <FilterChip key={y} active={y === riwayatYear} onClick={() => setRiwayatYear(y)}>{y}</FilterChip>
+        ))}
+      </FilterChips>
 
-        {/* Header — tidak ikut scroll */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0 16px 14px', flexShrink:0 }}>
-          <div style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:800, fontSize:'var(--fs-heading)', color:'var(--txt)', display:'flex', alignItems:'center', gap:8 }}>
-            <Calendar size={15} strokeWidth={1.5} color="var(--zc)" />
-            {riwayatName}
-            <span style={{ fontSize:'var(--fs-caption)', fontWeight:400, color:'var(--txt3)' }}>({riwayatZone})</span>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label={t("action.close")}
-            style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', color:'var(--txt3)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all var(--t-fast)', flexShrink:0 }}
-          >
-            <X size={14} />
-          </button>
-        </div>
+      <div className={s.yrNav}>
+        <IconButton icon={CaretLeft} label={t('riwayat.prevYear')} disabled={riwayatYear <= minYear}
+          onClick={() => riwayatYear > minYear && setRiwayatYear(riwayatYear - 1)} />
+        <b className={`wp-num ${s.yrTx}`}>{riwayatYear}</b>
+        <IconButton icon={CaretRight} label={t('riwayat.nextYear')} disabled={riwayatYear >= maxYear}
+          onClick={() => riwayatYear < maxYear && setRiwayatYear(riwayatYear + 1)} />
+      </div>
 
-        {/* Year tabs — tidak ikut scroll */}
-        <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4, padding:'0 16px 8px', flexShrink:0 }}>
-          {getYears().map(y => (
-            <button key={y} className={`rw-year-tab ${y===riwayatYear?'active':''}`} onClick={() => setRiwayatYear(y)}>{y}</button>
-          ))}
-        </div>
+      <Card variant="flat" padding="none" className={s.sum}>
+        <span className={`wp-t-cap ${s.sumTx}`}>{lunas}/{tracked} {t('riwayat.monthsPaid')}</span>
+        <b className={`wp-num ${s.sumVal}`}>{rp(totalVal)}</b>
+      </Card>
 
-        {/* Year nav — tidak ikut scroll */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10, padding:'0 16px', flexShrink:0 }}>
-          <button
-            onClick={() => riwayatYear > minYear && setRiwayatYear(riwayatYear - 1)}
-            disabled={riwayatYear <= minYear}
-            aria-label={t("riwayat.prevYear")}
-            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: riwayatYear <= minYear ? 0.4 : 1, transition:'all var(--t-fast)' }}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, fontSize:'var(--fs-body)', color:'var(--txt)' }}>{riwayatYear}</span>
-          <button
-            onClick={() => riwayatYear < maxYear && setRiwayatYear(riwayatYear + 1)}
-            disabled={riwayatYear >= maxYear}
-            aria-label={t("riwayat.nextYear")}
-            style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt2)', width:32, height:32, borderRadius:'var(--r-sm)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', opacity: riwayatYear >= maxYear ? 0.4 : 1, transition:'all var(--t-fast)' }}
-          >
-            <ChevronRight size={14} />
-          </button>
+      <div className={s.stt}>
+        <div>
+          <div className={`wp-t-micro ${s.stl}`}><Medal size={10} aria-hidden="true" /> {t('riwayat.statTotal')}</div>
+          <b className={`wp-num ${s.stv}`} style={{ color: 'var(--c-lunas)' }}>{statLunas} {t('riwayat.monthAbbr')}</b>
         </div>
+        <div>
+          <div className={`wp-t-micro ${s.stl}`}><Wallet size={10} aria-hidden="true" /> {t('riwayat.statBayar')}</div>
+          <b className={`wp-num ${s.stv} ${s.stSm}`} style={{ color: 'var(--zc)' }}>{rp(statNominal)}</b>
+        </div>
+        <div>
+          <div className={`wp-t-micro ${s.stl}`}><TrendUp size={10} aria-hidden="true" /> {t('riwayat.statMulai')}</div>
+          <b className={`wp-num ${s.stv} ${s.stSm}`}>{statFirst || '—'}</b>
+        </div>
+      </div>
 
-        {/* Summary bar — tidak ikut scroll */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 12px', marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
-          <span style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', fontFamily:"var(--font-sans),sans-serif" }}>{lunas}/{totalMonths} {t('riwayat.monthsPaid')}</span>
-          <span style={{ fontFamily:"var(--font-sans),sans-serif", fontWeight:700, color:'var(--zc)' }}>{rp(totalVal)}</span>
-        </div>
-
-        {/* Statistik lintas tahun */}
-        <div style={{ display:'flex', gap:6, marginBottom:8, marginLeft:16, marginRight:16, flexShrink:0 }}>
-          <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-              <Award size={9} /> {t('riwayat.statTotal')}
-            </div>
-            <div style={{ fontSize:'var(--fs-body)', fontWeight:800, color:'var(--c-lunas)', fontFamily:"var(--font-sans),sans-serif" }}>
-              {statLunas} {t('riwayat.monthAbbr')}
-            </div>
-          </div>
-          <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-            <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-              <Banknote size={9} /> {t('riwayat.statBayar')}
-            </div>
-            <div style={{ fontSize:'var(--fs-caption)', fontWeight:800, color:'var(--zc)', fontFamily:"var(--font-mono),monospace" }}>
-              {rp(statNominal)}
-            </div>
-          </div>
-          {statFirst ? (
-            <div style={{ flex:1, background:'rgba(255,255,255,0.04)', borderRadius:'var(--r-sm)', padding:'8px 6px', textAlign:'center' }}>
-              <div style={{ fontSize:'var(--fs-micro)', color:'var(--txt4)', marginBottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
-                <TrendingUp size={9} /> {t('riwayat.statMulai')}
-              </div>
-              <div style={{ fontSize:'var(--fs-micro)', fontWeight:700, color:'var(--txt2)', fontFamily:"var(--font-sans),sans-serif", lineHeight:1.3 }}>
-                {statFirst}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Rows — HANYA bagian ini yang scroll */}
-        <div style={{ flex:1, overflowY:'auto', padding:'0 16px 20px', WebkitOverflowScrolling:'touch' as React.CSSProperties['WebkitOverflowScrolling'] }}>
-          {rows.length === 0 ? (
-            <EmptyState icon={Calendar} title={t('common.noData')} description={`${t('riwayat.noHistory')} ${riwayatYear}`} size="md" />
-          ) : rows}
-        </div>
-      </motion.div>
-    </motion.div>
-      )}
-    </AnimatePresence>
+      <div className={s.rows}>
+        {MONTH_NAMES.length === 0 ? (
+          <EmptyState icon={CalendarBlank} title={t('common.noData')} description={`${t('riwayat.noHistory')} ${riwayatYear}`} size="md" />
+        ) : MONTH_NAMES.map((displayName, mi) => (
+          <RiwayatMonthRow
+            key={mi}
+            displayName={`${displayName} ${riwayatYear}`}
+            tgl={(info[`date_${riwayatYear}_${mi}`] as string) || ''}
+            value={getPay(appData, riwayatZone, riwayatName, riwayatYear, mi)}
+            isFree={isFree(appData, riwayatZone, riwayatName, riwayatYear, mi)}
+            na={(s => (isNotApplicable(s) ? s : null))(getMonthStatus(appData, riwayatZone, riwayatName, riwayatYear, mi))}
+            onClick={() => openInEntry(mi)}
+          />
+        ))}
+      </div>
+    </Sheet>
   );
 }

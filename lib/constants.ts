@@ -2,20 +2,6 @@
 // lib/constants.ts — Konstanta global
 // ══════════════════════════════════════════
 
-import type React from 'react';
-import {
-  LayoutDashboard,
-  CreditCard,
-  BarChart3,
-  AlertCircle,
-  TrendingUp,
-  ScrollText,
-  Users,
-  Briefcase,
-  Settings,
-} from 'lucide-react';
-import type { ViewName } from '@/types';
-
 // v11.5: APP_NAME & APP_VERSION terpusat — single source of truth untuk tampilan
 // nama & versi app di seluruh UI (Header, Sidebar, LoadingScreen, halaman login,
 // halaman offline, Settings, dan footer export PDF). Sebelumnya setiap tempat
@@ -23,7 +9,7 @@ import type { ViewName } from '@/types';
 // tampil "v11.4" tanpa suffix "Next" yang dipakai di semua tempat lain).
 // Saat naik versi: HANYA ubah baris ini, seluruh app otomatis konsisten.
 export const APP_NAME         = 'WiFi Pay';
-export const APP_VERSION      = 'v11.7.1';
+export const APP_VERSION      = 'v11.10.1';
 export const APP_VERSION_SUFFIX = 'Next';
 export const APP_VERSION_FULL = `${APP_VERSION} ${APP_VERSION_SUFFIX}`; // "v11.5 Next"
 
@@ -72,27 +58,5 @@ export const DEFAULT_SLK = [
 // mobile biasa tanpa scroll vertikal sama sekali di dalam satu halaman.
 export const ROWS_PER_PAGE = 20;
 
-export const PAGE_TITLES: Record<string, string> = {
-  dashboard:   'Beranda',
-  entry:       'Entry',
-  rekap:       'Rekap',
-  tunggakan:   'Tunggakan',
-  grafik:      'Grafik',
-  log:         'Log',
-  members:     'Member',
-  operasional: 'Operasional',
-  settings:    'Pengaturan',
-};
-
-// PAGE_ICON_MAP — Lucide icon components (menggantikan PAGE_ICONS emoji)
-export const PAGE_ICON_MAP: Record<ViewName, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
-  dashboard:   LayoutDashboard,
-  entry:       CreditCard,
-  rekap:       BarChart3,
-  tunggakan:   AlertCircle,
-  grafik:      TrendingUp,
-  log:         ScrollText,
-  members:     Users,
-  operasional: Briefcase,
-  settings:    Settings,
-};
+// REDESAIN T11: PAGE_TITLES dan PAGE_ICON_MAP (ikon Lucide) dihapus — nol pemakai (judul/ikon menu kini dari
+// lib/navItems.tsx + kamus i18n; ikon resmi = Phosphor).

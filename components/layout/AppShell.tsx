@@ -1,25 +1,33 @@
 // ══════════════════════════════════════════
 // components/layout/AppShell.tsx (task 1.15: dipecah)
+// REDESAIN T6: Mode Navigasi (A1: 'bottom' | 'sidebar'), Posisi Toast (A2, di Toast.tsx),
+// Header baru, banner Update/Offline/PWA bergaya baru. Logika non-visual TIDAK berubah
+// (migrasi wp-settings, idle timeout, usePWA, sync route→view, tema, auto backup, navigate).
+// AccountModal kini dimiliki shell ini (dibuka dari avatar Header ATAU kartu akun Sidebar).
 // ══════════════════════════════════════════
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { useAppStore } from '@/store/useAppStore';
 import { checkAutoBackup } from '@/lib/backup';
+import { hasAnyMembers, useEscapeClose } from './shellLogic';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { usePWA } from '@/hooks/usePWA';
 import { useOfflineDetect } from '@/hooks/useOfflineDetect';
 import AppErrorBoundary from './AppErrorBoundary';
 import Header        from './Header';
 import Sidebar       from './Sidebar';
+import BottomNav     from './BottomNav';
 import Toast         from '@/components/ui/Toast';
 import Confirm       from '@/components/ui/Confirm';
 import PinLock       from '@/components/ui/PinLock';
 import OnboardingHint from '@/components/ui/OnboardingHint';
-import { WifiOff, X } from 'lucide-react';
+import AccountModal from '@/components/modals/AccountModal';
+import AppLogo from '@/components/ui/AppLogo';
+import { Button } from '@/components/ui/Button';
+import { WifiSlash, WifiHigh, ArrowUp, X } from '@phosphor-icons/react';
 import type { ViewName } from '@/types';
 import { useT } from '@/hooks/useT';
 
@@ -38,27 +46,15 @@ function OfflineBanner() {
   const t = useT();
 
   if (!show) return null;
+  const Icon = offline ? WifiSlash : WifiHigh;
   return (
     <div
-      style={{
-        display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-        padding:'7px 16px',
-        background: offline ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.10)',
-        borderBottom: offline ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(34,197,94,0.2)',
-        transition:'background var(--t-base), border-color var(--t-base)',
-      }}
+      className={`net-banner ${offline ? 'net-banner--off' : 'net-banner--on'}`}
       role="status"
       aria-live="polite"
-      aria-label={offline ? t('app.offline') : t('app.backOnline')}
     >
-      <WifiOff size={13} strokeWidth={1.5} color={offline ? 'var(--c-belum)' : 'var(--c-lunas)'} />
-      <span style={{
-        fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-body)',
-        color: offline ? 'var(--c-belum)' : 'var(--c-lunas)',
-        fontWeight:500,
-      }}>
-        {offline ? t('app.offline') : t('app.backOnline')}
-      </span>
+      <Icon size={16} weight="fill" aria-hidden="true" />
+      <span>{offline ? t('app.offline') : t('app.backOnline')}</span>
     </div>
   );
 }
@@ -70,8 +66,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const {
     sidebarOpen, setSidebar, setView, theme, appData,
     setDeferredPrompt, showUpdateBanner,
-    deferredPrompt, settings,
+    deferredPrompt, settings, navMode,
   } = useAppStore();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const t = useT();
 
@@ -81,6 +78,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // scroll cepat di halaman berat seperti Rekap (tabel 100+ baris) → terlihat seperti jank/delay.
   const [showScrollFade, setShowScrollFade] = useState(true);
   const scrollFadeRaf = useRef<number | null>(null);
+  const textSize = useAppStore(st => st.textSize);
+  useEffect(() => { document.documentElement.dataset.textSize = textSize; }, [textSize]);
   useEffect(() => () => { if (scrollFadeRaf.current !== null) cancelAnimationFrame(scrollFadeRaf.current); }, []);
   function handleContentScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
@@ -119,11 +118,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Auto backup
   const backupChecked = useRef(false);
   useEffect(() => {
-    if (!backupChecked.current && appData.krsMembers?.length) {
+    // T11: member di zona MANA PUN memicu cek auto-backup (dulu hanya krsMembers → zona kustom diabaikan)
+    if (!backupChecked.current && hasAnyMembers(appData, settings)) {
       backupChecked.current = true;
       checkAutoBackup(appData);
     }
-  }, [appData]);
+  }, [appData, settings]);
+
+  // T11 (a11y): Esc menutup drawer Sidebar
+  const closeSidebar = useCallback(() => setSidebar(false), [setSidebar]);
+  useEscapeClose(sidebarOpen, closeSidebar);
+
+  // Tinggi banner Update → CSS var global (dipakai posisi toast Atas & offset kontainer)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--banner-h', showUpdateBanner ? '44px' : '0px');
+    return () => { document.documentElement.style.setProperty('--banner-h', '0px'); };
+  }, [showUpdateBanner]);
 
   const navigate = useCallback((v: ViewName) => {
     setView(v);
@@ -141,129 +151,75 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <OnboardingHint />
 
       {showUpdateBanner && (
-        <div className="update-banner">
-          <span style={{ fontSize:'var(--fs-body)', color:'var(--c-lunas)' }}>{t('app.updateAvailable')}</span>
-          <button
+        <div className="update-banner" role="status">
+          <span className="update-banner__ico" aria-hidden="true"><ArrowUp size={16} weight="bold" /></span>
+          <span className="update-banner__txt">{t('app.updateAvailable')}</span>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => navigator.serviceWorker.getRegistration().then(r => {
               r?.waiting?.postMessage({ type:'SKIP_WAITING' }); window.location.reload();
             })}
-            style={{
-              background:'var(--c-lunas)', color:'#0a0c12', border:'none',
-              padding:'6px 14px', borderRadius:6, fontSize:'var(--fs-caption)', fontWeight:700,
-              cursor:'pointer', flexShrink:0,
-            }}
           >
             {t('app.updateNow')}
-          </button>
+          </Button>
         </div>
       )}
 
-      <div style={{ display:'flex', position:'fixed', inset:0, top: showUpdateBanner ? 44 : 0 }}>
-        <div className={`sidebar-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebar(false)} />
-        <div id="sidebar" className={sidebarOpen ? 'open' : ''}>
-          <Sidebar onNavigate={navigate} />
-        </div>
-        <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
-          {/* v11.7.0: LockBanner DIHAPUS — redundan setelah Header.tsx punya indikator
-              status "Terkunci"/"Terbuka" sendiri di toolbar (lihat komentar Header.tsx).
-              Sebelumnya banner ini + status baru di Header sama2 tampil saat globalLocked,
-              menampilkan info identik 2x. User: "hilangkan saja... sudah bisa diketahui
-              dari statusnya". Import LockBanner & file komponennya jg dihapus. */}
-          <Header onToggleSidebar={() => setSidebar(!sidebarOpen)} />
+      {/* v11.7.0: LockBanner DIHAPUS — status "Terkunci"/"Terbuka" sudah ada di Header. */}
+      <div id="app-root" className="wp-app" data-nav={navMode}>
+        {navMode === 'sidebar' && (
+          <>
+            <div className={`sidebar-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebar(false)} />
+            <div id="sidebar" className={sidebarOpen ? 'open' : ''}>
+              <Sidebar onNavigate={navigate} onOpenAccount={() => setAccountOpen(true)} />
+            </div>
+          </>
+        )}
+        <div className="wp-col">
+          <Header onToggleSidebar={() => setSidebar(!sidebarOpen)} onOpenAccount={() => setAccountOpen(true)} />
           <OfflineBanner />
-          <div style={{ flex:1, position:'relative', display:'flex', flexDirection:'column', minHeight:0 }}>
+          <div className="wp-content-wrap">
             <div
               id="content"
-              style={{
-                flex:1, overflowY:'auto',
-                padding:'12px 12px 0',
-                paddingBottom:'max(24px, env(safe-area-inset-bottom))',
-                background:'var(--bg)',
-                overscrollBehavior:'contain' as React.CSSProperties['overscrollBehavior'],
-              }}
               onScroll={handleContentScroll}
             >
               {children}
             </div>
             {/* Scroll shadow — gradient bawah menandakan ada konten lebih */}
-            {showScrollFade && (
-              <div
-                aria-hidden="true"
-                style={{
-                  position:'absolute', bottom:0, left:0, right:0, height:36,
-                  background:'linear-gradient(to bottom, transparent, var(--bg))',
-                  pointerEvents:'none',
-                  transition:'opacity var(--t-base)',
-                }}
-              />
-            )}
+            {showScrollFade && <div aria-hidden="true" className="wp-scroll-fade" />}
           </div>
         </div>
+        {navMode === 'bottom' && <BottomNav onNavigate={navigate} />}
       </div>
+
+      <AccountModal open={accountOpen} onClose={() => { setAccountOpen(false); setSidebar(false); }} />
 
       <Toast />
       <Confirm />
 
       {/* PWA Install Banner */}
       {deferredPrompt && (
-        <div style={{
-          position:'fixed', bottom:0, left:0, right:0, zIndex:9000,
-          background: theme === 'gold'
-            ? 'linear-gradient(135deg, #1C1610 0%, #141008 100%)'
-            : 'var(--bg2)',
-          borderTop: theme === 'gold'
-            ? '1px solid rgba(201,149,42,0.3)'
-            : '1px solid var(--border)',
-          padding:'12px 16px',
-          display:'flex', alignItems:'center', gap:12,
-          boxShadow: theme === 'gold'
-            ? '0 -4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,149,42,0.1)'
-            : '0 -4px 24px rgba(0,0,0,0.2)',
-        }}>
-          <div style={{
-            width:40, height:40, borderRadius:10, overflow:'hidden', flexShrink:0,
-            border: theme === 'gold' ? '1px solid rgba(201,149,42,0.3)' : '1px solid var(--border)',
-          }}>
-            <Image src="/icon-192.png" alt="WiFi Pay" width={192} height={192}
-              style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        <div className={`pwa-banner${navMode === 'bottom' ? ' pwa-banner--above-nav' : ''}`} role="region" aria-label={t('pwa.installTitle')}>
+          <AppLogo size="s" />
+          <div className="pwa-banner__tx">
+            <b className={theme === 'gold' ? 'gtxt-gold' : undefined}>{t('pwa.installTitle')}</b>
+            <span>{t('pwa.installDesc')}</span>
           </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{
-              fontSize:'var(--fs-body)', fontWeight:700,
-              color: theme === 'gold' ? 'var(--gold-bright, #E8B84B)' : 'var(--txt)',
-              fontFamily:"var(--font-sans), sans-serif",
-            }}>
-              {t('pwa.installTitle')}
-            </div>
-            <div style={{ fontSize:'var(--fs-caption)', color:'var(--txt3)', marginTop:1 }}>
-              {t('pwa.installDesc')}
-            </div>
-          </div>
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => { (deferredPrompt as any).prompt(); }} // eslint-disable-line @typescript-eslint/no-explicit-any
-            style={{
-              background: theme === 'gold'
-                ? 'linear-gradient(135deg, #C9952A 0%, #E8B84B 100%)'
-                : 'var(--zc)',
-              color: theme === 'gold' ? '#0C0A06' : '#fff',
-              border:'none', padding:'8px 16px',
-              borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)', fontWeight:700,
-              cursor:'pointer', flexShrink:0,
-              boxShadow: theme === 'gold' ? '0 2px 8px rgba(201,149,42,0.4)' : 'none',
-            }}
           >
             {t('pwa.installBtn')}
-          </button>
+          </Button>
           <button
+            type="button"
+            className="pwa-banner__x"
             onClick={() => setDeferredPrompt(null)}
-            aria-label="Tutup"
-            style={{
-              background:'transparent', border:'none',
-              color:'var(--txt4)', cursor:'pointer',
-              padding:4, display:'flex', alignItems:'center',
-            }}
+            aria-label={t('common.close')}
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       )}

@@ -4,9 +4,13 @@
 
 import { ref, set, onValue, off, DatabaseReference, update } from 'firebase/database';
 import { db } from './firebase';
-import { AppData, ActivityLog, MemberInfo, TenantInfo } from '@/types';
+import { AppData, AppSettings, ActivityLog, CustomZone, MemberInfo, MemberPeriods, TenantInfo } from '@/types';
 import { DEFAULT_KRS, DEFAULT_SLK } from './constants';
 import { cleanOldEditLogs } from './helpers';
+import { getAllActiveZones } from './member';
+import { cleanMemberPeriods, getMemberPeriods, migrateFreeMembers } from './memberPeriods';
+import type { PayDatePatch } from './payDate';
+import { zoneColor } from './design-tokens';
 
 export const DEFAULT_APP_DATA: AppData = {
   krsMembers:     [...DEFAULT_KRS],
@@ -15,7 +19,8 @@ export const DEFAULT_APP_DATA: AppData = {
   payments:       {},
   memberInfo:     {},
   activityLog:    [],
-  freeMembers:    {},
+  freeMembers:    {}, // LEGACY (T12): hanya dibaca untuk migrasi; sumber baru = memberPeriods
+  memberPeriods:  {}, // REDESAIN T12 — Terdaftar sejak, Free multi-periode, Nonaktif/Reaktivasi
   deletedMembers: {},
   operasional:    {},
   tenants:        {}, // v11.6 — fitur Penagih
@@ -47,6 +52,8 @@ export function listenDB(
         memberInfo:     val.memberInfo     || {},
         activityLog:    val.activityLog    || [],
         freeMembers:    val.freeMembers    || {},
+        // REDESAIN T12: migrasi otomatis + idempoten rekaman free lama → memberPeriods (entri baru tidak pernah ditimpa).
+        memberPeriods:  migrateFreeMembers(val.memberPeriods, val.freeMembers),
         deletedMembers: val.deletedMembers || {},
         operasional:    val.operasional    || {},
         tenants:        val.tenants        || {}, // v11.6.4 FIX — lihat catatan di atas
@@ -152,6 +159,9 @@ export function buildGranularPaymentPatch(
   userEmail: string,
   lockState: { globalLocked: boolean; lockedEntries: Record<string, boolean> },
   now: number = Date.now(),
+  // REDESAIN T12 (F4): tanggal bayar ikut ditulis dalam update() atomik yang sama (jalur nominal-diketik tidak lagi
+  // kehilangan tanggal). Tetap granular: hanya SATU kunci memberInfo/{member}/date_Y_M, bukan seluruh memberInfo.
+  payDate?: PayDatePatch,
 ): Record<string, unknown> {
   // Defense-in-depth: paymentKey harus sudah disanitasi via getKey()/fbKey() sebelum
   // sampai ke sini (yang menghapus . # $ [ ] /). Sebuah '/' mentah di key path multi-path
@@ -162,15 +172,20 @@ export function buildGranularPaymentPatch(
   if (paymentKey.includes('/')) {
     throw new Error(`persistPaymentGranular: paymentKey mengandung '/' yang tidak valid: ${paymentKey}`);
   }
+  if (payDate && (payDate.infoKey.includes('/') || payDate.dateKey.includes('/'))) {
+    throw new Error(`persistPaymentGranular: kunci tanggal bayar mengandung '/' yang tidak valid: ${payDate.infoKey}`);
+  }
   const log: ActivityLog = { ...logEntry, ts: now, user: userEmail || '—' };
   const newActivityLog = [log, ...(currentActivityLog || [])].slice(0, 200);
 
-  return {
+  const patch: Record<string, unknown> = {
     [`payments/${paymentKey}`]: paymentValue,
     activityLog:                newActivityLog,
     _globalLocked:               lockState.globalLocked,
     _lockedEntries:              lockState.lockedEntries,
   };
+  if (payDate) patch[`memberInfo/${payDate.infoKey}/${payDate.dateKey}`] = payDate.date;
+  return patch;
 }
 
 // ── v11.5.7: Granular write untuk operasi pembayaran — menyelesaikan bug "delay saat
@@ -201,9 +216,10 @@ export async function persistPaymentGranular(
   logEntry: Omit<ActivityLog, 'ts' | 'user'>,
   userEmail: string,
   getCurrentLockState: () => { globalLocked: boolean; lockedEntries: Record<string, boolean> },
+  payDate?: PayDatePatch,
 ): Promise<void> {
   const patch = buildGranularPaymentPatch(
-    paymentKey, paymentValue, currentActivityLog, logEntry, userEmail, getCurrentLockState(),
+    paymentKey, paymentValue, currentActivityLog, logEntry, userEmail, getCurrentLockState(), Date.now(), payDate,
   );
   await update(getUserRef(uid), patch);
 }
@@ -244,16 +260,80 @@ export function normalizeImportedData(data: unknown): AppData | null {
   const d = data as Partial<AppData>;
   if (!d.krsMembers && !d.payments) return null;
 
+  const freeMembers = (d.freeMembers && typeof d.freeMembers === 'object') ? d.freeMembers : {};
   return {
     krsMembers:     Array.isArray(d.krsMembers) ? d.krsMembers : [],
     slkMembers:     Array.isArray(d.slkMembers) ? d.slkMembers : [],
     payments:       (d.payments && typeof d.payments === 'object') ? d.payments : {},
     memberInfo:     (d.memberInfo && typeof d.memberInfo === 'object') ? d.memberInfo : {},
     activityLog:    [],
-    freeMembers:    (d.freeMembers && typeof d.freeMembers === 'object') ? d.freeMembers : {},
-    deletedMembers: (d.deletedMembers && typeof d.deletedMembers === 'object') ? d.deletedMembers : {},
+    freeMembers,
+    // REDESAIN T12: backup lama (hanya freeMembers) tetap bisa diimpor — dimigrasikan otomatis; berkas baru membawa memberPeriods.
+    memberPeriods:  migrateFreeMembers(d.memberPeriods, freeMembers),
+    deletedMembers: normalizeDeletedMembers(d.deletedMembers),
     operasional:    (d.operasional && typeof d.operasional === 'object') ? d.operasional : {},
+    // REDESAIN T10 (perbaikan zona kustom): member zona kustom ikut dibaca (sebelumnya hilang saat Import).
+    zoneMembers:    normalizeZoneMembers(d.zoneMembers),
   };
+}
+
+// REDESAIN T12 — Recycle Bin: bentuk lama dipertahankan apa adanya; `periods` (periode member yang ikut dihapus) hanya
+// dipertahankan bila valid, supaya berkas impor cacat tidak menanam nilai aneh ke data aktif saat dipulihkan.
+function normalizeDeletedMembers(v: unknown): AppData['deletedMembers'] {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  const out: AppData['deletedMembers'] = {};
+  for (const [key, entry] of Object.entries(v as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object') { out[key] = entry as AppData['deletedMembers'][string]; continue; }
+    const e = { ...(entry as Record<string, unknown>) };
+    if ('periods' in e) {
+      const periods = cleanMemberPeriods(e.periods);
+      if (periods) e.periods = periods; else delete e.periods;
+    }
+    out[key] = e as unknown as AppData['deletedMembers'][string];
+  }
+  return out;
+}
+
+// REDESAIN T10 — hanya daftar nama bertipe string per zona yang dipertahankan; selain itu dibuang (bukan menggagalkan import).
+function normalizeZoneMembers(v: unknown): Record<string, string[]> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  const out: Record<string, string[]> = {};
+  for (const [zone, list] of Object.entries(v as Record<string, unknown>)) {
+    if (Array.isArray(list)) out[zone] = list.filter((n): n is string => typeof n === 'string');
+  }
+  return out;
+}
+
+// REDESAIN T10 — zona kustom di file impor: JSON Backup zip tidak membawa `settings`, tetapi berkas dari sumber lain bisa
+// membawa `settings.customZones` atau `customZones`. Item yang valid (key + warna teks) dipakai; sisanya diabaikan.
+export function extractImportedCustomZones(raw: unknown): CustomZone[] {
+  if (!raw || typeof raw !== 'object') return [];
+  const r = raw as { customZones?: unknown; settings?: { customZones?: unknown } };
+  const src = Array.isArray(r.settings?.customZones) ? r.settings!.customZones : r.customZones;
+  if (!Array.isArray(src)) return [];
+  return src.filter((z): z is CustomZone => !!z && typeof (z as CustomZone).key === 'string' && !!(z as CustomZone).key)
+    .map(z => ({ key: z.key, name: typeof z.name === 'string' && z.name ? z.name : z.key, color: typeof z.color === 'string' ? z.color : '' }));
+}
+
+/**
+ * REDESAIN T10 — zona yang HARUS didaftarkan setelah Import supaya member zona kustom tampil di header:
+ * setiap kunci `zoneMembers` yang bukan zona dasar dan belum ada di daftar zona saat ini. Warna dari file
+ * (bila ada) atau palet cadangan deterministik (zoneColor).
+ */
+export function zonesToRegister(current: CustomZone[], zoneMembers: Record<string, string[]> | undefined, fromFile: CustomZone[] = []): CustomZone[] {
+  const known = new Set([
+    ...getAllActiveZones({ customZones: [], hiddenZones: [] } as unknown as AppSettings),
+    ...current.map(z => z.key),
+  ]);
+  const keys = [...Object.keys(zoneMembers || {}), ...fromFile.map(z => z.key)];
+  const out: CustomZone[] = [];
+  for (const key of keys) {
+    if (known.has(key)) continue;
+    known.add(key);
+    const f = fromFile.find(z => z.key === key);
+    out.push({ key, name: f?.name || key, color: f?.color || zoneColor(key) });
+  }
+  return out;
 }
 
 // v11.5.13: importToDB ditulis ulang sebagai SATU multi-path update() atomik, bukan
@@ -277,9 +357,14 @@ export async function importToDB(uid: string, data: AppData): Promise<void> {
     payments:       normalized.payments,
     memberInfo:     normalized.memberInfo,
     activityLog:    [],
-    freeMembers:    normalized.freeMembers,
+    // REDESAIN T12: import mengganti SELURUH dataset — periode member ditulis utuh ke memberPeriods; rekaman free lama
+    // TIDAK ditulis lagi (dikosongkan agar tidak bisa dimigrasikan ulang menimpa/menghidupkan data lama).
+    memberPeriods:  normalized.memberPeriods ?? {},
+    freeMembers:    {},
     deletedMembers: normalized.deletedMembers,
     operasional:    normalized.operasional,
+    // REDESAIN T10: import = mengganti SELURUH dataset, jadi daftar member zona kustom ikut diganti (kosong bila file tak memuatnya).
+    zoneMembers:    normalized.zoneMembers ?? {},
   };
   await update(getUserRef(uid), patch);
 }
@@ -326,10 +411,11 @@ function extractReferenceFields(info: MemberInfo): MemberInfo {
 //
 // Field yang IKUT dibawa: krsMembers/slkMembers/zoneMembers (nama member
 // masuk daftar zona yang sesuai), memberInfo (HANYA field referensi, lihat
-// extractReferenceFields), freeMembers (UTUH — dikonfirmasi pengguna:
+// extractReferenceFields), memberPeriods (UTUH — dikonfirmasi pengguna:
 // status "sedang digratiskan" perlu diketahui penagih di lapangan supaya
 // tidak salah tagih, meski scoped-by-period; ini pengecualian yang
-// disengaja terhadap prinsip "semua histori mulai dari nol").
+// disengaja terhadap prinsip "semua histori mulai dari nol". REDESAIN T12:
+// pengganti freeMembers; Terdaftar sejak dan Nonaktif ikut dengan alasan yang sama).
 // Field yang TIDAK PERNAH ikut: payments, deletedMembers, activityLog,
 // operasional — ini murni histori/log transaksional milik owner.
 export function buildClonePatch(
@@ -340,7 +426,7 @@ export function buildClonePatch(
   const slkMembers: string[] = [];
   const zoneMembers: Record<string, string[]> = {};
   const memberInfo: Record<string, MemberInfo> = {};
-  const freeMembers: Record<string, import('@/types').FreeMember> = {};
+  const memberPeriods: Record<string, MemberPeriods> = {};
 
   for (const { zone, name } of selected) {
     // Daftarkan nama ke field zona yang sesuai — KRS/SLK punya field
@@ -364,8 +450,10 @@ export function buildClonePatch(
       if (Object.keys(refOnly).length > 0) memberInfo[infoKey] = refOnly;
     }
 
-    const sourceFree = sourceData.freeMembers?.[infoKey];
-    if (sourceFree) freeMembers[infoKey] = sourceFree;
+    // REDESAIN T12: periode member (Terdaftar sejak, Free, Nonaktif) ikut UTUH; rekaman free lama dibaca lewat
+    // getMemberPeriods (migrasi otomatis) dan TIDAK ditulis ke akun penagih sebagai freeMembers.
+    const sourcePeriods = cleanMemberPeriods(getMemberPeriods(sourceData, zone, name));
+    if (sourcePeriods) memberPeriods[infoKey] = sourcePeriods;
   }
 
   const patch: Partial<AppData> = {};
@@ -373,7 +461,7 @@ export function buildClonePatch(
   if (slkMembers.length > 0) patch.slkMembers = slkMembers;
   if (Object.keys(zoneMembers).length > 0) patch.zoneMembers = zoneMembers;
   if (Object.keys(memberInfo).length > 0) patch.memberInfo = memberInfo;
-  if (Object.keys(freeMembers).length > 0) patch.freeMembers = freeMembers;
+  if (Object.keys(memberPeriods).length > 0) patch.memberPeriods = memberPeriods;
   return patch;
 }
 

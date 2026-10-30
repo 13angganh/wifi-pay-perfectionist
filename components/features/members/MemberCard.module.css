@@ -1,0 +1,60 @@
+/* components/features/members/MemberCard.module.css — kartu member Entry (REDESAIN T7)
+   Padanan kelas prototype T2: .mc .mc-h .mc-t .mc-r .mc-b .note .cbx. Hanya token. */
+
+.mc { padding: 0 !important; overflow: hidden; border-left: 3px solid var(--border); position: relative; transition: background .35s ease-out, border-left-color .35s ease-out, opacity var(--t-base, 200ms); }
+.lunas { border-left-color: var(--c-lunas); }
+.belum { border-left-color: var(--c-belum); }
+.free  { border-left-color: var(--c-free); }
+/* REDESAIN T12: Belum terdaftar / Nonaktif (N/A) — redup + garis netral; tetap terbaca dan bisa dibuka */
+.nonaktif, .belumTerdaftar { border-left-color: var(--txt4); opacity: .72; }
+.picked { background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
+.flash  { background: color-mix(in srgb, var(--c-lunas) 8%, var(--card)); border-left-color: var(--c-lunas); }
+.na { opacity: .45; }
+.na .head { cursor: not-allowed; }
+
+.head { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-h); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; background: none; border: 0; width: 100%; text-align: left; color: inherit; font: inherit; }
+.head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tx { flex: 1; min-width: 0; }
+.name { display: block; font-weight: var(--fw-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.end { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; flex-shrink: 0; }
+.end .wp-num { font-size: var(--fs-caption); color: var(--txt2); }
+.caret { color: var(--txt4); flex-shrink: 0; }
+
+.mark { background: var(--zcdim); color: var(--zc); border-radius: 2px; padding: 0 1px; font-weight: 700; font-style: normal; }
+
+.body { padding: var(--sp-h); display: flex; flex-direction: column; gap: var(--sp-h); border-top: 1px solid var(--border2); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.foot { display: flex; align-items: center; gap: var(--sp-2); }
+.foot .grow { flex: 1; }
+.lbl { display: flex; gap: 4px; align-items: center; }
+
+.note { display: flex; gap: var(--sp-2); align-items: center; padding: 10px; border-radius: var(--r-md); background: var(--bg3); color: var(--txt3); font-size: var(--fs-caption); }
+.note svg { font-size: 18px; flex-shrink: 0; }
+.noteFree { color: var(--c-free); background: color-mix(in srgb, var(--c-free) 12%, transparent); }
+.noteLock { color: var(--c-belum); background: color-mix(in srgb, var(--c-belum) 10%, transparent); }
+.noteNA { flex-wrap: wrap; justify-content: space-between; }
+.noteNAtx { flex: 1; min-width: 0; }
+
+/* nominal: awalan "Rp" dan akhiran ".000" (satuan ribu, sesuai zip: rp() = nilai x 1000) */
+.amtWrap { position: relative; display: flex; align-items: center; }
+.amtPre, .amtSuf { position: absolute; color: var(--txt3); font-size: var(--fs-caption); font-weight: var(--fw-strong); pointer-events: none; }
+.amtPre { left: 14px; }
+.amtSuf { right: 14px; }
+.amtSufDel { right: 46px; }
+.amtDel { position: absolute; right: 6px; }
+
+/* tekan lama 500 ms → cincin visual (perilaku zip startBatch tidak berubah) */
+.lp { animation: mclp 500ms linear forwards; }
+@keyframes mclp { from { box-shadow: var(--shadow-sm), 0 0 0 0 transparent; } to { box-shadow: var(--shadow-sm), 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .lp { animation: none; } }
+
+/* centang sukses di pojok */
+.check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--c-lunas); color: var(--on-accent); display: grid; place-content: center; animation: mcpop .35s var(--ease-spring) both; pointer-events: none; }
+@keyframes mcpop { from { transform: scale(0); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .check { animation: none; } }
+
+.letter { font-weight: 800; font-size: var(--fs-heading); }
+.idBtn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: inherit; display: inline-flex; }
+.amtIn { padding-left: 40px; padding-right: 48px; width: 100%; }
+.amtInDel { padding-right: 84px; }

@@ -1,0 +1,92 @@
+/* components/features/rekap/rekap.module.css — layar Rekap + RekapModal (REDESAIN T8)
+   Padanan kelas prototype T3: .rwc .rt .hint .sumrow .pgn .bsheet .bl. Hanya token (tanpa warna literal). */
+
+.page { display: flex; flex-direction: column; gap: var(--sp-h); }
+.rise { animation: rkrise .5s var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 55ms); }
+@keyframes rkrise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } .flash { animation: none; } }
+
+/* banner terkunci — ketuk = buka (diteruskan ke tombol kunci Header; satu jalur unlock) */
+.lkb { display: flex; align-items: center; gap: var(--sp-h); width: 100%; padding: var(--sp-h); border-radius: var(--r-lg); border: 1px solid color-mix(in srgb, var(--c-belum) 35%, var(--border)); background: color-mix(in srgb, var(--c-belum) 10%, var(--card)); color: var(--c-belum); font: inherit; font-weight: var(--fw-strong); font-size: var(--fs-caption); text-align: left; cursor: pointer; }
+.lkb svg { font-size: 20px; flex-shrink: 0; }
+.lkb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* periode: tahun dulu, lalu bulan acuan */
+.period { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: var(--sp-2); }
+
+/* ringkasan total tahun + Pilih Banyak (T3 keputusan 1 dan 5b) */
+.sumrow { display: flex; align-items: center; gap: var(--sp-h); }
+.sumMain { flex: 1; min-width: 0; }
+.sumVal { display: block; font-size: var(--fs-heading); }
+
+.count { font-size: var(--fs-label); color: var(--txt4); text-align: center; }
+
+/* kartu tabel: scroll horizontal + vertikal di dalam kartu, header dan kolom # / Nama menempel (keputusan 2) */
+.rwc { overscroll-behavior: contain; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: auto; max-height: min(56vh, 520px); background: var(--card); box-shadow: var(--shadow-sm); flex-shrink: 0; overscroll-behavior-x: contain; }
+.rt { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; font-size: var(--fs-caption); }
+.rt th, .rt td { padding: 9px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border2); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; }
+.rt thead th { position: sticky; top: 0; z-index: 4; background: var(--bg3); color: var(--txt3); font: var(--fw-strong) var(--fs-label) var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .04em; text-align: center; }
+.rt .stk { position: sticky; z-index: 3; background: var(--card); text-align: left; }
+.rt thead .stk { z-index: 5; background: var(--bg3); }
+.rt .c1 { left: 0; width: 34px; min-width: 34px; text-align: center; color: var(--txt3); }
+.rt .c2 { left: 34px; min-width: 108px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; font: var(--fw-strong) var(--fs-body) var(--font-sans), sans-serif; color: var(--txt); box-shadow: 3px 0 6px -4px color-mix(in srgb, var(--txt) 25%, transparent); }
+.nameBtn { all: unset; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.nameBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
+
+.rt .cell { position: relative; cursor: pointer; user-select: none; transition: background var(--t-fast), opacity var(--t-base); }
+.rt .cell:hover { background: var(--bg3); }
+.rt .cv, .rt .cz { color: var(--c-lunas); }
+.rt .cz { font-size: var(--fs-micro); text-align: center; }
+.rt .cf { color: var(--c-free); text-align: center; }
+.rt .cb { color: var(--c-belum); background: color-mix(in srgb, var(--c-belum) 7%, transparent); text-align: center; }
+.rt .cn { color: var(--txt4); text-align: center; }
+/* REDESAIN T12: sel N/A (Belum terdaftar / Nonaktif tanpa pembayaran) — penanda khusus, bukan sel kosong biasa */
+.rt .cna { color: var(--txt3); background: color-mix(in srgb, var(--txt4) 14%, transparent); text-align: center; }
+.rt .cell svg { vertical-align: middle; }
+.rt .open { outline: 2px solid var(--zc); outline-offset: -2px; }
+.rt .sl { outline: 2px solid var(--zc); outline-offset: -2px; background: var(--zcdim); }
+.rt .dm { opacity: .2; pointer-events: none; }
+.rt .na { opacity: .45; cursor: not-allowed; background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--txt4) 14%, transparent) 5px 6px); }
+.rt .na:hover { background: none; }
+.rt .el { outline: 1.5px dashed color-mix(in srgb, var(--zc) 55%, transparent); outline-offset: -3px; }
+.rt th.rm { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.rt th.bc { color: var(--zc); background: linear-gradient(var(--zcdim), var(--zcdim)), var(--bg3); }
+.rt .tt { font-weight: 700; color: var(--zc); background: var(--bg3); min-width: 92px; }
+
+/* kilatan sukses setelah bayar (v11.5.2/v11.5.7) — overlay terpisah supaya restart animasi tanpa remount sel */
+.flash { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: color-mix(in srgb, var(--c-lunas) 30%, transparent); animation: rkflash .75s ease-out forwards; }
+@keyframes rkflash { from { opacity: 1; } to { opacity: 0; } }
+.cellTx { position: relative; z-index: 1; }
+
+.rt tfoot td { background: var(--bg3); font-weight: 700; color: var(--c-lunas); border-bottom: 0; }
+.rt tfoot .stk { background: var(--bg3); color: var(--txt2); font: var(--fw-strong) var(--fs-label) var(--font-sans), sans-serif; text-transform: uppercase; white-space: normal; line-height: 1.25; min-width: 142px; max-width: 142px; overflow: hidden; }
+.rt tfoot tr.sb2 td { border-bottom: 1px solid var(--border2); }
+.rt tfoot tr.sb2 td:not(.stk) { opacity: .75; }
+
+/* paginasi (di bawah tabel) */
+.pgn { display: flex; justify-content: center; align-items: center; gap: var(--sp-h); flex-shrink: 0; }
+.pgnTx { font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+
+/* sheet total batch — menempel di bawah area konten, di atas Bottom Nav bila navMode bottom (T6 §2 butir 7) */
+.bsheet { position: sticky; z-index: 20; margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-2); box-shadow: var(--shadow-lg); }
+.bsheetRow { display: flex; align-items: center; gap: var(--sp-h); }
+.bsheetTx { flex: 1; min-width: 0; }
+.bsheetTot { font-size: var(--fs-heading); flex: none; }
+.bl { max-height: 110px; overflow: auto; }
+.bli { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-top: 1px solid var(--border2); font-size: var(--fs-caption); }
+.bliR { display: inline-flex; align-items: center; gap: 6px; }
+.bsheetNote { font-size: var(--fs-caption); color: var(--txt3); }
+/* REDESAIN T12 (F4): pemilih tanggal bayar pada mode manual */
+.bsheetDate { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-h); }
+.bsheetDate > :last-child { flex: 0 1 11rem; min-width: 0; }
+
+/* RekapModal */
+.mAmt { display: flex; gap: var(--sp-2); align-items: flex-end; }
+.mAmt > :first-child { flex: 1; min-width: 0; }
+.note { display: flex; align-items: center; justify-content: center; gap: 6px; padding: var(--sp-h) 0; font-size: var(--fs-body); text-align: center; }
+.noteFree { color: var(--c-free); }
+.noteLock { color: var(--c-belum); }
+/* REDESAIN T12: catatan + tombol untuk bulan Belum terdaftar / Nonaktif */
+.noteNA { display: flex; flex-direction: column; gap: var(--sp-2); }
+.noteNA .note { color: var(--txt3); }
+.modalMeta { color: var(--zc); }

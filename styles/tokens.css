@@ -1,28 +1,43 @@
 /* ══════════════════════════════════════════════════════
-   styles/tokens.css — MASTER design tokens
-   Source of truth untuk semua CSS custom properties.
-   Jika mengubah nilai token, update file ini TERLEBIH DAHULU,
-   lalu cek lib/design-tokens.ts untuk JS-relevant tokens.
+   styles/tokens.css — MASTER design tokens (REDESAIN T6)
+   Sumber nilai: CORE BLOCK v3 (T1) + serah-terima T1 bagian 2.
+   Source of truth untuk semua CSS custom properties. Jika mengubah nilai,
+   update file ini TERLEBIH DAHULU, lalu cek lib/design-tokens.ts (cermin JS).
+
+   Struktur tema produksi: dark = :root (default), light = body.light,
+   gold = body.gold (nama internal tema TIDAK berubah; tampilan Terang/Gelap/Emas).
+
+   CATATAN TEKNIS: token turunan yang memakai var(--accent) (--grad-a, --glow,
+   --accentdim, --halo) dideklarasikan ulang di setiap blok tema, karena
+   :root (elemen <html>) dan body.light/body.gold adalah elemen yang berbeda;
+   tanpa itu nilai turunan tetap terkunci ke nilai tema gelap.
    ══════════════════════════════════════════════════════ */
 
-/* ── Dark (default) ── */
+/* ── Gelap (default) ── */
 :root {
-  --bg  : #0F1117;
-  --bg2 : #181C27;
-  --bg3 : #1E2235;
-  --bg4 : #252B40;
-  --border : #252B40;
-  --border2: #1E2235;
-  --scrollbar: #252B40;
+  --bg  : #0B1020;
+  --bg2 : #131A2D;
+  --bg3 : #1A2238;
+  --bg4 : #242E4A;
+  --border : #222B45;
+  --border2: #1A2238;
+  --scrollbar: #242E4A;
 
   --zc-krs: #3B82F6;
   --zc-slk: #F97316;
   --zc    : var(--zc-krs);
-  --zcdim : #3B82F622;
+  --zcdim : rgba(59,130,246,.14);
+
+  /* Aksen tema (warna tombol utama + elemen aktif): biru / biru / emas — BUKAN warna zona */
+  --accent    : var(--zc-krs);
+  --on-accent : #FFFFFF;
+  --accentdim : rgba(59,130,246,.14);
 
   --c-lunas: #22C55E;
   --c-belum: #EF4444;
   --c-free : #3B82F6;
+  --c-warn : #F59E0B;
+  --c-info : #3B82F6;
 
   --txt : #FFFFFF;
   --txt2: #A1A8C1;
@@ -30,37 +45,45 @@
   --txt4: #4A5270;
   --txt5: #2D3452;
 
-  --card : #181C27;
-  --card2: #1E2235;
+  --card : #131A2D;
+  --card2: #182036;
 
-  --sidebar-w: 250px;
-  /* v11.7.1: fallback awal sblm ResizeObserver Header.tsx sempat mengukur tinggi asli
-     (render pertama). Sebelumnya 56px (cuma ~setinggi 1 baris) — Header sudah 2 baris
-     (Row 1 logo+zone ~10+40+8=58px, Row 2 sync/status/aksi ~36+10=46px) jadi total real
-     ~104px; nilai ini cuma perkiraan render-pertama, ResizeObserver yg jadi sumber
-     kebenaran final & auto-sinkron kapan pun Header berubah tinggi. */
-  --header-h : 104px;
+  /* Layout */
+  --sidebar-w: 232px;
+  /* Fallback render-pertama; sumber kebenaran = ResizeObserver Header.tsx yang menulis
+     --header-h ke <html>. Header 2 baris ≈ 92px (CORE v3). */
+  --header-h : 92px;
+  --bnav-h   : 64px;
+  --banner-h : 0px;
 
-  --fs-display: 18px;
-  --fs-heading: 15px;
-  --fs-body   : 13px;
-  --fs-data   : 13px;
-  --fs-caption: 11px;
-  --fs-label  : 10px;
-  --fs-micro  :  9px;
+  /* Tipografi — SATU skala final (T1) */
+  --fs-display: 20px;
+  --fs-heading: 16px;
+  --fs-body   : 14px;
+  --fs-data   : 14px;
+  --fs-caption: 12px;
+  --fs-label  : 11px;
+  --fs-micro  : 10px;
+
+  --fw-title : 800;
+  --fw-strong: 600;
+  --fw-body  : 500;
 
   --lh-heading: 1.2;
-  --lh-body   : 1.6;
-  --lh-caption: 1.5;
+  --lh-body   : 1.5;
+  --lh-caption: 1.4;
 
+  /* Spacing */
   --sp-1:  4px;
   --sp-2:  8px;
+  --sp-h: 12px;
   --sp-3: 16px;
   --sp-4: 24px;
   --sp-5: 32px;
   --sp-6: 40px;
   --sp-7: 48px;
 
+  /* Radius */
   --r-xs  :  4px;
   --r-sm  :  8px;
   --r-md  : 12px;
@@ -68,12 +91,18 @@
   --r-xl  : 20px;
   --r-full: 9999px;
 
+  /* Shadow */
   --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
   --shadow-sm: 0 2px 8px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
   --shadow-md: 0 4px 16px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08);
   --shadow-z : 0 4px 20px rgba(59,130,246,.25);
+  --hl  : inset 0 1px 0 rgba(255,255,255,.07);
+  --surf: linear-gradient(180deg,var(--card2),var(--card));
+  --halo: radial-gradient(120% 70% at 50% -10%,rgba(59,130,246,.16),transparent 60%);
 
+  /* Gerak */
+  --ease       : cubic-bezier(.4,0,.2,1);
   --ease-spring: cubic-bezier(.34,1.56,.64,1);
   --ease-out   : cubic-bezier(.0,.0,.2,1);
   --ease-in    : cubic-bezier(.4,.0,1,1);
@@ -90,7 +119,13 @@
   --t-spring-anim  : 400ms cubic-bezier(.34,1.56,.64,1);
 }
 
-/* ── Light ── */
+/* Token turunan aksen — dideklarasikan di tiap elemen tema (lihat catatan di atas) */
+:root, body.light, body.gold {
+  --grad-a: linear-gradient(135deg,color-mix(in srgb,var(--accent) 100%,#fff 18%),color-mix(in srgb,var(--accent) 100%,#000 22%));
+  --glow  : 0 6px 24px color-mix(in srgb,var(--accent) 35%,transparent);
+}
+
+/* ── Terang ── */
 body.light {
   --bg  : #F8FAFC;
   --bg2 : #FFFFFF;
@@ -99,6 +134,21 @@ body.light {
   --border : #E4EAF0;
   --border2: #EEF2F7;
   --scrollbar: #C8D0E0;
+
+  --zc-krs: #2563EB;
+  --zc-slk: #EA6F00;
+  --zc    : var(--zc-krs);
+  --zcdim : rgba(37,99,235,.10);
+
+  --accent    : #2563EB;
+  --on-accent : #FFFFFF;
+  --accentdim : rgba(37,99,235,.10);
+
+  --c-lunas: #16A34A;
+  --c-belum: #DC2626;
+  --c-free : #64748b;
+  --c-warn : #D97706;
+  --c-info : #2563EB;
 
   --txt : #0F1117;
   --txt2: #374151;
@@ -109,44 +159,43 @@ body.light {
   --card : #FFFFFF;
   --card2: #F0F4F8;
 
-  --zc-krs: #2563EB;
-  --zc-slk: #EA6F00;
-  --zc    : var(--zc-krs);
-  --zcdim : rgba(37,99,235,0.10);
-
-  --c-lunas: #16A34A;
-  --c-belum: #DC2626;
-  --c-free : #64748b;
-
   --shadow-xs: 0 1px 2px rgba(0,0,0,.08);
   --shadow-sm: 0 2px 8px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.04);
   --shadow-md: 0 4px 16px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,.16),0 0 0 1px rgba(0,0,0,.08);
   --shadow-z : 0 4px 20px rgba(37,99,235,.18);
-  --zcdim    : rgba(37,99,235,0.10);
+  --hl  : inset 0 1px 0 #fff;
+  --surf: #FFFFFF;
+  --halo: radial-gradient(120% 70% at 50% -10%,rgba(37,99,235,.10),transparent 60%);
 }
 
-/* ── Gold / Emas ── */
+/* ── Emas ── */
 body.gold {
   /* Background — hitam hangat, bukan hitam dingin */
   --bg  : #0C0A06;
   --bg2 : #141008;
   --bg3 : #1C1610;
   --bg4 : #241D12;
-  --border : rgba(201,149,42,0.15);
-  --border2: rgba(201,149,42,0.08);
+  --border : rgba(201,149,42,.15);
+  --border2: rgba(201,149,42,.08);
   --scrollbar: #2a2010;
 
   /* Zona: safir gelap (KRS) + tembaga (SLK) — tetap bisa dibedakan */
   --zc-krs: #4d9de0;
   --zc-slk: #d4870f;
   --zc    : var(--zc-krs);
-  --zcdim : rgba(201,149,42,0.12);
+  --zcdim : rgba(201,149,42,.12);
 
-  /* Status — tidak berubah agar tetap intuitif */
+  --accent    : #C9952A;
+  --on-accent : #0C0A06;
+  --accentdim : rgba(201,149,42,.15);
+
+  /* Status — warna tetap konsisten lintas tema */
   --c-lunas: #22C55E;
   --c-belum: #EF4444;
   --c-free : #94a3b8;
+  --c-warn : #F59E0B;
+  --c-info : #3B82F6;
 
   /* Teks — putih gading hangat */
   --txt : #F5EAD6;
@@ -160,14 +209,19 @@ body.gold {
 
   /* Shadow — hangat keemasan */
   --shadow-xs: 0 1px 3px rgba(0,0,0,.6);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,.5), 0 0 0 1px rgba(201,149,42,0.08);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.6), 0 0 0 1px rgba(201,149,42,0.12);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(201,149,42,0.16);
-  --shadow-z : 0 4px 20px rgba(201,149,42,0.20);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.5), 0 0 0 1px rgba(201,149,42,.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.6), 0 0 0 1px rgba(201,149,42,.12);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(201,149,42,.16);
+  --shadow-z : 0 4px 20px rgba(201,149,42,.20);
+  --hl  : inset 0 1px 0 rgba(232,184,75,.14);
+  --surf: linear-gradient(180deg,var(--card2),var(--card));
+  --halo: radial-gradient(120% 70% at 50% -10%,rgba(201,149,42,.22),transparent 60%);
+  --grad-a: linear-gradient(135deg,#F2CF74,#C9952A 55%,#9C6F14);
+  --glow  : 0 6px 28px rgba(201,149,42,.38);
 
-  /* Aksen utama — emas medium */
+  /* Aksen emas */
   --gold        : #C9952A;
   --gold-bright : #E8B84B;
-  --gold-dim    : rgba(201,149,42,0.15);
-  --gold-border : rgba(201,149,42,0.35);
+  --gold-dim    : rgba(201,149,42,.15);
+  --gold-border : rgba(201,149,42,.35);
 }

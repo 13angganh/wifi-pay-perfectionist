@@ -1,44 +1,40 @@
-// components/features/settings/SettingsIPSection.tsx
-// v11.5: dipindah dari menu Members (sebelumnya tombol "IP .13→.90" hardcoded di toolbar
-// Members) ke Settings sebagai collapsible section, mengikuti pola section lain di
-// Settings (lihat SettingsZoneSection.tsx). Sekarang fleksibel: bisa cari & ganti
-// substring APAPUN di nilai IP (bukan hanya oktet ke-2), karena tidak semua kasus
-// konversi adalah ".13" → ".90" — bisa beda router, beda subnet, dll.
-//
-// v11.5.1 FIX: sebelumnya pakai pola "t(key) OR fallback-string" dengan asumsi t() akan
-// mengembalikan string kosong/falsy untuk key yang belum terdaftar di locale. Ternyata
-// t() mengembalikan KEY ITU SENDIRI (lihat lib/i18n.ts: `locale[key] ?? key`), yang
-// selalu truthy — sehingga fallback tidak pernah tercapai dan raw key seperti
-// "settings.ip.zoneLabel" tampil apa adanya di UI. Semua key di bawah sekarang
-// benar-benar terdaftar di lib/locales/id.ts dan en.ts.
+// ══════════════════════════════════════════
+// components/features/settings/SettingsIPSection.tsx — Konversi IP (REDESAIN T10)
+// Logika zip utuh (v11.5): cari-ganti substring APAPUN di IP member sebuah zona (convertMemberIPs, fungsi murni),
+// pratinjau jumlah yang terdampak, Confirm sebelum menulis, persistPayment + rollback selektif, log "[IP] Konversi".
+// Daftar zona = allZoneKeys (dasar + kustom); zona awal = zona pertama (tanpa literal).
+// ══════════════════════════════════════════
 'use client';
 
 import { useState } from 'react';
+import { ArrowsLeftRight } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useT } from '@/hooks/useT';
 import { showToast } from '@/components/ui/Toast';
 import { showConfirm } from '@/components/ui/Confirm';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
 import { getMembersForZone, convertMemberIPs } from '@/lib/member';
-import { useT } from '@/hooks/useT';
-import { Repeat } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { FilterChip, FilterChips } from '@/components/ui/Chip';
+import { Input } from '@/components/ui/Input';
+import { Notice } from '@/components/ui/Notice';
+import type { AppData } from '@/types';
+import { allZoneKeys } from './settings.logic';
+import s from './settings.module.css';
 
 export default function SettingsIPSection() {
   const { appData, setAppData, uid, userEmail, setSyncStatus, settings } = useAppStore();
   const t = useT();
+  const zones = allZoneKeys(settings);
+  const [zone, setZone] = useState<string>(zones[0]);
+  const [find, setFind] = useState('');
+  const [replace, setReplace] = useState('');
 
-  // Zona yang tersedia (KRS, SLK, + custom zones)
-  const customZones = settings.customZones ?? [];
-  const allZoneKeys: string[] = ['KRS', 'SLK', ...customZones.map(z => z.key)];
-
-  const [zone,   setZone]   = useState<string>('KRS');
-  const [find,   setFind]   = useState('');
-  const [replace,setReplace]= useState('');
-
-  // FIX v11.5.7: rollback via selectiveRollback (lib/rollback.ts) — lihat penjelasan
-  // lengkap di persist() MemberCard.tsx.
-  async function persist(newData: typeof appData, action: string, detail?: string): Promise<boolean> {
+  // FIX v11.5.7 (dipertahankan): rollback via selectiveRollback.
+  async function persist(newData: AppData, action: string, detail?: string): Promise<boolean> {
     const prevData = appData;
     setAppData(newData);
     if (!uid) return true;
@@ -59,144 +55,46 @@ export default function SettingsIPSection() {
     }
   }
 
-  // v11.5: konversi generik — cari substring `find` di IP, ganti dengan `replace`.
-  // Tidak lagi dibatasi hanya oktet ke-2; bisa cari/ganti bagian IP manapun
-  // (oktet pertama, kedua, ketiga, keempat, atau bahkan seluruh string IP/URL router).
-  // Logic inti ada di lib/member.ts (convertMemberIPs) — pure function, unit-tested.
   async function doConvert() {
     const f = find.trim();
     if (!f) { showToast(t('settings.ip.findRequired'), 'err'); return; }
-
-    const info = appData.memberInfo || {};
-    const zoneMems = getMembersForZone(zone, appData);
-    const { newInfo, count } = convertMemberIPs(info, zoneMems, zone, f, replace);
-
-    if (count === 0) {
-      showToast(`${t('settings.ip.noneFound')} ${zone}`, 'err');
-      return;
-    }
-
-    const ok = await persist(
-      { ...appData, memberInfo: newInfo },
-      `[IP] Konversi "${f}"→"${replace}" zona ${zone}`,
-      `${count} member diperbarui`
-    );
-    if (ok) {
-      showToast(`${count} IP zona ${zone} ${t('settings.ip.converted')}`);
-      setFind(''); setReplace('');
-    } else {
-      showToast(t('common.saveFailed'), 'err');
-    }
+    const { newInfo, count } = convertMemberIPs(appData.memberInfo || {}, getMembersForZone(zone, appData), zone, f, replace);
+    if (count === 0) { showToast(`${t('settings.ip.noneFound')} ${zone}`, 'err'); return; }
+    const ok = await persist({ ...appData, memberInfo: newInfo }, `[IP] Konversi "${f}"→"${replace}" zona ${zone}`, `${count} member diperbarui`);
+    if (ok) { showToast(`${count} IP zona ${zone} ${t('settings.ip.converted')}`); setFind(''); setReplace(''); }
+    else showToast(t('common.saveFailed'), 'err');
   }
 
   function handleConvertClick() {
     const f = find.trim();
     if (!f) { showToast(t('settings.ip.findRequired'), 'err'); return; }
-    showConfirm(
-      '🔄',
+    showConfirm('switch',
       `${t('settings.ip.confirmPrefix')} ${zone} ${t('settings.ip.confirmFrom')} "${f}" ${t('settings.ip.confirmTo')} "${replace}"?`,
-      t('settings.ip.convertYes'),
-      doConvert,
-      { description: t('settings.ip.confirmNote') }
-    );
+      t('settings.ip.convertYes'), doConvert, { description: t('settings.ip.confirmNote') });
   }
 
-  const previewCount = (() => {
-    const f = find.trim();
-    if (!f) return 0;
-    return getMembersForZone(zone, appData).filter(name => {
-      const ip = String(appData.memberInfo?.[`${zone}__${name}`]?.ip || '');
-      return ip.includes(f);
-    }).length;
-  })();
+  const f = find.trim();
+  const previewCount = !f ? 0 : getMembersForZone(zone, appData).filter(name => String(appData.memberInfo?.[`${zone}__${name}`]?.ip || '').includes(f)).length;
 
   return (
-    <div>
-      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', marginBottom:10 }}>
-        {t('settings.ip.zoneLabel').toUpperCase()}
+    <Card className={s.card}>
+      <div>
+        <span className={s.sectionLabel}>{t('settings.ip.zoneLabel')}</span>
+        <FilterChips ariaLabel={t('settings.ip.zoneLabel')}>
+          {zones.map(z => <FilterChip key={z} active={zone === z} aria-pressed={zone === z} onClick={() => setZone(z)}>{z}</FilterChip>)}
+        </FilterChips>
       </div>
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
-        {allZoneKeys.map(z => (
-          <button
-            key={z}
-            onClick={() => setZone(z)}
-            style={{
-              padding:'6px 14px', borderRadius:'var(--r-full)', border:'none', cursor:'pointer',
-              fontSize:'var(--fs-body)', fontWeight: zone===z ? 700 : 500, minHeight:32,
-              background: zone===z ? 'var(--zc)' : 'var(--bg3)',
-              color: zone===z ? '#fff' : 'var(--txt3)',
-              transition:'all var(--t-fast)',
-            }}
-          >
-            {z}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:12 }}>
-        <div>
-          <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
-            {t('settings.ip.findLabel').toUpperCase()}
-          </label>
-          <input
-            value={find}
-            onChange={e => setFind(e.target.value)}
-            placeholder="contoh: 10.13 atau .13 atau 192.168.1"
-            style={{
-              width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
-              fontFamily:"var(--font-mono),monospace", outline:'none',
-            }}
-          />
-        </div>
-        <div>
-          <label style={{ fontSize:'var(--fs-label)', color:'var(--txt3)', letterSpacing:'.06em', display:'block', marginBottom:5 }}>
-            {t('settings.ip.replaceLabel').toUpperCase()}
-          </label>
-          <input
-            value={replace}
-            onChange={e => setReplace(e.target.value)}
-            placeholder="contoh: 10.90"
-            style={{
-              width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--txt)',
-              padding:'9px 12px', borderRadius:'var(--r-sm)', fontSize:'var(--fs-body)',
-              fontFamily:"var(--font-mono),monospace", outline:'none',
-            }}
-          />
-        </div>
-      </div>
-
-      {find.trim() && (
-        <div style={{
-          fontSize:'var(--fs-caption)', color: previewCount > 0 ? 'var(--zc)' : 'var(--txt4)',
-          marginBottom:12, padding:'8px 10px', background:'rgba(255,255,255,0.02)',
-          borderRadius:'var(--r-xs)',
-        }}>
-          {previewCount > 0
-            ? `${previewCount} ${t('settings.ip.willBeChanged')} ${zone}`
-            : `${t('settings.ip.noMatch')} ${zone}`}
-        </div>
+      <Input label={t('settings.ip.findLabel')} className={s.mono} autoComplete="off" placeholder={t('settings.ip.findPlaceholder')} value={find} onChange={e => setFind(e.target.value)} />
+      <Input label={t('settings.ip.replaceLabel')} className={s.mono} autoComplete="off" placeholder={t('settings.ip.replacePlaceholder')} value={replace} onChange={e => setReplace(e.target.value)} />
+      {f && (
+        <Notice tone={previewCount > 0 ? 'info' : 'warn'}>
+          {previewCount > 0 ? `${previewCount} ${t('settings.ip.willBeChanged')} ${zone}` : `${t('settings.ip.noMatch')} ${zone}`}
+        </Notice>
       )}
-
-      <button
-        onClick={handleConvertClick}
-        disabled={!find.trim()}
-        style={{
-          width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-          background: find.trim() ? 'var(--zc)' : 'var(--bg3)',
-          color: find.trim() ? '#fff' : 'var(--txt4)',
-          border:'none', borderRadius:'var(--r-sm)', padding:'10px',
-          fontSize:'var(--fs-body)', fontWeight:600, cursor: find.trim() ? 'pointer' : 'not-allowed',
-          transition:'all var(--t-fast)',
-        }}
-      >
-        <Repeat size={14} strokeWidth={1.5} />
-        {t('settings.ip.convertButton')}
-      </button>
-
-      <div style={{ fontSize:'var(--fs-label)', color:'var(--txt4)', marginTop:10, lineHeight:1.6, padding:'8px 10px', background:'rgba(255,255,255,0.02)', borderRadius:'var(--r-xs)' }}>
-        {t('settings.ip.note')}
-      </div>
-    </div>
+      <Button variant="primary" block disabled={!f} onClick={handleConvertClick}>
+        <ArrowsLeftRight aria-hidden="true" /> {t('settings.ip.convertButton')}
+      </Button>
+      <span className={s.capSm}>{t('settings.ip.note')}</span>
+    </Card>
   );
 }

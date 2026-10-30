@@ -1,0 +1,64 @@
+/* components/features/members/members.module.css — layar Member (REDESAIN T9)
+   Padanan kelas prototype T4: .mtb .lkg .msr .cnt .mlist .mc .mbr .mbf .ipl .dc .fm2. Hanya token. */
+
+.root { display: flex; flex-direction: column; gap: var(--sp-h); }
+.top  { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mtb  { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); flex-wrap: nowrap; }
+.mtb > :first-child { flex: 1 1 0; min-width: 0; }
+.lkg  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+
+/* cari + tombol tambah */
+.msr    { display: flex; align-items: center; gap: var(--sp-2); }
+.msrFld { flex: 1; min-width: 0; }
+.msrClr { background: none; border: 0; color: inherit; display: flex; cursor: pointer; padding: 0; }
+
+/* hitungan + urutkan */
+.cnt  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--txt3); font-size: var(--fs-caption); }
+.sort { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--txt3); }
+.sort select { height: 32px; min-width: 84px; font-size: var(--fs-caption); font-weight: var(--fw-strong); }
+
+/* daftar kartu: 1 kolom di ponsel, 2 kolom di desktop */
+.mlist { display: flex; flex-direction: column; gap: var(--sp-2); }
+@media (min-width: 720px) { .mlist { display: grid; grid-template-columns: 1fr 1fr; align-items: start; } }
+
+/* kartu member (pola .mc T2/T7: garis kiri menurut status) */
+.mc     { padding: 0 !important; overflow: hidden; border-left: 3px solid var(--border); }
+.lunas  { border-left-color: var(--c-lunas); }
+.belum  { border-left-color: var(--c-belum); }
+.free   { border-left-color: var(--c-free); }
+/* REDESAIN T12: Nonaktif / Belum terdaftar (N/A) — redup + garis netral */
+.nonaktif, .belumTerdaftar { border-left-color: var(--txt4); opacity: .72; }
+
+.head { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-h); padding-bottom: var(--sp-2); cursor: pointer; }
+.head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.letter { font-weight: 800; font-size: var(--fs-heading); }
+.tx   { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.name { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: var(--fw-strong); }
+.nm   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note { display: inline-flex; color: var(--txt4); font-size: 14px; flex-shrink: 0; }
+.end  { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; flex-shrink: 0; }
+.end .wp-num { font-size: var(--fs-caption); color: var(--txt2); }
+
+.foot { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-h); border-top: 1px solid var(--border2); flex-wrap: nowrap; }
+.sp   { flex: 1; min-width: 0; }
+.ipl  { display: inline-flex; align-items: center; gap: 5px; min-width: 24px; max-width: 100%; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; color: var(--accent); font: var(--fw-strong) var(--fs-caption) var(--font-mono); }
+.ipl svg { flex-shrink: 0; font-size: 14px; }
+.ipl span { overflow: hidden; text-overflow: ellipsis; }
+
+/* Recycle Bin */
+.dc { display: flex; align-items: center; gap: var(--sp-h); padding: var(--sp-h); border-left: 3px solid var(--c-belum); }
+.dcTx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dcTx b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-strong); }
+
+/* sheet Tambah / Edit */
+.form { display: flex; flex-direction: column; gap: var(--sp-h); }
+.two  { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.actions { display: flex; gap: var(--sp-2); }
+.actions > :first-child { flex: 1; }
+.actions > :last-child  { flex: 2; }
+.upper { text-transform: uppercase; }
+.area  { min-height: 76px; resize: vertical; font-family: var(--font-sans); }
+.zoneHead { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+/* REDESAIN T12: keterangan kolom "Terdaftar sejak" */
+.joinHint { font-size: var(--fs-caption); color: var(--txt3); }

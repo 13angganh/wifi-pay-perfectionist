@@ -12,9 +12,39 @@
 // biner) semuanya identik dengan output sebelum upgrade.
 // ══════════════════════════════════════════
 
-import type { AppData } from '@/types';
+import type { AppData, AppSettings } from '@/types';
 import { MONTHS, APP_NAME, APP_VERSION_FULL } from './constants';
-import { getPay } from './payment';
+import { getPay, getMonthStatus, isNotApplicable } from './payment';
+import { getAllActiveZones, getMembersForZone } from './member';
+
+// ── REDESAIN T12: label Status pada ekspor bulanan (PDF/Excel) ──
+// Pembayaran tercatat → 'Lunas' (tidak berubah; termasuk pembayaran di bulan Nonaktif/Belum terdaftar, D3).
+// Tanpa pembayaran: Free → 'Gratis' (sebelumnya tercetak 'Belum' — Free bukan Belum, D4), Nonaktif → 'Nonaktif',
+// Belum terdaftar → 'Belum terdaftar' (tidak tampak seperti penunggak), selain itu 'Belum'. Total/jumlah tetap
+// jumlah pembayaran apa adanya, jadi bulan N/A tidak menambah apa pun ke total.
+export function exportStatusLabel(data: AppData, zone: string, name: string, year: number, month: number): string {
+  if (getPay(data, zone, name, year, month) !== null) return 'Lunas';
+  switch (getMonthStatus(data, zone, name, year, month)) {
+    case 'free':           return 'Gratis';
+    case 'nonaktif':       return 'Nonaktif';
+    case 'belumTerdaftar': return 'Belum terdaftar';
+    default:               return 'Belum';
+  }
+}
+
+// ── REDESAIN T10 (perbaikan zona kustom): daftar baris member per zona tanpa cabang zona tertanam ──
+// `zone` = satu zona, atau 'ALL' = semua zona di `zones`. Bila `zones` tidak diberikan, dipakai zona dasar +
+// zona kustom yang punya daftar member di data (zoneMembers). Daftar member dibaca lewat getMembersForZone.
+export function zonesFromData(data: AppData): string[] {
+  const base = getAllActiveZones({ customZones: [], hiddenZones: [] } as unknown as AppSettings);
+  const extra = Object.keys(data.zoneMembers || {}).filter(k => !base.includes(k));
+  return [...base, ...extra];
+}
+
+export function zoneRows(data: AppData, zone: string, zones?: string[]): { n: string; z: string }[] {
+  const list = zone === 'ALL' ? (zones && zones.length ? zones : zonesFromData(data)) : [zone];
+  return list.flatMap(z => getMembersForZone(z, data).map(n => ({ n, z })));
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // SheetJS tetap via CDN global (XLSX)
@@ -47,7 +77,7 @@ function download(blob: Blob, filename: string) {
 //    didDrawPage), dan grand total sungguhan dipisah tegas hanya di halaman
 //    terakhir via showFoot:'lastPage' + label "GRAND TOTAL" agar tidak tertukar.
 export async function generatePDF(
-  data: AppData, zone: string, year: number, month: number | null
+  data: AppData, zone: string, year: number, month: number | null, zones?: string[]
 ): Promise<{ blob: Blob; filename: string }> {
   // Dynamic import agar tidak bloat initial bundle
   const { default: jsPDF }    = await import('jspdf');
@@ -67,10 +97,7 @@ export async function generatePDF(
   // total begitu baris ini dihapus, sedangkan tabel data asli di bawah tetap
   // tergambar sempurna tanpa perubahan apa pun.
 
-  const mems =
-    zone === 'ALL'
-      ? [...data.krsMembers.map(n => ({ n, z:'KRS' })), ...data.slkMembers.map(n => ({ n, z:'SLK' }))]
-      : (zone === 'KRS' ? data.krsMembers : data.slkMembers).map(n => ({ n, z: zone }));
+  const mems = zoneRows(data, zone, zones);
 
   const title = month !== null
     ? `Rekap WiFi Pay ${zone} - ${MONTHS[month]} ${year}`
@@ -132,7 +159,7 @@ export async function generatePDF(
       const info = data.memberInfo?.[z+'__'+n] || {};
       const dt   = (info[`date_${year}_${month}`] as string) || '—';
       rawValuesByRow[i] = [v || 0];
-      return [i+1, n, z, dt, v !== null ? 'Rp '+v.toLocaleString('id-ID') : '—', v !== null ? 'Lunas' : 'Belum'];
+      return [i+1, n, z, dt, v !== null ? 'Rp '+v.toLocaleString('id-ID') : '—', exportStatusLabel(data, z, n, year, month)];
     });
     sumColIndexes = [4];
   } else {
@@ -140,7 +167,11 @@ export async function generatePDF(
     body = mems.map(({ n, z }, i) => {
       let t = 0;
       const raws: number[] = [];
-      const cols = MONTHS.map((_, mi) => { const v = getPay(data, z, n, year, mi); t += v || 0; raws.push(v || 0); return v !== null ? v : '—'; });
+      const cols = MONTHS.map((_, mi) => {
+        const v = getPay(data, z, n, year, mi); t += v || 0; raws.push(v || 0);
+        // T12: bulan Belum terdaftar / Nonaktif tanpa pembayaran ditandai 'N/A' (bukan kosong biasa); selain itu '—' seperti sebelumnya
+        return v !== null ? v : (isNotApplicable(getMonthStatus(data, z, n, year, mi)) ? 'N/A' : '—');
+      });
       rawValuesByRow[i] = raws;
       return [i+1, n, ...cols, t.toLocaleString('id-ID')];
     });
@@ -276,16 +307,13 @@ export async function generatePDF(
 
 // ── Excel via SheetJS CDN ──
 export function generateExcel(
-  data: AppData, zone: string, year: number, month: number | null
+  data: AppData, zone: string, year: number, month: number | null, zones?: string[]
 ): { blob: Blob; filename: string } {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const XLSX = win.XLSX;
   if (!XLSX) throw new Error('SheetJS belum tersedia');
 
-  const mems =
-    zone === 'ALL'
-      ? [...data.krsMembers.map(n => ({ n, z:'KRS' })), ...data.slkMembers.map(n => ({ n, z:'SLK' }))]
-      : (zone === 'KRS' ? data.krsMembers : data.slkMembers).map(n => ({ n, z: zone }));
+  const mems = zoneRows(data, zone, zones);
 
   const wb = XLSX.utils.book_new();
   let ws: any;
@@ -295,7 +323,7 @@ export function generateExcel(
     mems.forEach(({ n, z }, i) => {
       const v    = getPay(data, z, n, year, month);
       const info = data.memberInfo?.[z+'__'+n] || {};
-      rows.push([i+1, n, z, (info[`date_${year}_${month}`] as string)||'', v !== null ? v : 0, v !== null ? 'Lunas' : 'Belum']);
+      rows.push([i+1, n, z, (info[`date_${year}_${month}`] as string)||'', v !== null ? v : 0, exportStatusLabel(data, z, n, year, month)]);
     });
     const total = mems.reduce((s, { n, z }) => s + (getPay(data, z, n, year, month) || 0), 0);
     rows.push(['','','','TOTAL', total,'']);

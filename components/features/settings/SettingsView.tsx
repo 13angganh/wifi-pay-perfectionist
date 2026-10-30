@@ -1,164 +1,132 @@
-// components/features/settings/SettingsView.tsx
-// Restrukturisasi 2-level (sesi audit UI/UX setelah v11.6.1): 5 grup besar level 1
-// (Akun, Keamanan, Manajemen, Data, Tampilan) via CollapsibleGroup, masing-masing
-// berisi CollapsibleSection individual level 2 SAMA PERSIS seperti sebelumnya (badge
-// status tetap di level 2 saja — TIDAK diringkas ulang di level 1 saat collapsed,
-// sesuai keputusan user). Info Aplikasi BERDIRI SENDIRI di paling bawah, bukan
-// collapsible sama sekali (kontennya sudah berupa kartu visual lengkap).
+// ══════════════════════════════════════════
+// components/features/settings/SettingsView.tsx — layar Pengaturan, DUA LEVEL (REDESAIN T10, prototype T5, D1/D2/D3/D16)
+//
+// Level 1 = 6 grup yang bisa dilipat (default TERTUTUP, perilaku zip): Akun, Keamanan, Manajemen, Data, Tampilan,
+// Info Aplikasi (kartu tanpa baris). Level 2 = baris berlencana status yang membuka HALAMAN ISI (drill-down) berisi
+// seksi dengan logika zip utuh. Pemetaan nama (A8): Akun Saya = Email & Reset Password, Akun Penagih = kelola penagih,
+// Export & Import Data. Tampilan memuat Tema, Mode Navigasi (A1), Posisi Toast (A2), Bahasa. Badge status memakai
+// token: hijau (var(--c-lunas)) saat aktif, redup saat nonaktif. Log/Operasional/Pengaturan TIDAK dikunci kunci global (D15).
+// ══════════════════════════════════════════
 'use client';
 
+import { useEffect, useState, type ReactNode } from 'react';
 import {
-  User, KeySquare, SlidersHorizontal, Database, Palette,
-  Shield, Fingerprint, Mail, Map, ArrowUpDown, MessageCircle, Zap, Sun, Globe, Calendar, Network, UserPlus,
-} from 'lucide-react';
+  AlignTopSimple, CalendarCheck, Database, DeviceMobile, Envelope, Export, Fingerprint, Info, Lightning, LockKey,
+  MapTrifold, Network, Palette, ShieldCheck, Sun, SquaresFour, TextAa, Translate, UserCircle, UserPlus, WhatsappLogo,
+} from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
 import { useAppStore } from '@/store/useAppStore';
-import SettingsPinSection      from './SettingsPinSection';
+import { CollapsibleBody, CollapsibleGroupHeader } from '@/components/ui/CollapsibleGroupHeader';
+import { RowGroup } from '@/components/ui/ListRow';
+import type { AnyIcon } from '@/components/ui/icons';
+import type { TileTone } from '@/components/ui/IconTile';
+import SettingsPinSection from './SettingsPinSection';
 import SettingsBiometricSection from './SettingsBiometricSection';
-import SettingsEmailSection     from './SettingsEmailSection';
-import SettingsZoneSection      from './SettingsZoneSection';
-import SettingsTarifSection     from './SettingsTarifSection';
-import SettingsAppSection       from './SettingsAppSection';
-import SettingsIPSection        from './SettingsIPSection';
-import SettingsTenantSection    from './SettingsTenantSection';
-import CollapsibleSection       from './CollapsibleSection';
-import CollapsibleGroup         from './CollapsibleGroup';
+import SettingsEmailSection from './SettingsEmailSection';
+import SettingsZoneSection from './SettingsZoneSection';
+import SettingsTarifSection from './SettingsTarifSection';
+import SettingsAppSection from './SettingsAppSection';
+import SettingsIPSection from './SettingsIPSection';
+import SettingsTenantSection from './SettingsTenantSection';
+import SettingsRow from './SettingsRow';
+import SettingsPage from './SettingsPage';
+import { SETTINGS_PAGE_EVENT, takePendingSettingsPage, type SettingsPageKey } from './settingsBridge';
+import { allZoneKeys } from './settings.logic';
+import s from './settings.module.css';
+
+type GroupId = 'account' | 'security' | 'management' | 'data' | 'appearance' | 'info';
 
 export default function SettingsView() {
-  const t      = useT();
-  const { settings, theme } = useAppStore();
+  const t = useT();
+  const { settings, theme, navMode, toastPosition, textSize } = useAppStore();
+  const [open, setOpen] = useState<Record<GroupId, boolean>>({ account: false, security: false, management: false, data: false, appearance: false, info: false });
+  const [page, setPage] = useState<SettingsPageKey | null>(null);
+
+  // Pusat Notifikasi → halaman tertentu (permintaan tertunda saat dibuka + event saat sudah terbuka)
+  useEffect(() => {
+    const take = () => { const k = takePendingSettingsPage(); if (k) setPage(k); };
+    take();
+    window.addEventListener(SETTINGS_PAGE_EVENT, take);
+    return () => window.removeEventListener(SETTINGS_PAGE_EVENT, take);
+  }, []);
+
+  const toggle = (id: GroupId) => setOpen(o => ({ ...o, [id]: !o[id] }));
+  const on = (v: boolean | undefined) => !!v;
+  const activeBadge = (v: boolean | undefined) => (on(v) ? t('common.active') : t('common.inactive'));
+  const activeColor = (v: boolean | undefined) => (on(v) ? 'var(--c-lunas)' : 'var(--txt4)');
+
+  const titles: Record<SettingsPageKey, string> = {
+    email: t('settings.emailSectionTitle'), tenant: t('settings.tenant.sectionTitle'),
+    pin: t('settings.pinSectionTitle'), bio: t('settings.biometricSectionTitle'),
+    zone: t('settings.zones'), ip: t('settings.ipSectionTitle'), quick: t('settings.quickPaySectionTitle'),
+    autodate: t('settings.autoDateSectionTitle'), export: t('settings.export'), wa: t('settings.waSummaryTitle'),
+    theme: t('settings.theme'), textsize: t('display.textSize'), nav: t('display.navMode'), toast: t('display.toastPos'), lang: t('settings.language'),
+  };
+  const pages: Record<SettingsPageKey, ReactNode> = {
+    email: <SettingsEmailSection />, tenant: <SettingsTenantSection />,
+    pin: <SettingsPinSection />, bio: <SettingsBiometricSection />,
+    zone: <SettingsZoneSection />, ip: <SettingsIPSection />,
+    quick: <SettingsTarifSection section="quickpay" />, autodate: <SettingsAppSection section="autodate" />,
+    export: <SettingsTarifSection section="export" />, wa: <SettingsTarifSection section="wa" />,
+    theme: <SettingsAppSection section="theme" />, textsize: <SettingsAppSection section="textsize" />, nav: <SettingsAppSection section="nav" />,
+    toast: <SettingsAppSection section="toast" />, lang: <SettingsAppSection section="language" />,
+  };
+
+  if (page) {
+    return <SettingsPage title={titles[page]} onBack={() => setPage(null)} key={page}>{pages[page]}</SettingsPage>;
+  }
+
+  const themeLabel = theme === 'light' ? t('settings.theme.light') : theme === 'gold' ? t('settings.theme.gold') : t('settings.theme.dark');
+  const row = (key: SettingsPageKey, icon: AnyIcon, tone: TileTone, extra?: { badge?: string | number; badgeColor?: string; description?: string; title?: string }) => (
+    <SettingsRow key={key} icon={icon} tone={tone} title={titles[key]} onOpen={() => setPage(key)} {...extra} />
+  );
+  const group = (id: GroupId, title: string, icon: AnyIcon, tone: TileTone, count: number | undefined, body: ReactNode) => (
+    <section key={id} className={s.group}>
+      <CollapsibleGroupHeader title={title} open={open[id]} onToggle={() => toggle(id)} controlsId={`gb-${id}`} icon={icon} tone={tone} count={count} />
+      <CollapsibleBody id={`gb-${id}`} open={open[id]}>{body}</CollapsibleBody>
+    </section>
+  );
 
   return (
-    <div>
-      {/* v11.7.1: judul "Pengaturan" + ikon Settings DIHAPUS — pola sama dgn DashboardView.tsx
-          (duplikat dgn label menu yg sama di Sidebar). Beda dgn Dashboard, Settings tidak
-          py dropdown/filter yg perlu direstrukturisasi — cukup hapus blok judulnya saja,
-          konten grup langsung mulai dari sini. */}
+    <div className={s.root}>
+      <div className={s.groups}>
+        {group('account', t('settings.group.account'), UserCircle, 'blue', 2,
+          <RowGroup>
+            {row('email', Envelope, 'blue', { title: t('settings.group.accountMine'), description: titles.email })}
+            {row('tenant', UserPlus, 'teal', { title: t('settings.group.accountTenant'), description: titles.tenant })}
+          </RowGroup>)}
 
-      {/* ═══ Grup 1: Akun ═══ */}
-      <CollapsibleGroup title={t('settings.group.account')} icon={<User size={18} strokeWidth={1.5} />}>
-        {/* Sub-label "Akun Saya" — pemisah visual, BUKAN section tersendiri, supaya
-            tidak tertukar dgn "Akun Penagih" di bawahnya (dua hal beda: atur akun
-            sendiri vs bikin akun utk orang lain). */}
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-label)', fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:'var(--txt4)', padding:'4px 4px 6px' }}>
-          {t('settings.group.accountMine')}
-        </div>
-        <CollapsibleSection
-          title={t('settings.emailSectionTitle')}
-          icon={<Mail size={16} strokeWidth={1.5} />}
-        >
-          <SettingsEmailSection />
-        </CollapsibleSection>
+        {group('security', t('settings.group.security'), ShieldCheck, 'lunas', 2,
+          <RowGroup>
+            {row('pin', LockKey, 'orange', { badge: activeBadge(settings.pinEnabled), badgeColor: activeColor(settings.pinEnabled) })}
+            {row('bio', Fingerprint, 'purple', { badge: activeBadge(settings.biometricEnabled), badgeColor: activeColor(settings.biometricEnabled) })}
+          </RowGroup>)}
 
-        <div style={{ fontFamily:"var(--font-sans),sans-serif", fontSize:'var(--fs-label)', fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:'var(--txt4)', padding:'10px 4px 6px' }}>
-          {t('settings.group.accountTenant')}
-        </div>
-        <CollapsibleSection
-          title={t('settings.tenant.sectionTitle')}
-          icon={<UserPlus size={16} strokeWidth={1.5} />}
-        >
-          <SettingsTenantSection />
-        </CollapsibleSection>
-      </CollapsibleGroup>
+        {group('management', t('settings.group.management'), SquaresFour, 'purple', 4,
+          <RowGroup>
+            {row('zone', MapTrifold, 'teal', { badge: allZoneKeys(settings).length })}
+            {row('ip', Network, 'blue')}
+            {row('quick', Lightning, 'orange')}
+            {row('autodate', CalendarCheck, 'lunas', {
+              badge: settings.autoDate ? t('settings.autoDateBadgeAuto') : t('settings.autoDateBadgeManual'),
+              badgeColor: activeColor(settings.autoDate),
+            })}
+          </RowGroup>)}
 
-      {/* ═══ Grup 2: Keamanan ═══ */}
-      <CollapsibleGroup title={t('settings.group.security')} icon={<KeySquare size={18} strokeWidth={1.5} />}>
-        <CollapsibleSection
-          title={t('settings.pinSectionTitle')}
-          icon={<Shield size={16} strokeWidth={1.5} />}
-          badge={settings.pinEnabled ? t('common.active') : t('common.inactive')}
-          badgeColor={settings.pinEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
-        >
-          <SettingsPinSection />
-        </CollapsibleSection>
+        {group('data', t('settings.group.data'), Database, 'slate', 2,
+          <RowGroup>{row('export', Export, 'blue')}{row('wa', WhatsappLogo, 'lunas')}</RowGroup>)}
 
-        <CollapsibleSection
-          title={t('settings.biometricSectionTitle')}
-          icon={<Fingerprint size={16} strokeWidth={1.5} />}
-          badge={settings.biometricEnabled ? t('common.active') : t('common.inactive')}
-          badgeColor={settings.biometricEnabled ? 'var(--c-lunas)' : 'var(--txt4)'}
-        >
-          <SettingsBiometricSection />
-        </CollapsibleSection>
-      </CollapsibleGroup>
+        {group('appearance', t('settings.group.appearance'), Palette, 'orange', 5,
+          <RowGroup>
+            <SettingsRow icon={Sun} tone="orange" title={titles.theme} description={t('settings.themeDesc')} badge={themeLabel} badgeColor="var(--c-lunas)" onOpen={() => setPage('theme')} />
+            {row('textsize', TextAa, 'teal', { badge: textSize === 'large' ? t('display.textLarge') : t('display.textNormal'), description: t('settings.textSizeDesc') })}
+            {row('nav', DeviceMobile, 'blue', { badge: navMode === 'sidebar' ? t('display.navSidebar') : t('display.navBottom'), description: t('settings.navModeDesc') })}
+            {row('toast', AlignTopSimple, 'purple', { badge: toastPosition === 'bottom' ? t('display.toastBottom') : t('display.toastTop'), description: t('settings.toastPosDesc') })}
+            <SettingsRow icon={Translate} tone="teal" title={titles.lang} description={t('settings.languageDesc')} badge={settings.language === 'en' ? t('settings.languageBadgeEn') : t('settings.languageBadgeId')} badgeColor="var(--c-lunas)" onOpen={() => setPage('lang')} />
+          </RowGroup>)}
 
-      {/* ═══ Grup 3: Manajemen ═══ */}
-      <CollapsibleGroup title={t('settings.group.management')} icon={<SlidersHorizontal size={18} strokeWidth={1.5} />}>
-        <CollapsibleSection
-          title={t('settings.zones')}
-          icon={<Map size={16} strokeWidth={1.5} />}
-        >
-          <SettingsZoneSection />
-        </CollapsibleSection>
-
-        {/* Konversi IP — v11.5: dipindah dari menu Members, kini fleksibel (bukan hanya oktet ke-2) */}
-        <CollapsibleSection
-          title={t('settings.ipSectionTitle')}
-          icon={<Network size={16} strokeWidth={1.5} />}
-        >
-          <SettingsIPSection />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title={t('settings.quickPaySectionTitle')}
-          icon={<Zap size={16} strokeWidth={1.5} />}
-        >
-          <SettingsTarifSection section="quickpay" />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title={t('settings.autoDateSectionTitle')}
-          icon={<Calendar size={16} strokeWidth={1.5} />}
-          badge={settings.autoDate ? t('settings.autoDateBadgeAuto') : t('settings.autoDateBadgeManual')}
-          badgeColor={settings.autoDate ? 'var(--c-lunas)' : 'var(--txt4)'}
-        >
-          <SettingsAppSection section="autodate" />
-        </CollapsibleSection>
-      </CollapsibleGroup>
-
-      {/* ═══ Grup 4: Data ═══ */}
-      <CollapsibleGroup title={t('settings.group.data')} icon={<Database size={18} strokeWidth={1.5} />}>
-        {/* v11.5.14: Export & Import Data — hanya komponen ExportSection dari SettingsTarifSection.
-            Judul digabung (dulu "Export Data") supaya header collapsed jujur mencerminkan isinya —
-            sebelumnya Import ada di dalam tapi tidak terlihat dari nama section sebelum di-expand. */}
-        <CollapsibleSection
-          title={t('settings.export')}
-          icon={<ArrowUpDown size={16} strokeWidth={1.5} />}
-        >
-          <SettingsTarifSection section="export" />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title={t('settings.waSummaryTitle')}
-          icon={<MessageCircle size={16} strokeWidth={1.5} />}
-        >
-          <SettingsTarifSection section="wa" />
-        </CollapsibleSection>
-      </CollapsibleGroup>
-
-      {/* ═══ Grup 5: Tampilan ═══ */}
-      <CollapsibleGroup title={t('settings.group.appearance')} icon={<Palette size={18} strokeWidth={1.5} />}>
-        <CollapsibleSection
-          title={t('settings.theme')}
-          icon={<Sun size={16} strokeWidth={1.5} />}
-          badge={theme === 'light' ? t('settings.theme.light') : theme === 'gold' ? t('settings.theme.gold') : t('settings.theme.dark')}
-          badgeColor="var(--c-lunas)"
-        >
-          <SettingsAppSection section="theme" />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title={t('settings.language')}
-          icon={<Globe size={16} strokeWidth={1.5} />}
-          badge={settings.language === 'en' ? t('settings.languageBadgeEn') : t('settings.languageBadgeId')}
-          badgeColor="var(--c-lunas)"
-        >
-          <SettingsAppSection section="language" />
-        </CollapsibleSection>
-      </CollapsibleGroup>
-
-      {/* ═══ Info Aplikasi — berdiri sendiri, BUKAN collapsible sama sekali ═══ */}
-      <SettingsAppSection section="info" />
+        {group('info', t('settings.appInfo'), Info, 'slate', undefined, <SettingsAppSection section="info" />)}
+      </div>
     </div>
   );
 }

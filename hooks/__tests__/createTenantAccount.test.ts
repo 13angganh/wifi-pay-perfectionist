@@ -219,7 +219,7 @@ describe('createTenantAccount', () => {
     createUserShouldFail = true;
     createUserFailCode = 'auth/weak-password';
     const result = await createTenantAccount('penagih@test.com', '123');
-    expect(result.error).toContain('Password terlalu lemah');
+    expect(result.error).toContain('Kata sandi terlalu lemah');
   });
 
   // ── Tidak menyentuh sesi/store owner sama sekali ──

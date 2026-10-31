@@ -166,7 +166,7 @@ describe('Member — tampilan', () => {
     setup({}, { search: 'zzzz' });
     const r2 = render(<MembersView />);
     expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
-    await userEvent.setup().click(btn('Reset Filter'));
+    await userEvent.setup().click(btn('Atur Ulang Filter'));
     expect(rows()).toHaveLength(4);
     r2.unmount();
 
@@ -191,12 +191,12 @@ describe('Member — kunci, zona, tab', () => {
     const u = userEvent.setup();
     expect(screen.getByText('Terbuka')).toBeInTheDocument();
     expect(btn('Tambah Member')).toBeInTheDocument();
-    expect(within(rowOf('ABIL')).getByRole('button', { name: 'Edit member: ABIL' })).toBeInTheDocument();
+    expect(within(rowOf('ABIL')).getByRole('button', { name: 'Ubah member: ABIL' })).toBeInTheDocument();
     await u.click(btn('Daftar member sedang terbuka. Ketuk untuk mengunci.'));
     expect(useAppStore.getState().membersLocked).toBe(true);
     expect(screen.getByText('Terkunci')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Tambah Member' })).not.toBeInTheDocument();
-    expect(within(rowOf('ABIL')).queryByRole('button', { name: /Edit member/ })).not.toBeInTheDocument();
+    expect(within(rowOf('ABIL')).queryByRole('button', { name: /Ubah member/ })).not.toBeInTheDocument();
     expect(within(rowOf('ABIL')).queryByRole('button', { name: /Hapus member/ })).not.toBeInTheDocument();
     expect(within(rowOf('ABIL')).queryByRole('button', { name: /member gratis/ })).not.toBeInTheDocument();
   });
@@ -230,7 +230,7 @@ describe('Member — Tambah / Edit (sheet)', () => {
     await u.type(within(dlg).getByLabelText('Nama'), 'budi baru');
     await u.type(within(dlg).getByLabelText('ID Pelanggan'), 'KRS-099');
     await u.type(within(dlg).getByLabelText(/Tarif/), '120');
-    await u.type(within(dlg).getByLabelText('IP / Link Router'), '10.9.9.9');
+    await u.type(within(dlg).getByLabelText('IP / Tautan Router'), '10.9.9.9');
     await u.type(within(dlg).getByLabelText('Catatan'), 'pindahan');
     await u.click(within(dlg).getByRole('button', { name: /Tambah ke KRS/ }));
     const s = useAppStore.getState().appData;
@@ -279,7 +279,7 @@ describe('Member — Tambah / Edit (sheet)', () => {
     setup();
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(within(rowOf('ADIT')).getByRole('button', { name: 'Edit member: ADIT' }));
+    await u.click(within(rowOf('ADIT')).getByRole('button', { name: 'Ubah member: ADIT' }));
     const dlg = screen.getByRole('dialog');
     expect(within(dlg).getByLabelText('Nama')).toHaveValue('ADIT');
     expect(within(dlg).getByLabelText('Catatan')).toHaveValue('catatan');
@@ -287,7 +287,7 @@ describe('Member — Tambah / Edit (sheet)', () => {
     await u.click(within(dlg).getByRole('button', { name: /Simpan Perubahan/ }));
     expect(useAppStore.getState().appData.memberInfo!.KRS__ADIT).toEqual({ id: 'KRS-002', ip: 'http://10.0.0.2' });
 
-    await u.click(within(rowOf('ABIL')).getByRole('button', { name: 'Edit member: ABIL' }));
+    await u.click(within(rowOf('ABIL')).getByRole('button', { name: 'Ubah member: ABIL' }));
     const d2 = screen.getByRole('dialog');
     await u.clear(within(d2).getByLabelText('Nama')); await u.type(within(d2).getByLabelText('Nama'), 'zaki');
     await u.click(within(d2).getByRole('button', { name: /Simpan Perubahan/ }));
@@ -301,7 +301,7 @@ describe('Member — Tambah / Edit (sheet)', () => {
     setup({}, { activeZone: 'TIMUR' });
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(within(rowOf('BUDI')).getByRole('button', { name: 'Edit member: BUDI' }));
+    await u.click(within(rowOf('BUDI')).getByRole('button', { name: 'Ubah member: BUDI' }));
     const dlg = screen.getByRole('dialog');
     await u.clear(within(dlg).getByLabelText('Nama')); await u.type(within(dlg).getByLabelText('Nama'), 'budiman');
     await u.click(within(dlg).getByRole('button', { name: /Simpan Perubahan/ }));
@@ -353,7 +353,7 @@ describe('Member — hapus, Recycle Bin, pulihkan', () => {
     expect(s.krsMembers).toEqual(['ABIL', 'ADIT', 'AKBAR', 'ANA']);
     expect(s.payments[`KRS__ABIL__${Y}__${M}`]).toBe(100);
     expect(s.deletedMembers).toEqual({});
-    expect(screen.getByText('Recycle Bin Kosong')).toBeInTheDocument();
+    expect(screen.getByText('Tempat Sampah Kosong')).toBeInTheDocument();
   });
 
   it('hapus permanen: Confirm (trash) lalu entri bin hilang', async () => {
@@ -396,10 +396,10 @@ describe('FreeMemberModal — sheet', () => {
     const u = userEvent.setup();
     await u.click(within(rowOf('ADIT')).getByRole('button', { name: 'Status & Periode: ADIT' }));
     const dlg = screen.getByRole('dialog', { name: 'Status & Periode: ADIT' });
-    await u.click(within(dlg).getByRole('button', { name: /Tambah periode Free/ }));
+    await u.click(within(dlg).getByRole('button', { name: /Tambah periode Gratis/ }));
     expect(within(dlg).queryByRole('button', { name: /Kembalikan Berbayar/ })).not.toBeInTheDocument();
     await u.click(within(dlg).getByRole('checkbox', { name: /selamanya/i }));
-    await u.click(within(dlg).getByRole('button', { name: 'Simpan Free Member' }));
+    await u.click(within(dlg).getByRole('button', { name: 'Simpan Member Gratis' }));
     const st = useAppStore.getState().appData;
     const f = st.memberPeriods!.KRS__ADIT.free!;
     expect(f).toHaveLength(1);
@@ -415,10 +415,10 @@ describe('FreeMemberModal — sheet', () => {
     const u = userEvent.setup();
     await u.click(within(rowOf('AKBAR')).getByRole('button', { name: 'Status & Periode: AKBAR' }));
     let dlg = screen.getByRole('dialog');
-    await u.click(within(dlg).getByRole('button', { name: /Tambah periode Free/ }));
+    await u.click(within(dlg).getByRole('button', { name: /Tambah periode Gratis/ }));
     await u.selectOptions(within(dlg).getByLabelText(/Mulai gratis dari — Tahun/), '2025');
     await u.selectOptions(within(dlg).getByLabelText(/Sampai dengan — Tahun/), '2024');
-    await u.click(within(dlg).getByRole('button', { name: 'Simpan Free Member' }));
+    await u.click(within(dlg).getByRole('button', { name: 'Simpan Member Gratis' }));
     expect(toast.show).toHaveBeenLastCalledWith('Tanggal selesai harus setelah tanggal mulai', 'err');
     expect(useAppStore.getState().appData.memberPeriods!.KRS__AKBAR).toBeUndefined();
     await u.click(within(dlg).getByRole('button', { name: 'Batal' }));
@@ -426,7 +426,7 @@ describe('FreeMemberModal — sheet', () => {
 
     await u.click(within(rowOf('ANA')).getByRole('button', { name: 'Status & Periode: ANA' }));
     dlg = screen.getByRole('dialog');
-    await u.click(within(dlg).getByRole('button', { name: /Ubah periode Free/ }));
+    await u.click(within(dlg).getByRole('button', { name: /Ubah periode Gratis/ }));
     await u.click(within(dlg).getByRole('button', { name: /Kembalikan Berbayar/ }));
     expect(useAppStore.getState().confirmDialog.icon).toBe('question');
     await act(async () => { useAppStore.getState().confirmDialog.cb?.(); await Promise.resolve(); });

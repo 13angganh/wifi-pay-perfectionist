@@ -1,7 +1,7 @@
 # REDESAIN-MANIFEST.md — WiFi Pay redesain UI/UX
 
 Berkas koordinasi antar-tahap (kontrak T0 bagian 9 butir 5). Dipindah ke `docs/` di T11 (selesai).
-**Status terakhir: v11.10.1 (pembaruan keamanan Next.js 16.4.3 di atas T13; lihat bagian 17). Sebelumnya TAHAP 13 selesai (menerapkan hasil uji prototipe R1–R17 ke zip produksi, v11.10.0; lihat bagian 16). Sebelumnya TAHAP 12 selesai (FITUR: Periode Member — Free multi-periode, Terdaftar sejak, Nonaktif/Reaktivasi — + perbaikan tanggal bayar; lihat bagian 15). Sebelumnya TAHAP 11: verifikasi + pembersihan + zip final (bagian 14)** · `APP_VERSION` = **v11.10.1** (patch pembaruan Next.js; v11.10.0 di T13; sebelumnya v11.9.0 di T12; README punya entri baru paling atas).
+**Status terakhir: v11.10.2 (perbaikan tampilan, kelancaran, bahasa baku; lihat bagian 18). Sebelumnya v11.10.1 (pembaruan keamanan Next.js 16.4.3 di atas T13; lihat bagian 17). Sebelumnya TAHAP 13 selesai (menerapkan hasil uji prototipe R1–R17 ke zip produksi, v11.10.0; lihat bagian 16). Sebelumnya TAHAP 12 selesai (FITUR: Periode Member — Free multi-periode, Terdaftar sejak, Nonaktif/Reaktivasi — + perbaikan tanggal bayar; lihat bagian 15). Sebelumnya TAHAP 11: verifikasi + pembersihan + zip final (bagian 14)** · `APP_VERSION` = **v11.10.2** (patch perbaikan UX; v11.10.1 patch pembaruan Next.js; v11.10.0 di T13; sebelumnya v11.9.0 di T12; README punya entri baru paling atas).
 Zip asal: `wifi-pay-perfectionist-main.zip` (v11.7.1, tidak ditimpa) → T6: `wifi-pay-redesain-T6.zip` → T7: `wifi-pay-redesain-T7.zip` (tidak ditimpa) → T8: `wifi-pay-redesain-T8.zip` (tidak ditimpa) → T9: `wifi-pay-redesain-T9.zip` (tidak ditimpa) → T10: `wifi-pay-redesain-T10.zip` → T11: `wifi-pay-perfectionist-v11_8_0.zip` → T12: `wifi-pay-perfectionist-v11_9_0.zip` → T13: `wifi-pay-perfectionist-v11_10_0.zip` → zip ini: `wifi-pay-perfectionist-v11_10_1.zip`.
 
 ---
@@ -978,3 +978,13 @@ Permintaan user: naik ke Next.js stable terbaru (user mengira 16.3.4; yang benar
 - **Audit:** 54 → 42 advisori; 12 ditutup (3 critical + 2 high Next, 1 high sharp, 5 moderate dan 1 low Next). Sisa tidak dari Next (dompurify via jspdf, grpc-js/re2js via firebase, source-map-js via postcss, zod, dan alat test/dev).
 - **Catatan Vercel:** `vercel.json` memakai `installCommand: npm install` sedangkan lockfile proyek pnpm; `next` dipin eksak (16.4.3 pasti terpasang), tetapi versi transitif lain di deploy bisa berbeda dari lockfile. Tidak diubah di sini.
 - **Jebakan baru:** npm 10.9.7 di sandbox gagal (`Cannot read properties of null (reading 'edgesOut')`) pada package.json lama maupun baru, jadi resolusi npm ala Vercel tidak bisa disimulasikan; itu bug npm lingkungan, bukan akibat upgrade.
+
+## 18. v11.10.2 — perbaikan tampilan, kelancaran, dan bahasa baku (di atas v11.10.1)
+
+Tujuh butir permintaan user dari uji di HP (lihat README v11.10.2 untuk rincian):
+- Chip "Semua" Entri memakai jumlah (identik Rekap). Splash tanpa tagline; bilah loading satu arah (bukan `alternate`).
+- Pindah menu: `setView` idempoten + efek `setView` di 9 `page.tsx` dihapus (AppShell yang menyinkronkan pathname) + `useRoutePrefetch`. Menutup juga celah lama: efek halaman me-reset periode yang baru diatur `setViewWithPeriod`.
+- `useAxisLock` dirombak (anti scroll ganda, jepit ujung, inersia berhenti di ujung, kecepatan dihaluskan); `.rwc` `overscroll-behavior: none`.
+- Grafik pendapatan Beranda interaktif (batang = tombol + keterangan).
+- id.ts dibakukan (Beranda, Entri, Aktivitas, Ekspor/Impor, Cadangan, Unduh, Kata Sandi, Tautan, Berkas, Ubah, Atur Ulang, Perbarui, Luring/daring, Gratis, Tempat Sampah, Wawasan, Bilah Samping, Anda). Dipertahankan sengaja: **Quick Pay** (nama fitur) dan **Member** (nama menu; masih berdampingan dengan "pelanggan" pada sebagian teks, menunggu keputusan user). Teks aksi Log baru memakai istilah baku; entri Log lama (otomatis terhapus setelah 30 hari) tetap terbaca karena deteksi jenis Log berbasis tag `[PAY]/[DEL]/[FREE]` dan kata kunci yang tidak berubah.
+- Tidak berubah: data, aturan bisnis, `database.rules.json`, `vercel.json`, `next.config.ts`, dependensi.

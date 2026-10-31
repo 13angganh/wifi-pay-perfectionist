@@ -98,6 +98,14 @@ export interface ViewSlice {
 
 const now = new Date();
 
+const isEmptyRecord = (x: unknown) =>
+  typeof x === 'object' && x !== null && !Array.isArray(x) && Object.keys(x as object).length === 0;
+
+/** true bila menerapkan `patch` tidak mengubah apa pun (objek kosong dianggap sama dengan objek kosong lain). */
+function patchIsNoop(state: Record<string, unknown>, patch: Record<string, unknown>): boolean {
+  return Object.keys(patch).every(k => Object.is(state[k], patch[k]) || (isEmptyRecord(state[k]) && isEmptyRecord(patch[k])));
+}
+
 export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
   // Zone & view
   activeZone:  'KRS',
@@ -106,10 +114,15 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
     activeZone: z, search: '', filterStatus: 'all',
     expandedCard: null, entryCardYear: {}, entryCardMonth: {},
   }),
-  setView: (v, opts) => set(() => {
+  // v11.10.2: setView IDEMPOTEN — bila semua nilai yang akan ditulis sudah sama dengan state sekarang,
+  // state dikembalikan apa adanya sehingga Zustand TIDAK memberi tahu subscriber (tanpa render ulang).
+  // Sebelumnya tiap pindah menu memicu 3 update beruntun (navigate → efek halaman → sinkronisasi pathname
+  // AppShell) dan masing-masing merender ulang halaman berat (mis. Rekap) = penyebab lag bottom nav.
+  // Nilai akhir state TIDAK berubah dibanding sebelumnya; hanya update berulang yang identik yang dilewati.
+  setView: (v, opts) => set((s) => {
     const _n = new Date();
     const keepPeriod = opts?.keepPeriod === true;
-    return {
+    const patch: Partial<ViewSlice> = {
       currentView: v,
       search: '', filterStatus: 'all',
       entryScrollTop: 0, rekapExpanded: null,
@@ -128,6 +141,7 @@ export const createViewSlice: StateCreator<ViewSlice> = (set) => ({
             ...(v !== 'entry' ? { entryCardYear: {}, entryCardMonth: {} } : {}),
           }),
     };
+    return patchIsNoop(s as unknown as Record<string, unknown>, patch as Record<string, unknown>) ? s : patch;
   }),
   // v11.5: set currentView + selYear + selMonth dalam satu operasi atomic — menghindari
   // race condition saat dashboard "klik tunggakan" perlu pindah ke Entry pada bulan tertentu.

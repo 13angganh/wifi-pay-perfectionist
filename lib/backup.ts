@@ -4,6 +4,7 @@
 import type { AppData } from '@/types';
 import { doJSONBackup } from './export';
 import { showToast } from '@/components/ui/Toast'; // task 1.06
+import { tLog } from './i18n';
 
 export function checkAutoBackup(data: AppData): void {
   if (typeof window === 'undefined') return;
@@ -28,6 +29,6 @@ export function checkAutoBackup(data: AppData): void {
   // task 1.06: tampilkan toast setelah backup selesai
   setTimeout(() => {
     doJSONBackup(data);
-    showToast('Auto backup berhasil diunduh', 'ok');
+    showToast(tLog('backup.autoDone'), 'ok');
   }, 5000);
 }

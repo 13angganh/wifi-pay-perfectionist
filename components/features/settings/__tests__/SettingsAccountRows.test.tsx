@@ -1,5 +1,5 @@
 // components/features/settings/__tests__/SettingsAccountRows.test.tsx — REDESAIN T11
-// Grup "Akun" memakai NAMA zip: baris "Akun Saya" (isi: Email & Reset Password) dan "Akun Penagih" (isi: Buat Akun Penagih),
+// Grup "Akun" memakai NAMA zip: baris "Akun Saya" (isi: Email & Atur Ulang Kata Sandi) dan "Akun Penagih" (isi: Buat Akun Penagih),
 // sesuai prototype T5. Sebelumnya judul baris hanya memuat nama seksi, sehingga "Akun Saya"/"Akun Penagih" tidak tampil.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -30,7 +30,7 @@ describe('Pengaturan — grup Akun memakai nama zip', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Akun/ }));
     const saya = screen.getByRole('button', { name: /Akun Saya/ });
     expect(within(saya).getByText('Akun Saya')).toBeInTheDocument();
-    expect(within(saya).getByText('Email & Reset Password')).toBeInTheDocument();
+    expect(within(saya).getByText('Email & Atur Ulang Kata Sandi')).toBeInTheDocument();
     const penagih = screen.getByRole('button', { name: /Akun Penagih/ });
     expect(within(penagih).getByText('Akun Penagih')).toBeInTheDocument();
     expect(within(penagih).getByText('Buat Akun Penagih')).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('Pengaturan — grup Akun memakai nama zip', () => {
     render(<SettingsView />);
     await userEvent.click(screen.getByRole('button', { name: /^Akun/ }));
     await userEvent.click(screen.getByRole('button', { name: /Akun Saya/ }));
-    expect(screen.getByRole('heading', { name: 'Email & Reset Password' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Email & Atur Ulang Kata Sandi' })).toBeInTheDocument();
   });
 
   it('English memakai kamus en', async () => {

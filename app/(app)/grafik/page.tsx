@@ -1,7 +1,5 @@
 'use client';
-import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useAppStore } from '@/store/useAppStore';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 // task 1.09: lazy-load GrafikView agar Chart.js (~200KB gzipped) tidak masuk bundle awal.
@@ -17,7 +15,5 @@ const GrafikView = dynamic(() => import('@/components/features/grafik/GrafikView
 });
 
 export default function Page() {
-  const { setView } = useAppStore();
-  useEffect(() => { setView('grafik'); }, [setView]);
   return <GrafikView />;
 }

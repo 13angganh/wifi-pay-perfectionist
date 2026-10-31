@@ -1,6 +1,18 @@
-# WiFi Pay Next — Update v11.10.1
+# WiFi Pay Next — Update v11.10.2
 
 > Redesain UI/UX menyeluruh (tahap T6–T11): tampilan baru dengan 3 tema (Terang/Gelap/Emas), Mode Navigasi (Bottom/Sidebar), Posisi Toast, Pusat Notifikasi, dan layar Log, Operasional, Pengaturan versi baru. **Logika bisnis zip v11.7.1 dipertahankan**; perubahan logika hanya yang disetujui user (Register Tambahan A1–A3 dan A27–A29, serta perbaikan zona kustom). Rincian lengkap per tahap: `docs/REDESAIN-MANIFEST.md`.
+
+## v11.10.2 — perbaikan tampilan, kelancaran, dan bahasa baku
+
+Tujuh butir dari uji di HP. Data pelanggan, logika bisnis, dan struktur data TIDAK berubah.
+
+- **Entri — chip "Semua" kini menampilkan jumlah** (sama seperti Rekap). Satu-satunya chip tanpa angka; baris chip Entri dan Rekap kini identik.
+- **Splash:** kalimat "Sederhana. Andal. Untuk Usaha Anda." dihapus (teks + key `splash.tagline` di id/en). **Animasi loading:** bilah dulu memakai animasi `width` dengan `infinite alternate`, sehingga maju lalu MUNDUR ("mental balik"); kini bilah selebar 40% meluncur satu arah kiri → kanan lalu mengulang (hanya `transform`, ringan untuk GPU). Reduced-motion: bilah statis.
+- **Pindah menu (bottom nav / sidebar) tidak lag:** (a) tiap pindah menu sebelumnya memicu TIGA update store berturut-turut (`navigate()`, efek `setView` di tiap `page.tsx`, lalu sinkronisasi pathname AppShell), masing-masing merender ulang halaman berat seperti Rekap. Efek redundan di 9 `page.tsx` dihapus dan `setView` dibuat idempoten (nilai identik = tidak ada notifikasi). (b) Rute belum pernah di-prefetch; kini `useRoutePrefetch` memuat semua rute menu bertahap saat browser senggang (dan menghangatkan chunk Grafik/Chart.js). (c) Tombol nav `touch-action: manipulation`. Efek samping yang ikut beres: efek `setView` di halaman dulu me-reset periode/kartu yang baru diatur `setViewWithPeriod` (alur Beranda → Entri ke bulan lain).
+- **Tabel Rekap, mentok di ujung tidak bergetar:** `useAxisLock` dirombak — tidak lagi menggeser lewat JS bila touchmove tidak-cancelable (browser sudah memegang scroll → dulu scroll ganda + efek overscroll native), geseran dijepit ke ujung, inersia berhenti saat menabrak ujung, kecepatan lepas jari dihaluskan/dibatasi dan diabaikan bila jari sempat diam > 80 ms. CSS `.rwc`: `overscroll-behavior: none` (bukan `contain`) + `touch-action: pan-x pan-y`.
+- **Beranda → grafik pendapatan interaktif:** 6 batang kini tombol; ketuk menampilkan bulan, nominal, dan perubahan vs batang sebelumnya; ketuk lagi menutup. Key baru `dashboard.trendHint`.
+- **Bahasa Indonesia baku (id.ts; Inggris tidak berubah):** Dashboard → **Beranda**, Entry → **Entri**, Log → **Aktivitas** (judul "Catatan Aktivitas"), Export/Import → **Ekspor/Impor**, Backup → **Cadangan**, Download → **Unduh**, Password → **Kata Sandi**, Link → **Tautan**, File → **Berkas**, Edit → **Ubah**, Reset → **Atur Ulang**, Update → **Perbarui**, Offline/online → **Luring/daring**, Free → **Gratis**, Recycle Bin → **Tempat Sampah**, Insight → **Wawasan**, Sidebar → **Bilah Samping**, "kamu" → **Anda**, "Nunggak" → **Menunggak**, dan sisanya (lihat `lib/__tests__/v11-10-2-guard.test.ts`, yang menjaga agar kata-kata ini tidak kembali). Nama fitur **Quick Pay** dan istilah **Member** sengaja dipertahankan. Teks hardcoded yang belum lewat kamus (toast gagal muat, toast cadangan otomatis, pesan galat Firebase Auth, teks error boundary, aksi Log Entri/Gratis) dirapikan; judul `offline.html` disamakan.
+- **Test:** 1101 → 1124 test (58 → 61 file); tsc dan `eslint .` bersih.
 
 ## v11.10.1 — pembaruan keamanan Next.js 16.3.5 → 16.4.3
 
@@ -1409,7 +1421,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.10.1 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.10.2 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

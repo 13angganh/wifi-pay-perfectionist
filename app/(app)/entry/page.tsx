@@ -1,9 +1,5 @@
 'use client';
-import { useEffect } from 'react';
-import { useAppStore } from '@/store/useAppStore';
 import EntryView from '@/components/features/entry/EntryView';
 export default function EntryPage() {
-  const { setView } = useAppStore();
-  useEffect(()=>{ setView('entry'); },[setView]);
   return <EntryView />;
 }

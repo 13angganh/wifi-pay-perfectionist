@@ -60,7 +60,7 @@ describe('Tambah member — "Terdaftar sejak" (D6)', () => {
   });
 });
 
-describe('Edit member — rename dan "Terdaftar sejak"', () => {
+describe('Ubah member — rename dan "Terdaftar sejak"', () => {
   it('rename memindahkan SEMUA periode ke nama baru (celah lama "rename → free hilang" tertutup)', () => {
     const r = buildEditMember(mk(), 'KRS', 'ABIL', form({ name: 'abilah' }));
     expect(r.ok).toBe(true); if (!r.ok) return;

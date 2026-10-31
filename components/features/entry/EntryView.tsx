@@ -16,6 +16,7 @@ import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { zoneCssColor } from '@/lib/design-tokens';
 import { useT } from '@/hooks/useT';
+import { tLog } from '@/lib/i18n';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
@@ -116,7 +117,7 @@ export default function EntryView() {
   }, [setEntryScrollTop]);
 
   const chips: { key: FilterStatus; icon: typeof ListBullets; label: string; count?: number }[] = [
-    { key: 'all',    icon: ListBullets, label: t('common.all') },
+    { key: 'all',    icon: ListBullets, label: t('common.all'),    count: mems.length },
     { key: 'paid',   icon: CheckCircle, label: t('status.lunas'), count: paid },
     { key: 'unpaid', icon: XCircle,     label: t('status.belum'), count: unpaid },
     { key: 'free',   icon: Gift,        label: t('status.free'),  count: freeCount },
@@ -166,7 +167,7 @@ export default function EntryView() {
       setSyncStatus('loading');
       try {
         await persistPayment(uid, newData, {
-          action: `[PAY] Batch Pay Entry ${activeZone} - ${details.length} member - ${MONTH_NAMES[batchMonth]} ${batchYear}`,
+          action: `[PAY] ${tLog('log.action.batchPay')} Entri ${activeZone} - ${details.length} member - ${MONTH_NAMES[batchMonth]} ${batchYear}`,
           detail: details.join(', '),
         }, userEmail || '', () => ({
           globalLocked: useAppStore.getState().globalLocked,

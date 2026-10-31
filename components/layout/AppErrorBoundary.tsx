@@ -26,8 +26,8 @@ function tStatic(key: string): string {
         'app.reload':     'Reload',
       },
       id: {
-        'app.errorTitle': 'Oops, ada yang error',
-        'app.errorDesc':  'Aplikasi mengalami error tidak terduga. Coba muat ulang halaman.',
+        'app.errorTitle': 'Terjadi kesalahan',
+        'app.errorDesc':  'Aplikasi mengalami kesalahan tak terduga. Coba muat ulang halaman.',
         'app.reload':     'Muat Ulang',
       },
     };

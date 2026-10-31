@@ -63,13 +63,13 @@ describe('BottomNav (A1)', () => {
     render(<BottomNav onNavigate={() => {}} />);
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' });
     expect(within(nav).getAllByRole('button')).toHaveLength(5);
-    expect(within(nav).getByRole('button', { name: /Dashboard/ })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('button', { name: /Beranda/ })).toHaveAttribute('aria-current', 'page');
   });
 
   it('tab memanggil onNavigate', async () => {
     const onNavigate = vi.fn();
     render(<BottomNav onNavigate={onNavigate} />);
-    await userEvent.click(screen.getByRole('button', { name: /Entry/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Entri/ }));
     expect(onNavigate).toHaveBeenCalledWith('entry');
   });
 
@@ -131,7 +131,7 @@ describe('DisplayPrefs — pemilih Mode Navigasi (A1) & Posisi Toast (A2)', () =
   it('NavModePicker mengubah store', async () => {
     render(<NavModePicker />);
     expect(screen.getByRole('radio', { name: /Navigasi Bawah/ })).toHaveAttribute('aria-checked', 'true');
-    await userEvent.click(screen.getByRole('radio', { name: /Sidebar/ }));
+    await userEvent.click(screen.getByRole('radio', { name: /Bilah Samping/ }));
     expect(useAppStore.getState().navMode).toBe('sidebar');
   });
   it('ToastPositionPicker mengubah store', async () => {

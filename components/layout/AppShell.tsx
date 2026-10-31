@@ -15,6 +15,7 @@ import { checkAutoBackup } from '@/lib/backup';
 import { hasAnyMembers, useEscapeClose } from './shellLogic';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { usePWA } from '@/hooks/usePWA';
+import { useRoutePrefetch } from '@/hooks/useRoutePrefetch';
 import { useOfflineDetect } from '@/hooks/useOfflineDetect';
 import AppErrorBoundary from './AppErrorBoundary';
 import Header        from './Header';
@@ -95,6 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useIdleTimeout(settings.pinTimeoutMinutes);
   usePWA(); // task 1.15: hook hasil pecah dari AppShell
+  useRoutePrefetch(); // v11.10.2: muat rute menu lebih dulu → pindah menu tidak lag
 
   // Sync route → view
   // v11.5 FIX: gunakan keepPeriod:true — effect ini hanya untuk sinkronisasi currentView

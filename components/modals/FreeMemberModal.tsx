@@ -136,7 +136,7 @@ function FreeMemberBody({ zone, name, onEditMember }: Omit<Props, 'open' | 'onCl
     const res = index === null ? addPeriod(mp, kind, period) : updatePeriod(mp, kind, index, period);
     const detail = `${lang === 'en' ? 'From' : 'Dari'} ${MONTH_NAMES[fromMonth]} ${fromYear}${noEnd ? (lang === 'en' ? ' (forever)' : ' (selamanya)') : (lang === 'en' ? ' to ' : ' s/d ') + MONTH_NAMES[toMonth] + ' ' + toYear}`;
     const ok = kind === 'free'
-      ? await commit(res, `[FREE] Set Free Member ${zone} - ${name}`, detail, `${name} ${t('freemodal.setFree')}`)
+      ? await commit(res, `[FREE] ${tLog('log.action.setFree')} ${zone} - ${name}`, detail, `${name} ${t('freemodal.setFree')}`)
       : await commit(res, `[EDIT] ${tLog('log.action.editPeriod')} ${zone} - ${name}`, detail, `${name} ${t('periods.savedInactive')}`);
     if (ok) setEditor(null);
   }
@@ -149,7 +149,7 @@ function FreeMemberBody({ zone, name, onEditMember }: Omit<Props, 'open' | 'onCl
         `${t('freemodal.removeConfirm')} ${name}?`,
         t('freemodal.removeYes'),
         async () => {
-          const ok = await commit(removePeriod(mp, 'free', index), `[PAY] Kembalikan ke Berbayar ${zone} - ${name}`, label, `${name} ${t('freemodal.removed')}`);
+          const ok = await commit(removePeriod(mp, 'free', index), `[PAY] ${tLog('log.action.unsetFree')} ${zone} - ${name}`, label, `${name} ${t('freemodal.removed')}`);
           if (ok) setEditor(null);
         },
         { description: t('freemodal.removeNote') },

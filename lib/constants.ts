@@ -9,7 +9,7 @@
 // tampil "v11.4" tanpa suffix "Next" yang dipakai di semua tempat lain).
 // Saat naik versi: HANYA ubah baris ini, seluruh app otomatis konsisten.
 export const APP_NAME         = 'WiFi Pay';
-export const APP_VERSION      = 'v11.10.1';
+export const APP_VERSION      = 'v11.10.2';
 export const APP_VERSION_SUFFIX = 'Next';
 export const APP_VERSION_FULL = `${APP_VERSION} ${APP_VERSION_SUFFIX}`; // "v11.5 Next"
 

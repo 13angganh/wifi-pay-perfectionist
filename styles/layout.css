@@ -42,7 +42,7 @@
 
 /* ── Bottom Navigation (mode navigasi 'bottom') + sheet Lainnya ── */
 #bnav { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px)); padding: 0 4px env(safe-area-inset-bottom, 0px); background: var(--bg2); border-top: 1px solid var(--border); border-radius: var(--r-xl) var(--r-xl) 0 0; display: flex; z-index: 50; box-shadow: 0 -6px 20px rgba(0,0,0,.12); }
-.nb { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; color: var(--txt3); font-family: var(--font-sans), sans-serif; font-size: var(--fs-label); font-weight: var(--fw-strong); cursor: pointer; min-height: 44px; transition: color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.nb { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; color: var(--txt3); font-family: var(--font-sans), sans-serif; font-size: var(--fs-label); font-weight: var(--fw-strong); cursor: pointer; min-height: 44px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
 .nb span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nb.on { color: var(--accent); }
 .nb:active { transform: scale(.92); }

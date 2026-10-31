@@ -148,16 +148,16 @@ describe('EntryView (T7)', () => {
   it('terkunci: banner tampil dan Pilih Banyak ditolak (mode pilih tidak terbuka)', async () => {
     setup({}, { globalLocked: true });
     render(<EntryView />);
-    expect(screen.getByRole('button', { name: /Entry terkunci/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Entri terkunci/ })).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: /Pilih Banyak/ }));
     expect(useAppStore.getState().batchMode).toBe(false);
   });
 
-  it('pencarian tanpa hasil: state kosong + Reset Pencarian mengosongkan query', async () => {
+  it('pencarian tanpa hasil: state kosong + Atur Ulang Pencarian mengosongkan query', async () => {
     setup({}, { search: 'ZZZ' });
     render(<EntryView />);
     expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Reset Pencarian' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Atur Ulang Pencarian' }));
     expect(useAppStore.getState().search).toBe('');
   });
 

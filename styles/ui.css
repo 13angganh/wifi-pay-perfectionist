@@ -141,8 +141,10 @@ select.wp-inp { appearance: none; -webkit-appearance: none; padding-right: 36px;
 
 .wp-spinner { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: wpspin .8s linear infinite; opacity: .8; }
 .wp-prog { width: 220px; max-width: 70vw; height: 6px; border-radius: 9px; background: var(--bg4); overflow: hidden; }
-.wp-prog i { display: block; height: 100%; border-radius: 9px; background: var(--grad-a); animation: wpbar 2.4s var(--ease) infinite alternate; }
-@keyframes wpbar { 0% { width: 8%; } 60% { width: 78%; } 100% { width: 96%; } }
+/* v11.10.2: indeterminate satu arah — bilah selebar 40% meluncur kiri → kanan lalu mengulang dari kiri.
+   Sebelumnya animasi `width` + `infinite alternate` membuat bilah maju lalu MUNDUR; kini hanya transform (GPU). */
+.wp-prog i { display: block; width: 40%; height: 100%; border-radius: 9px; background: var(--grad-a); animation: wpbar 1.5s cubic-bezier(.4, 0, .2, 1) infinite; will-change: transform; }
+@keyframes wpbar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .wp-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
 .wp-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width var(--t-slow) var(--ease); }
 .wp-pct { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-micro); font-weight: var(--fw-strong); }
@@ -312,6 +314,7 @@ select.wp-inp { appearance: none; -webkit-appearance: none; padding-right: 36px;
 
 @media (prefers-reduced-motion: reduce) {
   .wp-skel, .wp-spinner, .wp-prog i, .wp-toast, .wp-toast--out, .wp-md, .wp-md__bx, .wp-backdrop, .wp-confirm, .wp-pdots--shake { animation: none !important; }
+  .wp-prog i { width: 100%; opacity: .45; }
 }
 
 /* ── Tambahan T6: tombol persegi ikon & logo ── */

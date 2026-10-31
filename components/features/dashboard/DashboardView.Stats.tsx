@@ -7,7 +7,7 @@
 'use client';
 
 import { clsx } from 'clsx';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { ArrowRight, CreditCard, Receipt, Wallet } from '@phosphor-icons/react';
 import { Card } from '@/components/ui/Card';
 import { IconTile } from '@/components/ui/IconTile';
@@ -46,8 +46,17 @@ export function StatTiles({ d }: { d: VM }) {
 
 export function IncomeCard({ d }: { d: VM }) {
   const t = useT();
+  // v11.10.2: batang 6 bulan kini INTERAKTIF — ketuk batang untuk melihat bulan + pendapatannya (+ perubahan vs
+  // bulan sebelumnya di grafik), ketuk lagi untuk menutup. Sebelumnya hanya hiasan: diketuk tidak terjadi apa-apa.
+  const [sel, setSel] = useState<string | null>(null);
   const max = Math.max(...d.history.map(h => h.total), 0);
   const prevName = d.MONTH_NAMES[d.prevDm];
+  const selIdx = d.history.findIndex(h => `${h.y}-${h.m}` === sel);
+  const picked = selIdx >= 0 ? d.history[selIdx] : null;
+  const before = selIdx > 0 ? d.history[selIdx - 1] : null;
+  const pickedPct = picked && before && before.total > 0
+    ? Math.round(((picked.total - before.total) / before.total) * 100)
+    : null;
   return (
     <Card variant="hl" className={clsx(s.hero, s.rise)} style={rise(2)}>
       <div className={s.heroMain}>
@@ -71,16 +80,41 @@ export function IncomeCard({ d }: { d: VM }) {
           )}
         </div>
       </div>
-      <div className={s.bars} role="img" aria-label={t('dashboard.incomeTrend')}>
-        {d.history.map((h, i) => (
-          <i
-            key={`${h.y}-${h.m}`}
-            style={{
-              height: `${max > 0 ? Math.round((h.total / max) * 100) : 0}%`,
-              opacity: +(0.4 + i * 0.12).toFixed(2),
-            }}
-          />
-        ))}
+      <div className={s.bars} role="group" aria-label={t('dashboard.incomeTrend')}>
+        {d.history.map((h, i) => {
+          const key = `${h.y}-${h.m}`;
+          const on = key === sel;
+          const label = `${d.MONTH_NAMES[h.m]} ${h.y}: ${rp(h.total)}`;
+          return (
+            <button
+              key={key}
+              type="button"
+              className={clsx(s.bar, on && s.barOn, picked && !on && s.barDim)}
+              aria-pressed={on}
+              aria-label={label}
+              title={label}
+              onClick={() => setSel(on ? null : key)}
+            >
+              <i
+                style={{
+                  height: `${max > 0 ? Math.round((h.total / max) * 100) : 0}%`,
+                  ['--o' as string]: +(0.4 + i * 0.12).toFixed(2),
+                } as CSSProperties}
+              />
+            </button>
+          );
+        })}
+      </div>
+      <div className={s.trendRead} aria-live="polite">
+        {picked ? (
+          <>
+            <b className="wp-t-cap">{d.MONTH_NAMES[picked.m]} {picked.y}</b>
+            <span className="wp-num">{rp(picked.total)}</span>
+            {pickedPct !== null && <DeltaPct value={pickedPct} />}
+          </>
+        ) : (
+          <span className="wp-t-micro">{t('dashboard.trendHint')}</span>
+        )}
       </div>
     </Card>
   );

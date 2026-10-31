@@ -142,7 +142,7 @@ export async function doLoginGoogle(): Promise<{ error?: string }> {
 export async function doLinkGoogle(): Promise<{ error?: string; success?: boolean }> {
   try {
     const user = auth.currentUser;
-    if (!user) return { error: 'Tidak ada sesi aktif. Login email dulu.' };
+    if (!user) return { error: 'Tidak ada sesi aktif. Masuk dengan email dulu.' };
 
     // Cek apakah Google sudah terhubung
     const isLinked = user.providerData.some(p => p.providerId === 'google.com');

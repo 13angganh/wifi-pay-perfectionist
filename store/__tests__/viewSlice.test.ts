@@ -209,3 +209,44 @@ describe('viewSlice — clearEntryCardFor (v11.5.9)', () => {
   });
 });
 
+
+describe('viewSlice — setView idempoten (v11.10.2: anti render berulang saat pindah menu)', () => {
+  beforeEach(() => { Object.keys(lsStore).forEach(k => delete lsStore[k]); });
+
+  it('pemanggilan kedua dengan nilai identik TIDAK memberi tahu subscriber (state sama persis)', () => {
+    const store = makeStore();
+    store.getState().setView('rekap');
+    let calls = 0;
+    const unsub = store.subscribe(() => { calls++; });
+    const before = store.getState();
+    store.getState().setView('rekap');                       // = efek halaman lama / sinkronisasi pathname
+    store.getState().setView('rekap', { keepPeriod: true });
+    expect(calls).toBe(0);
+    expect(store.getState()).toBe(before);
+    unsub();
+  });
+
+  it('perubahan nyata tetap diterapkan (pindah menu, reset filter, reset periode)', () => {
+    const store = makeStore();
+    store.getState().setView('rekap');
+    store.getState().setSearch('abil');
+    store.getState().setSelYear(2020);
+    let calls = 0;
+    const unsub = store.subscribe(() => { calls++; });
+    store.getState().setView('entry');
+    expect(calls).toBe(1);
+    expect(store.getState().currentView).toBe('entry');
+    expect(store.getState().search).toBe('');
+    expect(store.getState().selYear).toBe(new Date().getFullYear());
+    unsub();
+  });
+
+  it('setViewWithPeriod lalu sinkronisasi (keepPeriod) tidak menimpa periode & kartu yang dibuka (alur Dashboard → Entri)', () => {
+    const store = makeStore();
+    store.getState().setViewWithPeriod('entry', 2024, 2, 'SLK', 'BUDI');
+    store.getState().setView('entry', { keepPeriod: true });
+    expect(store.getState().selYear).toBe(2024);
+    expect(store.getState().selMonth).toBe(2);
+    expect(store.getState().expandedCard).not.toBeNull();
+  });
+});

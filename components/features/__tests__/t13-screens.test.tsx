@@ -105,7 +105,7 @@ describe('T13-03 Period bar standar', () => {
     const bar = container.querySelector('.wp-pbar') as HTMLElement;
     const seg = container.querySelector('.wp-sg') as HTMLElement;
     expect(before(bar, seg)).toBe(true);
-    expect(within(bar).getByRole('button', { name: 'Reset filter log' })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: 'Atur ulang filter aktivitas' })).toBeInTheDocument();
   });
 
   it('Grafik: [Tahun] saja di tab Pendapatan; selektor Bulan hanya di tab Pembayaran dan Pelanggan; chip zona + ikon di bar yang sama', async () => {
@@ -304,7 +304,7 @@ describe('T13-06 Operasional: ikon item', () => {
     render(<OperasionalView />);
     const u = userEvent.setup();
     await u.click(screen.getByRole('button', { name: 'Menu item Kontrakan' }));
-    await u.click(screen.getByRole('menuitem', { name: 'Edit' }));
+    await u.click(screen.getByRole('menuitem', { name: 'Ubah' }));
     const dlg = screen.getByRole('dialog');
     expect(within(dlg).getByRole('radio', { name: /Sewa/ })).toHaveAttribute('aria-checked', 'true');
     await u.clear(within(dlg).getByLabelText('Keterangan'));

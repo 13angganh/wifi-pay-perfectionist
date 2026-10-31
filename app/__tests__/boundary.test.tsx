@@ -35,7 +35,7 @@ describe('app/(app)/error.tsx', () => {
 
   it('pesan kosong → teks bawaan dari kamus', () => {
     render(<ErrorPage error={new Error('')} reset={() => {}} />);
-    expect(screen.getByText('Halaman ini mengalami error. Coba muat ulang atau kembali ke dashboard.')).toBeInTheDocument();
+    expect(screen.getByText('Halaman ini mengalami kesalahan. Coba muat ulang atau kembali ke Beranda.')).toBeInTheDocument();
   });
 
   it('Coba Lagi = reset(); Dashboard = router.push("/dashboard")', async () => {
@@ -43,7 +43,7 @@ describe('app/(app)/error.tsx', () => {
     render(<ErrorPage error={new Error('x')} reset={reset} />);
     await userEvent.click(screen.getByRole('button', { name: 'Coba Lagi' }));
     expect(reset).toHaveBeenCalledTimes(1);
-    await userEvent.click(screen.getByRole('button', { name: 'Dashboard' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Beranda' }));
     expect(nav.push).toHaveBeenCalledWith('/dashboard');
   });
 
@@ -59,7 +59,7 @@ describe('app/(app)/not-found.tsx', () => {
   it('judul + tautan Ke Dashboard (tautan sungguhan, bukan tombol)', () => {
     render(<NotFound />);
     expect(screen.getByText('Halaman Tidak Ditemukan')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Ke Dashboard/ })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /Ke Beranda/ })).toHaveAttribute('href', '/dashboard');
   });
 
   it('mengikuti bahasa Inggris', () => {
@@ -76,7 +76,7 @@ describe('app/global-error.tsx (di luar provider: teks lewat t() non-hook, bahas
   it('Indonesia secara bawaan; tanpa emoji (ikon = SVG Phosphor)', () => {
     const out = html();
     expect(out).toContain('Terjadi Kesalahan');
-    expect(out).toContain('Aplikasi mengalami error yang tidak terduga. Coba muat ulang halaman.');
+    expect(out).toContain('Aplikasi mengalami kesalahan yang tidak terduga. Coba muat ulang halaman.');
     expect(out).toContain('Coba Lagi');
     expect(out).toContain('<svg');
     expect(/\p{Extended_Pictographic}/u.test(out)).toBe(false);

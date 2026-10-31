@@ -155,12 +155,12 @@ describe('Sheet "Status & Periode" — Nonaktif / Reaktivasi berulang (S3)', () 
     await u.click(within(rowOf('ABIL')).getByRole('button', { name: 'Status & Periode: ABIL' }));
     let dlg = screen.getByRole('dialog');
     const addFree = async (fy: string, fm: string, ty: string, tm: string) => {
-      await u.click(within(dlg).getByRole('button', { name: /Tambah periode Free/ }));
+      await u.click(within(dlg).getByRole('button', { name: /Tambah periode Gratis/ }));
       await u.selectOptions(within(dlg).getByLabelText(/Mulai gratis dari — Tahun/), fy);
       await u.selectOptions(within(dlg).getByLabelText(/Mulai gratis dari — Bulan/), fm);
       await u.selectOptions(within(dlg).getByLabelText(/Sampai dengan — Tahun/), ty);
       await u.selectOptions(within(dlg).getByLabelText(/Sampai dengan — Bulan/), tm);
-      await u.click(within(dlg).getByRole('button', { name: 'Simpan Free Member' }));
+      await u.click(within(dlg).getByRole('button', { name: 'Simpan Member Gratis' }));
     };
     await addFree('2023', '0', '2026', '3');   // Jan 2023 – Apr 2026
     await addFree('2026', '8', '2026', '9');   // Sep 2026 – Okt 2026
@@ -178,7 +178,7 @@ describe('Sheet "Status & Periode" — Nonaktif / Reaktivasi berulang (S3)', () 
     await u.click(within(dlg).getByRole('button', { name: /Tambah periode Nonaktif/ }));
     await u.selectOptions(within(dlg).getByLabelText(/Nonaktif mulai — Tahun/), '2026');
     await u.selectOptions(within(dlg).getByLabelText(/Nonaktif mulai — Bulan/), '8');
-    expect(within(dlg).getByRole('note')).toHaveTextContent(/bertumpuk dengan periode Free/);
+    expect(within(dlg).getByRole('note')).toHaveTextContent(/bertumpuk dengan periode Gratis/);
     await u.click(within(dlg).getByRole('checkbox', { name: /Masih nonaktif/ }));
     await u.click(within(dlg).getByRole('button', { name: 'Simpan Periode Nonaktif' }));
     expect(useAppStore.getState().appData.memberPeriods!.KRS__ABIL.inactive).toEqual([{ fromY: 2026, fromM: 8 }]);
@@ -191,7 +191,7 @@ describe('Sheet "Status & Periode" — Nonaktif / Reaktivasi berulang (S3)', () 
     await u.click(within(rowOf('ANA')).getByRole('button', { name: 'Status & Periode: ANA' }));
     const dlg = screen.getByRole('dialog');
     expect(within(dlg).getByText(/Jan 2023/)).toBeInTheDocument();
-    await u.click(within(dlg).getByRole('button', { name: /Hapus periode Free/ }));
+    await u.click(within(dlg).getByRole('button', { name: /Hapus periode Gratis/ }));
     expect(useAppStore.getState().confirmDialog.icon).toBe('question');
     await runConfirm();
     const st = useAppStore.getState().appData;
@@ -249,14 +249,14 @@ describe('Form Tambah/Edit Member — "Terdaftar sejak" (F2, D6)', () => {
     setup({ memberPeriods: { KRS__ABIL: { joined: { y: 2026, m: 3 }, free: [{ fromY: 2023, fromM: 0, toY: 2023, toM: 5 }] } } });
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Edit member/ }));
+    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah member/ }));
     let dlg = screen.getByRole('dialog');
     expect(within(dlg).getByLabelText('Terdaftar sejak — Bulan')).toHaveValue('3');
     await u.selectOptions(within(dlg).getByLabelText('Terdaftar sejak — Bulan'), '5');
     await u.click(within(dlg).getByRole('button', { name: /Simpan/ }));
     expect(useAppStore.getState().appData.memberPeriods!.KRS__ABIL).toEqual({ joined: { y: 2026, m: 5 }, free: [{ fromY: 2023, fromM: 0, toY: 2023, toM: 5 }] });
 
-    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Edit member/ }));
+    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah member/ }));
     dlg = screen.getByRole('dialog');
     await u.selectOptions(within(dlg).getByLabelText('Terdaftar sejak — Bulan'), '');
     await u.click(within(dlg).getByRole('button', { name: /Simpan/ }));

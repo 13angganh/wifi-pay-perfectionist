@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { showToast } from '@/components/ui/Toast';
+import { tLog } from '@/lib/i18n';
 import { listenDB, saveDB } from '@/lib/db';
 import { AppData, ActivityLog } from '@/types';
 
@@ -31,7 +32,7 @@ export function useAppData() {
         if (data._globalLocked !== undefined) setGlobalLocked(data._globalLocked);
         if (data._lockedEntries)              setLockedEntries(data._lockedEntries);
       },
-      () => { setSyncStatus('err'); showToast('Gagal memuat data. Periksa koneksi internet.', 'err'); }
+      () => { setSyncStatus('err'); showToast(`${tLog('error.loadFailed')}. ${tLog('dashboard.loadErrorDesc')}`, 'err'); }
       // BUG-002: onLockChange dihapus — onData sudah handle, duplikasi menyebabkan double setGlobalLocked
     );
 

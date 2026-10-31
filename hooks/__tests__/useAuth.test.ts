@@ -10,14 +10,14 @@ describe('friendlyAuthError', () => {
   const knownCodes: [string, string][] = [
     ['auth/invalid-email',             'Email tidak valid'],
     ['auth/user-not-found',            'Akun tidak ditemukan'],
-    ['auth/wrong-password',            'Password salah'],
+    ['auth/wrong-password',            'Kata sandi salah'],
     ['auth/email-already-in-use',      'Email sudah terdaftar'],
-    ['auth/weak-password',             'Password terlalu lemah'],
+    ['auth/weak-password',             'Kata sandi terlalu lemah'],
     ['auth/network-request-failed',    'Gagal terhubung ke jaringan'],
     ['auth/too-many-requests',         'Terlalu banyak percobaan, coba lagi nanti'],
     ['auth/user-disabled',             'Akun telah dinonaktifkan'],
     ['auth/internal-error',            'Terjadi kesalahan server, coba lagi'],
-    ['auth/operation-not-allowed',     'Login email/password belum diaktifkan di Firebase'],
+    ['auth/operation-not-allowed',     'Masuk dengan email/kata sandi belum diaktifkan di Firebase'],
     ['auth/unauthorized-domain',       'Domain belum diizinkan di Firebase Console'],
   ];
 
@@ -28,12 +28,12 @@ describe('friendlyAuthError', () => {
     }
   );
 
-  it('auth/invalid-credential → "Email atau password salah"', () => {
-    expect(friendlyAuthError('auth/invalid-credential')).toBe('Email atau password salah');
+  it('auth/invalid-credential → "Email atau kata sandi salah"', () => {
+    expect(friendlyAuthError('auth/invalid-credential')).toBe('Email atau kata sandi salah');
   });
 
-  it('auth/invalid-login-credentials → "Email atau password salah" (varian kedua)', () => {
-    expect(friendlyAuthError('auth/invalid-login-credentials')).toBe('Email atau password salah');
+  it('auth/invalid-login-credentials → "Email atau kata sandi salah" (varian kedua)', () => {
+    expect(friendlyAuthError('auth/invalid-login-credentials')).toBe('Email atau kata sandi salah');
   });
 
   it('kode tidak dikenali → fallback berisi kode error', () => {

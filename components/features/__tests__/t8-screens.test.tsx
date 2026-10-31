@@ -111,7 +111,7 @@ describe('RekapView (T8)', () => {
     render(<RekapView />);
     const u = userEvent.setup();
     await u.click(screen.getByRole('button', { name: /Pilih Banyak/ }));
-    expect(screen.getByText(/tap sel untuk pilih\/batal/)).toBeInTheDocument();
+    expect(screen.getByText(/ketuk sel untuk pilih\/batal/)).toBeInTheDocument();
 
     await u.click(cell('ALFIN', 9));              // lunas → ditolak
     await u.click(cell('ANA', 9));                // gratis → ditolak
@@ -121,7 +121,7 @@ describe('RekapView (T8)', () => {
     await u.click(cell('AKBAR', 9));              // belum, tanpa tarif → QuickPay pertama (50)
     const sheet = screen.getByTestId('rekap-batch-sheet');
     expect(within(sheet).getByText(/2 Member Dipilih/)).toBeInTheDocument();
-    expect(within(sheet).getByText('default')).toBeInTheDocument();           // tag untuk AKBAR
+    expect(within(sheet).getByText('bawaan')).toBeInTheDocument();           // tag untuk AKBAR
     expect(within(sheet).getAllByText('Rp 100.000').length).toBeGreaterThan(0);
     expect(within(sheet).getByText('Rp 50.000')).toBeInTheDocument();
 
@@ -151,7 +151,7 @@ describe('RekapView (T8)', () => {
     fireEvent.pointerDown(c);
     act(() => { vi.advanceTimersByTime(500); });
     fireEvent.pointerUp(c);
-    expect(screen.queryByText(/tap sel untuk pilih\/batal/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ketuk sel untuk pilih\/batal/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('rekap-batch-sheet')).not.toBeInTheDocument();
   });
 
@@ -219,7 +219,7 @@ describe('RekapView (T8)', () => {
     hdr.addEventListener('click', spy);
     document.body.appendChild(hdr);
     render(<RekapView />);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Entry terkunci, ketuk untuk membuka' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Entri terkunci, ketuk untuk membuka' }));
     expect(spy).toHaveBeenCalledTimes(1);
     hdr.remove();
   });
@@ -242,12 +242,12 @@ describe('RekapView (T8)', () => {
     expect(screen.getByRole('button', { name: /Pilih Banyak/ })).toBeDisabled();
   });
 
-  it('tanpa hasil pencarian: keadaan tidak ditemukan dengan Reset Filter yang mengembalikan daftar', async () => {
+  it('tanpa hasil pencarian: keadaan tidak ditemukan dengan Atur Ulang Filter yang mengembalikan daftar', async () => {
     setup({}, { search: 'zzz' });
     render(<RekapView />);
     const u = userEvent.setup();
     expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
-    await u.click(screen.getByRole('button', { name: 'Reset Filter' }));
+    await u.click(screen.getByRole('button', { name: 'Atur Ulang Filter' }));
     expect(rowNames()).toHaveLength(5);
   });
 });
@@ -267,7 +267,7 @@ describe('TunggakanView (T8)', () => {
     expect(screen.getByText('Total Tunggakan')).toBeInTheDocument();
     expect(screen.getByText('Rp 640.000')).toBeInTheDocument();
     const mode = screen.getByRole('group', { name: 'Mode tunggakan' });
-    expect(within(mode).getByRole('button', { name: /Nunggak/ })).toHaveTextContent('3');
+    expect(within(mode).getByRole('button', { name: /Menunggak/ })).toHaveTextContent('3');
     expect(within(mode).getByRole('button', { name: /Rajin/ })).toHaveTextContent('1');
     expect(within(mode).getByRole('button', { name: /Gratis/ })).toHaveTextContent('1');
   });
@@ -306,7 +306,7 @@ describe('TunggakanView (T8)', () => {
     await u.clear(screen.getByPlaceholderText('Cari nama pelanggan...'));
     await u.type(screen.getByPlaceholderText('Cari nama pelanggan...'), 'zzz');
     expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
-    await u.click(screen.getByRole('button', { name: 'Reset Filter' }));
+    await u.click(screen.getByRole('button', { name: 'Atur Ulang Filter' }));
     expect(screen.getAllByTestId('tunggakan-card')).toHaveLength(3);
   });
 
@@ -326,7 +326,7 @@ describe('TunggakanView (T8)', () => {
     vi.stubGlobal('open', open);
     render(<TunggakanView />);
     const akbar = screen.getAllByTestId('tunggakan-card')[0];
-    expect(within(akbar).getByText(/Tarif belum diset, pakai default/)).toBeInTheDocument();
+    expect(within(akbar).getByText(/Tarif belum diatur, memakai tarif bawaan/)).toBeInTheDocument();
     await userEvent.setup().click(within(akbar).getByRole('button', { name: /Kirim WA/ }));
     expect(decodeURIComponent(open.mock.calls[0][0] as string)).toContain('300.000'); // 6 × 50 × 1000
   });

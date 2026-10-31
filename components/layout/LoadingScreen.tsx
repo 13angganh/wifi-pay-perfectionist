@@ -1,5 +1,6 @@
 // components/layout/LoadingScreen.tsx
-// REDESAIN T6: Splash/Loading — logo asli (AppLogo), nama, versi, tagline, progres + teks.
+// REDESAIN T6: Splash/Loading — logo asli (AppLogo), nama, versi, progres + teks.
+// v11.10.2: tagline dihapus (permintaan user); batang progres kini meluncur SATU arah (tidak bolak-balik).
 'use client';
 
 import AppLogo from '@/components/ui/AppLogo';
@@ -13,7 +14,6 @@ export default function LoadingScreen() {
       <AppLogo size="xl" priority className="splash__logo" />
       <div className="splash__name">{APP_NAME}</div>
       <div className="splash__ver">{APP_VERSION_FULL}</div>
-      <div className="splash__tag">{t('splash.tagline')}</div>
       <div className="wp-prog" aria-hidden="true"><i /></div>
       <div className="splash__txt">{t('splash.loading')}</div>
     </div>

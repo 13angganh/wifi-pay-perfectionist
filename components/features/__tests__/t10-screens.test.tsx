@@ -116,7 +116,7 @@ describe('Log — tampilan dan filter (zip + A27)', () => {
     await u.clear(screen.getByPlaceholderText('Cari nama / aksi...'));
     await u.type(screen.getByPlaceholderText('Cari nama / aksi...'), 'zzzz');
     expect(screen.getByText('Tidak ada hasil')).toBeInTheDocument();
-    await u.click(screen.getAllByRole('button', { name: 'Reset' })[0]);
+    await u.click(screen.getAllByRole('button', { name: 'Atur Ulang' })[0]);
     expect(screen.getByText('Login owner')).toBeInTheDocument();
     expect(useAppStore.getState().logSearch).toBe('');
   });
@@ -125,9 +125,9 @@ describe('Log — tampilan dan filter (zip + A27)', () => {
     setup();
     render(<LogView />);
     const u = userEvent.setup();
-    await u.selectOptions(screen.getByLabelText('Filter bulan log'), '8'); // September
+    await u.selectOptions(screen.getByLabelText('Filter bulan aktivitas'), '8'); // September
     expect(screen.getByText('Tidak ada hasil')).toBeInTheDocument();
-    await u.selectOptions(screen.getByLabelText('Filter bulan log'), '9');
+    await u.selectOptions(screen.getByLabelText('Filter bulan aktivitas'), '9');
     expect(screen.getByText('Login owner')).toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe('Log — tampilan dan filter (zip + A27)', () => {
   it('sinkron error tanpa log → state error dengan tombol coba lagi', () => {
     setup({ activityLog: [] }, { syncStatus: 'err' });
     render(<LogView />);
-    expect(screen.getByText('Gagal memuat log')).toBeInTheDocument();
+    expect(screen.getByText('Gagal memuat catatan aktivitas')).toBeInTheDocument();
     expect(btn('Coba Lagi')).toBeInTheDocument();
   });
 });
@@ -167,7 +167,7 @@ describe('Log — A28 Detail dan A29 Statistik', () => {
     const u = userEvent.setup();
     await u.click(btn('Statistik'));
     const dlg = screen.getByRole('dialog');
-    expect(within(dlg).getByText('Statistik Log')).toBeInTheDocument();
+    expect(within(dlg).getByText('Statistik Aktivitas')).toBeInTheDocument();
     const tile = (label: string) => dlg.querySelector(`[data-stat="${label}"]`)!;
     expect(tile('Total Aktivitas')).toHaveTextContent('4');
     expect(tile('Pembayaran')).toHaveTextContent('1');
@@ -176,7 +176,7 @@ describe('Log — A28 Detail dan A29 Statistik', () => {
     expect(within(dlg).getAllByRole('button', { name: /Buka detail aktivitas/ })).toHaveLength(3);
     await u.click(within(dlg).getByRole('button', { name: /Buka detail aktivitas: Bayar ABIL/ }));
     expect(screen.getByText('Detail Aktivitas')).toBeInTheDocument();
-    expect(screen.queryByText('Statistik Log')).not.toBeInTheDocument();
+    expect(screen.queryByText('Statistik Aktivitas')).not.toBeInTheDocument();
   });
 
   it('A3 → Log: permintaan tertunda membuka Detail saat layar dipasang; event saat sudah terbuka', async () => {
@@ -274,7 +274,7 @@ describe('Operasional — ringkasan, sheet, simpan, hapus', () => {
     render(<OperasionalView />);
     const u = userEvent.setup();
     await u.click(btn('Menu item Listrik'));
-    await u.click(screen.getByRole('menuitem', { name: 'Edit' }));
+    await u.click(screen.getByRole('menuitem', { name: 'Ubah' }));
     expect(screen.getByLabelText('Keterangan')).toHaveValue('Listrik');
     await u.keyboard('{Escape}');
     await u.click(btn('Menu item Listrik'));
@@ -403,10 +403,10 @@ describe('Pengaturan — dua level dan halaman isi', () => {
     await u.click(screen.getByRole('button', { name: /^Quick Pay/ }));
     const input = screen.getByPlaceholderText('50, 80, 90, 100, 150, 200');
     await u.clear(input); await u.type(input, '70');
-    await u.click(btn('Simpan Nominal Default'));
+    await u.click(btn('Simpan Nominal Bawaan'));
     expect(toast.show).toHaveBeenLastCalledWith('Minimal 2 nominal', 'err');
     await u.clear(input); await u.type(input, '70, 120, 200');
-    await u.click(btn('Simpan Nominal Default'));
+    await u.click(btn('Simpan Nominal Bawaan'));
     expect(useAppStore.getState().settings.quickAmounts).toEqual([70, 120, 200]);
   });
 
@@ -435,8 +435,8 @@ describe('Pengaturan — dua level dan halaman isi', () => {
     setup();
     render(<SettingsView />);
     act(() => { requestSettingsPage('export'); });
-    expect(await screen.findByRole('heading', { name: 'Export & Import Data' })).toBeInTheDocument();
-    expect(screen.getByText('JSON Backup')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Ekspor & Impor Data' })).toBeInTheDocument();
+    expect(screen.getByText('Cadangan JSON')).toBeInTheDocument();
   });
 });
 
@@ -450,7 +450,7 @@ describe('Pusat Notifikasi (A3)', () => {
     expect(screen.getByRole('button', { name: 'Notifikasi' })).toHaveTextContent('5'); // 4 aktivitas + backup
     const u = userEvent.setup();
     await openPanel(u);
-    expect(screen.getByText('Backup data disarankan')).toBeInTheDocument();
+    expect(screen.getByText('Disarankan mencadangkan data')).toBeInTheDocument();
     expect(screen.getByText('Bayar ABIL')).toBeInTheDocument();
   });
 
@@ -482,8 +482,8 @@ describe('Pusat Notifikasi (A3)', () => {
     render(<><NotificationCenter /><SettingsView /></>);
     const u = userEvent.setup();
     await openPanel(u);
-    await u.click(screen.getByText('Backup data disarankan'));
-    expect(await screen.findByRole('heading', { name: 'Export & Import Data' })).toBeInTheDocument();
+    await u.click(screen.getByText('Disarankan mencadangkan data'));
+    expect(await screen.findByRole('heading', { name: 'Ekspor & Impor Data' })).toBeInTheDocument();
     expect(useAppStore.getState().currentView).toBe('settings');
     expect(nav.push).not.toHaveBeenCalled();
   });
@@ -493,7 +493,7 @@ describe('Pusat Notifikasi (A3)', () => {
     render(<NotificationCenter />);
     const u = userEvent.setup();
     await openPanel(u);
-    expect(screen.getByText('Gagal simpan')).toBeInTheDocument();
+    expect(screen.getByText('Gagal menyimpan')).toBeInTheDocument();
     cleanup();
     localStorage.setItem('wp_last_backup', String(NOW));
     setup({ activityLog: [] });
@@ -532,7 +532,7 @@ describe('Import — ringkasan per zona dan pendaftaran zona kustom', () => {
     setup();
     render(<ImportInput />);
     pickFile('{"foo":1}');
-    await vi.waitFor(() => expect(toast.show).toHaveBeenCalledWith('File tidak valid!', 'err'));
+    await vi.waitFor(() => expect(toast.show).toHaveBeenCalledWith('Berkas tidak valid!', 'err'));
     expect(useAppStore.getState().confirmDialog.open).toBe(false);
   });
 });
@@ -544,7 +544,7 @@ describe('Panduan awal', () => {
     const u = userEvent.setup();
     expect(screen.getByText('Navigasi')).toBeInTheDocument();
     await u.click(btn('Lanjut'));
-    expect(screen.getByText(/tab zona di header/)).toBeInTheDocument();
+    expect(screen.getByText(/tab zona di bilah atas/)).toBeInTheDocument();
     expect(screen.queryByText(/KRS atau SLK/)).not.toBeInTheDocument();
     await u.click(btn('Lanjut'));
     await u.click(btn('Mengerti'));

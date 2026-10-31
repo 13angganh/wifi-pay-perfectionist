@@ -22,7 +22,9 @@
 .count { font-size: var(--fs-label); color: var(--txt4); text-align: center; }
 
 /* kartu tabel: scroll horizontal + vertikal di dalam kartu, header dan kolom # / Nama menempel (keputusan 2) */
-.rwc { overscroll-behavior: contain; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: auto; max-height: min(56vh, 520px); background: var(--card); box-shadow: var(--shadow-sm); flex-shrink: 0; overscroll-behavior-x: contain; }
+/* v11.10.2: overscroll-behavior: none (bukan contain) — tetap tidak menyambung ke halaman DAN mematikan efek regang/glow/pantul
+   native di ujung tabel yang tampak bergetar bersama sel sticky. touch-action: pan-x pan-y = tanpa zoom cubit/ketuk-ganda di tabel. */
+.rwc { overscroll-behavior: none; touch-action: pan-x pan-y; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: auto; max-height: min(56vh, 520px); background: var(--card); box-shadow: var(--shadow-sm); flex-shrink: 0; }
 .rt { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; font-size: var(--fs-caption); }
 .rt th, .rt td { padding: 9px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border2); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; }
 .rt thead th { position: sticky; top: 0; z-index: 4; background: var(--bg3); color: var(--txt3); font: var(--fw-strong) var(--fs-label) var(--font-sans), sans-serif; text-transform: uppercase; letter-spacing: .04em; text-align: center; }

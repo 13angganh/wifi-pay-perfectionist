@@ -28,12 +28,20 @@
 @media (min-width: 720px) { .g2 { display: grid; grid-template-columns: 1fr 1fr; align-items: start; } }
 
 /* pendapatan + grafik batang 6 bulan (A14) */
-.hero { display: flex; align-items: center; gap: var(--sp-h); }
+.hero { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-h); }
 .heroMain { flex: 1; min-width: 0; }
 .heroVal { margin: 6px 0 4px; word-break: break-word; }
 .heroMeta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-.bars { display: flex; align-items: flex-end; gap: 5px; height: 68px; width: 104px; flex-shrink: 0; }
-.bars i { flex: 1; border-radius: 4px 4px 2px 2px; background: var(--grad-a); min-height: 3px; }
+.bars { display: flex; align-items: flex-end; gap: 0; height: 68px; width: 120px; flex-shrink: 0; }
+/* v11.10.2: tiap batang = tombol (area ketuk setinggi grafik) */
+.bar { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; padding: 0 2px; background: none; border: 0; border-radius: 6px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.bar i { display: block; width: 100%; border-radius: 4px 4px 2px 2px; background: var(--grad-a); min-height: 3px; opacity: var(--o, 1); transform-origin: bottom; transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.bar:active i { transform: scaleY(.94); }
+.bar:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.barOn i { opacity: 1; }
+.barDim i { opacity: .28; }
+/* baris keterangan batang terpilih / petunjuk ketuk (tinggi tetap agar kartu tidak melompat) */
+.trendRead { flex: 1 0 100%; display: flex; align-items: center; flex-wrap: wrap; gap: 4px var(--sp-2); min-height: 28px; padding-top: var(--sp-2); border-top: 1px solid var(--border2); color: var(--txt2); }
 
 /* insight */
 .mini { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }

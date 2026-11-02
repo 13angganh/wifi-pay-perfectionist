@@ -6,10 +6,12 @@
 'use client';
 
 import { CardFilter, Vis } from '@/components/ui/CardFilter';
-import { CheckCircle, Gift, ListBullets, MagnifyingGlass, X, XCircle } from '@phosphor-icons/react';
+import { CheckCircle, Gift, ListBullets, XCircle } from '@phosphor-icons/react';
 import { getYears } from '@/lib/constants';
 import { useT } from '@/hooks/useT';
 import { Select } from '@/components/ui/Select';
+import { SearchField } from '@/components/ui/SearchField';
+import { useMemberSearchPlaceholder } from '@/hooks/useMemberSearchPlaceholder';
 import { FilterChip, FilterChips } from '@/components/ui/Chip';
 import type { RekapCounts, RekapFilter } from './rekap.logic';
 
@@ -30,6 +32,7 @@ export default function RekapFilterBar({
   year, month, monthNames, onYear, onMonth, search, onSearch, filter, counts, onFilter,
 }: Props) {
   const t = useT();
+  const searchPh = useMemberSearchPlaceholder();
   const chips = [
     { key: 'all' as const,   icon: ListBullets, label: t('common.all') },
     { key: 'lunas' as const, icon: CheckCircle, label: t('status.lunas') },
@@ -49,29 +52,7 @@ export default function RekapFilterBar({
         <CardFilter compact screen="rekap" items={[['sum', 'view.rekap.sum'], ['chips', 'view.rekap.chips']].map(([id, k]) => ({ id, label: t(k) }))} />
       </div>
 
-      <div className="wp-field">
-        <div className="wp-inpw">
-          <span className="wp-inpw__ico" aria-hidden="true"><MagnifyingGlass /></span>
-          <input
-            className="wp-inp"
-            data-testid="rekap-search"
-            type="text"
-            placeholder={t('rekap.searchPlaceholder')}
-            aria-label={t('header.searchMember')}
-            value={search}
-            onChange={e => onSearch(e.target.value)}
-            autoComplete="off"
-          />
-          {search && (
-            <span className="wp-inpw__end" style={{ pointerEvents: 'auto' }}>
-              <button type="button" aria-label={t('entry.clearSearch')} onClick={() => onSearch('')}
-                style={{ background: 'none', border: 0, color: 'inherit', display: 'flex', cursor: 'pointer' }}>
-                <X />
-              </button>
-            </span>
-          )}
-        </div>
-      </div>
+      <SearchField testId="rekap-search" value={search} onChange={onSearch} placeholder={searchPh} />
 
 <Vis screen="rekap" id="chips">      <FilterChips ariaLabel={t('entry.filterAria')}>
         {chips.map(c => (

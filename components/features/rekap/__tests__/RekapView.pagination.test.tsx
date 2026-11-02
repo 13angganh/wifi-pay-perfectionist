@@ -166,7 +166,7 @@ describe('RekapView — pagination (v11.6.5)', () => {
     await user.click(screen.getByLabelText('Halaman berikutnya'));
     expect(screen.getByText(/Halaman 2 \/ 2/)).toBeInTheDocument();
 
-    const searchBox = screen.getByPlaceholderText('Cari member...');
+    const searchBox = screen.getByPlaceholderText('Cari nama pelanggan di KRS...');
     await user.type(searchBox, 'M0');
     rerender(<RekapView />);
 

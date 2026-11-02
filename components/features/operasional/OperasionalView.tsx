@@ -16,6 +16,7 @@ import {
   DotsThreeVertical, PencilSimple, Receipt, Trash, Warning,
 } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
@@ -50,7 +51,7 @@ const MIN_YEAR = 2026;
 type SheetState = { mode: 'add' } | { mode: 'edit'; index: number; initial: OpsFormValue };
 
 export default function OperasionalView() {
-  const { appData, setAppData, uid, userEmail, opsYear, opsMonth, setOpsYear, setOpsMonth, setSyncStatus, syncStatus, settings } = useAppStore();
+  const { appData, setAppData, uid, userEmail, opsYear, opsMonth, setOpsYear, setOpsMonth, setSyncStatus, syncStatus, settings } = useAppStore(useShallow(s => ({ appData: s.appData, setAppData: s.setAppData, uid: s.uid, userEmail: s.userEmail, opsYear: s.opsYear, opsMonth: s.opsMonth, setOpsYear: s.setOpsYear, setOpsMonth: s.setOpsMonth, setSyncStatus: s.setSyncStatus, syncStatus: s.syncStatus, settings: s.settings })));
   const t = useT();
   const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;

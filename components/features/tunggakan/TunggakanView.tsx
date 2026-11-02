@@ -10,8 +10,9 @@ import { CardFilter, Vis } from '@/components/ui/CardFilter';
 import { useState, type CSSProperties } from 'react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { CheckCircle, Gift, MagnifyingGlass, Medal, UsersThree, Warning, X } from '@phosphor-icons/react';
+import { CheckCircle, Gift, MagnifyingGlass, Medal, UsersThree, Warning } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getYears } from '@/lib/constants';
 import { rp } from '@/lib/helpers';
 import { getMemberPeriods, periodContains } from '@/lib/memberPeriods';
@@ -22,6 +23,8 @@ import { Button, buttonVariants } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
+import { SearchField } from '@/components/ui/SearchField';
+import { useMemberSearchPlaceholder } from '@/hooks/useMemberSearchPlaceholder';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import RiwayatModal from '@/components/modals/RiwayatModal';
 import TunggakanFilterBar from './TunggakanView.FilterBar';
@@ -34,8 +37,9 @@ export default function TunggakanView() {
   const {
     appData, syncStatus, activeZone, setSelYear, setSelMonth,
     search, setSearch, setView, setRiwayatZone, setRiwayatName, setRiwayatYear,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, syncStatus: s.syncStatus, activeZone: s.activeZone, setSelYear: s.setSelYear, setSelMonth: s.setSelMonth, search: s.search, setSearch: s.setSearch, setView: s.setView, setRiwayatZone: s.setRiwayatZone, setRiwayatName: s.setRiwayatName, setRiwayatYear: s.setRiwayatYear })));
   const t = useT();
+  const searchPh = useMemberSearchPlaceholder();
   const { memberCount, arrears, rajin, free, aging, fallbackTarif, MONTH_NAMES, selYear, selMonth } = useTunggakan();
 
   const [mode, setMode] = useState<TunggakanMode>('nakal');
@@ -151,29 +155,7 @@ export default function TunggakanView() {
         <CardFilter compact screen="tunggakan" items={[['sum', 'view.tunggakan.sum'], ['chips', 'view.tunggakan.chips'], ['months', 'view.tunggakan.months'], ['wa', 'view.tunggakan.wa']].map(([id, k]) => ({ id, label: t(k) }))} />
       </div>
 
-      <div className="wp-field">
-        <div className="wp-inpw">
-          <span className="wp-inpw__ico" aria-hidden="true"><MagnifyingGlass /></span>
-          <input
-            className="wp-inp"
-            data-testid="tunggakan-search"
-            type="text"
-            placeholder={t('tunggakan.searchPlaceholder')}
-            aria-label={t('header.searchMember')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            autoComplete="off"
-          />
-          {search && (
-            <span className="wp-inpw__end" style={{ pointerEvents: 'auto' }}>
-              <button type="button" aria-label={t('entry.clearSearch')} onClick={() => setSearch('')}
-                style={{ background: 'none', border: 0, color: 'inherit', display: 'flex', cursor: 'pointer' }}>
-                <X />
-              </button>
-            </span>
-          )}
-        </div>
-      </div>
+      <SearchField testId="tunggakan-search" value={search} onChange={setSearch} placeholder={searchPh} />
 
       <TunggakanFilterBar
         mode={mode}

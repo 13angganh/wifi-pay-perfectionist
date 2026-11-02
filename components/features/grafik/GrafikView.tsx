@@ -17,6 +17,7 @@ import { CardFilter } from '@/components/ui/CardFilter';
 import { useState, type CSSProperties } from 'react';
 import { ChartBar, ChartLineUp, Receipt, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { zoneColor, zoneCssVars } from '@/lib/design-tokens';
 import { useT } from '@/hooks/useT';
@@ -38,7 +39,7 @@ import g from './grafik.module.css';
 type Tab = 'inc' | 'pay' | 'cust';
 
 export default function GrafikView() {
-  const { appData, activeZone, selYear, setSelYear, theme, settings, syncStatus } = useAppStore();
+  const { appData, activeZone, selYear, setSelYear, theme, settings, syncStatus } = useAppStore(useShallow(s => ({ appData: s.appData, activeZone: s.activeZone, selYear: s.selYear, setSelYear: s.setSelYear, theme: s.theme, settings: s.settings, syncStatus: s.syncStatus })));
   const t = useT();
   const lang: 'id' | 'en' = settings.language === 'en' ? 'en' : 'id';
   const monthNames = lang === 'en' ? MONTHS_EN : MONTHS;

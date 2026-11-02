@@ -98,3 +98,22 @@ describe('v11.10.2 #6 — grafik pendapatan Beranda bisa diketuk', () => {
     expect(screen.getByRole('button', { name: 'Okt 2026: Rp 180.000' })).toBeInTheDocument();
   });
 });
+
+describe('v11.11.0 — sapaan Beranda dinamis di layar', () => {
+  it('judul memakai nama tampilan; baris konteks muncul setelah data siap; tanpa awalan email', async () => {
+    const { __resetGreetingSession } = await import('@/hooks/useGreeting');
+    __resetGreetingSession();
+    useAppStore.setState({ userName: 'Budi', userEmail: 'hakiki.admin@test.com' } as never);
+    const { unmount } = render(<DashboardView />);
+    expect(screen.getByTestId('greeting-title')).toHaveTextContent('Budi');
+    expect(screen.getByTestId('greeting-line').textContent!.length).toBeGreaterThan(5);
+    unmount();
+
+    __resetGreetingSession();
+    useAppStore.setState({ userName: '' } as never);
+    render(<DashboardView />);
+    const title = screen.getByTestId('greeting-title').textContent!;
+    expect(title).not.toMatch(/hakiki|admin/i);
+    expect(title).not.toMatch(/,\s*$/);
+  });
+});

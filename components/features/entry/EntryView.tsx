@@ -9,9 +9,10 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { clsx } from 'clsx';
 import { useRouter } from 'next/navigation';
 import {
-  CheckCircle, ListBullets, ListChecks, Lock, MagnifyingGlass, X, XCircle, Gift,
+  CheckCircle, ListBullets, ListChecks, Lock, XCircle, Gift,
 } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isLunas, isFree, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { zoneCssColor } from '@/lib/design-tokens';
@@ -25,6 +26,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FilterChip, FilterChips } from '@/components/ui/Chip';
 import { Select } from '@/components/ui/Select';
+import { SearchField } from '@/components/ui/SearchField';
+import { useMemberSearchPlaceholder } from '@/hooks/useMemberSearchPlaceholder';
 import MemberCard from '../members/MemberCard';
 import type { FilterStatus } from '@/types';
 import { buildBatchPayments, filterBatchEligible, isBatchEligible, toggleBatchSelection, toggleSelectAll } from './batch';
@@ -48,15 +51,15 @@ export default function EntryView() {
     activeZone, selYear, selMonth, setSelYear, setSelMonth,
     search, setSearch,
     filterStatus, setFilter,
-    setEntryScrollTop,
     globalLocked,
     syncStatus,
     setSyncStatus,
     batchMode, batchSelected, batchYear, batchMonth,
     setBatchMode, setBatchPeriod, setBatchSelected, clearBatch,
     setView,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, setAppData: s.setAppData, uid: s.uid, userEmail: s.userEmail, activeZone: s.activeZone, selYear: s.selYear, selMonth: s.selMonth, setSelYear: s.setSelYear, setSelMonth: s.setSelMonth, search: s.search, setSearch: s.setSearch, filterStatus: s.filterStatus, setFilter: s.setFilter, globalLocked: s.globalLocked, syncStatus: s.syncStatus, setSyncStatus: s.setSyncStatus, batchMode: s.batchMode, batchSelected: s.batchSelected, batchYear: s.batchYear, batchMonth: s.batchMonth, setBatchMode: s.setBatchMode, setBatchPeriod: s.setBatchPeriod, setBatchSelected: s.setBatchSelected, clearBatch: s.clearBatch, setView: s.setView })));
   const t = useT();
+  const searchPh = useMemberSearchPlaceholder();
   const settings = useAppStore(s => s.settings);
   // REDESAIN T12 (F4): tanggal bayar pilihan pengguna untuk batch (mode manual). null = "hari ini" (dibaca saat dipakai).
   const [batchPayDate, setBatchPayDate] = useState<string | null>(null);
@@ -98,8 +101,9 @@ export default function EntryView() {
       raf = requestAnimationFrame(() => {
         // abaikan scroll yang terjadi saat rute sudah berpindah (reset ke atas oleh navigasi)
         if (!window.location.pathname.endsWith('/entry')) return;
+        // v11.10.3: HANYA simpan ke variabel modul. Dulu juga memanggil setEntryScrollTop → menulis ke store di SETIAP frame
+        // scroll sehingga seluruh app + 107 kartu member dirender ulang tiap frame (penyebab scroll Entri tertunda).
         savedScroll = { top: content.scrollTop, key: scrollKeyRef.current };
-        setEntryScrollTop(content.scrollTop);
       });
     };
     content.addEventListener('scroll', onScroll, { passive: true });
@@ -114,7 +118,7 @@ export default function EntryView() {
       if (timer) clearTimeout(timer);
       content.removeEventListener('scroll', onScroll);
     };
-  }, [setEntryScrollTop]);
+  }, []);
 
   const chips: { key: FilterStatus; icon: typeof ListBullets; label: string; count?: number }[] = [
     { key: 'all',    icon: ListBullets, label: t('common.all'),    count: mems.length },
@@ -167,7 +171,7 @@ export default function EntryView() {
       setSyncStatus('loading');
       try {
         await persistPayment(uid, newData, {
-          action: `[PAY] ${tLog('log.action.batchPay')} Entri ${activeZone} - ${details.length} member - ${MONTH_NAMES[batchMonth]} ${batchYear}`,
+          action: `[PAY] ${tLog('log.action.batchPay')} Entri ${activeZone} - ${details.length} ${tLog('common.members')} - ${MONTH_NAMES[batchMonth]} ${batchYear}`,
           detail: details.join(', '),
         }, userEmail || '', () => ({
           globalLocked: useAppStore.getState().globalLocked,
@@ -252,29 +256,7 @@ export default function EntryView() {
 
       {/* Pencarian — selalu tampil, juga saat mode pilih (perbaikan v11.x: tanpa ini user terkunci pada
           hasil pencarian lama dan tak bisa menambah member lain ke batch). */}
-      <div className="wp-field">
-        <div className="wp-inpw">
-          <span className="wp-inpw__ico" aria-hidden="true"><MagnifyingGlass /></span>
-          <input
-            className="wp-inp"
-            data-testid="entry-search"
-            type="text"
-            placeholder={`${t('entry.searchPlaceholder')} ${activeZone}...`}
-            aria-label={t('header.searchMember')}
-            value={search}
-            onChange={ev => setSearch(ev.target.value)}
-            autoComplete="off"
-          />
-          {search && (
-            <span className="wp-inpw__end" style={{ pointerEvents: 'auto' }}>
-              <button type="button" aria-label={t('entry.clearSearch')} onClick={() => setSearch('')}
-                style={{ background: 'none', border: 0, color: 'inherit', display: 'flex', cursor: 'pointer' }}>
-                <X />
-              </button>
-            </span>
-          )}
-        </div>
-      </div>
+      <SearchField testId="entry-search" value={search} onChange={setSearch} placeholder={searchPh} />
       {!batchMode && (
         <>
           {/* Chip filter */}

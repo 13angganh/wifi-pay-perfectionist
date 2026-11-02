@@ -14,6 +14,7 @@ import {
   CaretLeft, CaretRight, ChartBar, ListChecks, Lock, MagnifyingGlass, UsersThree, Warning, X,
 } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MONTHS, MONTHS_EN, ROWS_PER_PAGE } from '@/lib/constants';
 import { getPay, rp, fuzzyMatch, getMembersForZone } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
@@ -52,7 +53,7 @@ export default function RekapView() {
     globalLocked, lockedEntries,
     syncStatus, setSyncStatus,
     setView, setRiwayatZone, setRiwayatName, setRiwayatYear,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, setAppData: s.setAppData, uid: s.uid, userEmail: s.userEmail, activeZone: s.activeZone, selYear: s.selYear, selMonth: s.selMonth, setSelYear: s.setSelYear, setSelMonth: s.setSelMonth, search: s.search, setSearch: s.setSearch, rekapExpanded: s.rekapExpanded, setRekapExpanded: s.setRekapExpanded, globalLocked: s.globalLocked, lockedEntries: s.lockedEntries, syncStatus: s.syncStatus, setSyncStatus: s.setSyncStatus, setView: s.setView, setRiwayatZone: s.setRiwayatZone, setRiwayatName: s.setRiwayatName, setRiwayatYear: s.setRiwayatYear })));
   const settings = useAppStore(s => s.settings);
 
   const t = useT();

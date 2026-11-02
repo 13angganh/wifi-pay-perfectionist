@@ -10,8 +10,11 @@
 
 /* sapaan + pemilih periode */
 .head { display: flex; flex-direction: column; gap: var(--sp-h); }
-.greet { display: flex; align-items: baseline; gap: var(--sp-2); white-space: nowrap; min-width: 0; }
-.greetName { font-size: var(--fs-display); white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-1); }
+/* v11.11.0: sapaan dua baris (judul menurut waktu + satu baris konteks); boleh membungkus agar kalimat panjang tidak terpotong */
+.greet { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.greetTitle { font-size: var(--fs-display); line-height: 1.25; display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.greetTitle > span { min-width: 0; overflow-wrap: anywhere; }
+.greetLine { color: var(--txt2); line-height: 1.45; }
 .period { display: flex; align-items: center; gap: var(--sp-2); }
 .period > * { min-width: 0; }
 
@@ -72,8 +75,12 @@
 .trTx { flex: 1; min-width: 0; }
 .trTx b { display: block; font-weight: var(--fw-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trEnd { text-align: right; flex-shrink: 0; }
-.trEnd .wp-t-micro { display: block; }
-.moreLink { margin-top: 6px; width: 100%; text-align: center; padding: 6px; }
+/* v11.10.3: .wp-t-micro adalah class GLOBAL — di CSS module harus :global(), kalau tidak di-hash dan aturan ini tidak pernah mengenai
+   (dulu "5 bulan" dan "sejak Jun 2025" menempel sebaris tanpa spasi). */
+.trEnd :global(.wp-t-micro) { display: block; }
+/* v11.10.3: ikon dalam tombol teks (Tailwind preflight membuat svg display:block → panah turun ke baris baru di kiri,
+   tampak seperti tombol kedua). Kini satu tombol: teks + panah sebaris, di tengah. */
+.moreLink { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 6px; width: 100%; padding: 6px; }
 
 /* baris aksi (Operasional, Backup, WA) */
 .row { display: flex; align-items: center; gap: var(--sp-h); flex-wrap: wrap; }
@@ -81,7 +88,8 @@
 .rowBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rowGrow { flex: 1; min-width: 120px; }
 .rowGrow b { display: block; }
-.rowActs { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+/* v11.10.3: baris tombol selalu di baris sendiri di bawah judul kartu dan rata tengah (dulu bergantung lebar layar: kadang di kanan, kadang turun ke kiri) */
+.rowActs { display: flex; flex: 1 0 100%; justify-content: center; gap: var(--sp-2); flex-wrap: wrap; }
 
 /* aksi cepat */
 .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); }

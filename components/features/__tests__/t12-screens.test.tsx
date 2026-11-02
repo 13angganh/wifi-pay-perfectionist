@@ -160,7 +160,7 @@ describe('Sheet "Status & Periode" — Nonaktif / Reaktivasi berulang (S3)', () 
       await u.selectOptions(within(dlg).getByLabelText(/Mulai gratis dari — Bulan/), fm);
       await u.selectOptions(within(dlg).getByLabelText(/Sampai dengan — Tahun/), ty);
       await u.selectOptions(within(dlg).getByLabelText(/Sampai dengan — Bulan/), tm);
-      await u.click(within(dlg).getByRole('button', { name: 'Simpan Member Gratis' }));
+      await u.click(within(dlg).getByRole('button', { name: 'Simpan Pelanggan Gratis' }));
     };
     await addFree('2023', '0', '2026', '3');   // Jan 2023 – Apr 2026
     await addFree('2026', '8', '2026', '9');   // Sep 2026 – Okt 2026
@@ -220,7 +220,7 @@ describe('Form Tambah/Edit Member — "Terdaftar sejak" (F2, D6)', () => {
     setup({ memberPeriods: {} });
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(btn('Tambah Member'));
+    await u.click(btn('Tambah Pelanggan'));
     const dlg = screen.getByRole('dialog');
     expect(within(dlg).getByLabelText('Terdaftar sejak — Bulan')).toHaveValue('9');
     expect(within(dlg).getByLabelText('Terdaftar sejak — Tahun')).toHaveValue('2026');
@@ -235,7 +235,7 @@ describe('Form Tambah/Edit Member — "Terdaftar sejak" (F2, D6)', () => {
     setup({ memberPeriods: {} });
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(btn('Tambah Member'));
+    await u.click(btn('Tambah Pelanggan'));
     const dlg = screen.getByRole('dialog');
     await u.type(within(dlg).getByLabelText('Nama'), 'cici');
     await u.selectOptions(within(dlg).getByLabelText('Terdaftar sejak — Bulan'), '');
@@ -249,14 +249,14 @@ describe('Form Tambah/Edit Member — "Terdaftar sejak" (F2, D6)', () => {
     setup({ memberPeriods: { KRS__ABIL: { joined: { y: 2026, m: 3 }, free: [{ fromY: 2023, fromM: 0, toY: 2023, toM: 5 }] } } });
     render(<MembersView />);
     const u = userEvent.setup();
-    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah member/ }));
+    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah pelanggan/ }));
     let dlg = screen.getByRole('dialog');
     expect(within(dlg).getByLabelText('Terdaftar sejak — Bulan')).toHaveValue('3');
     await u.selectOptions(within(dlg).getByLabelText('Terdaftar sejak — Bulan'), '5');
     await u.click(within(dlg).getByRole('button', { name: /Simpan/ }));
     expect(useAppStore.getState().appData.memberPeriods!.KRS__ABIL).toEqual({ joined: { y: 2026, m: 5 }, free: [{ fromY: 2023, fromM: 0, toY: 2023, toM: 5 }] });
 
-    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah member/ }));
+    await u.click(within(rowOf('ABIL')).getByRole('button', { name: /Ubah pelanggan/ }));
     dlg = screen.getByRole('dialog');
     await u.selectOptions(within(dlg).getByLabelText('Terdaftar sejak — Bulan'), '');
     await u.click(within(dlg).getByRole('button', { name: /Simpan/ }));
@@ -371,7 +371,7 @@ describe('Rekap — sel N/A, modal, batch, tanggal bayar', () => {
     await u.click(rekapCell('ADIT', M));
     expect(screen.queryByTestId('rekap-batch-sheet')).not.toBeInTheDocument();
     await u.click(rekapCell('ABIL', M));
-    expect(within(screen.getByTestId('rekap-batch-sheet')).getByText(/1 Member Dipilih/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('rekap-batch-sheet')).getByText(/1 Pelanggan Dipilih/)).toBeInTheDocument();
   });
 
   it('total tahun dan kolom tetap jumlah pembayaran: pembayaran di bulan nonaktif tetap dihitung', () => {
@@ -505,8 +505,8 @@ describe('Entry (manual) nominal diketik dan GlobalSearch', () => {
   it('GlobalSearch: member N/A tampil dengan labelnya (bukan "Belum")', async () => {
     setup();
     render(<GlobalSearch open onClose={() => {}} />);
-    await userEvent.setup().type(screen.getByRole('textbox', { name: 'Cari member' }), 'ad');
-    const dlg = screen.getByRole('dialog', { name: 'Cari Member' });
+    await userEvent.setup().type(screen.getByRole('textbox', { name: 'Cari pelanggan' }), 'ad');
+    const dlg = screen.getByRole('dialog', { name: 'Cari Pelanggan' });
     expect(within(dlg).getByText('Nonaktif')).toBeInTheDocument();
     expect(within(dlg).queryByText('Belum')).not.toBeInTheDocument();
   });

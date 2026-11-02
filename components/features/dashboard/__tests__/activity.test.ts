@@ -15,7 +15,7 @@ describe('getActivityMeta', () => {
   });
   it('hapus → belum; tambah/edit → blue', () => {
     expect(getActivityMeta('[DEL] Hapus Member AKBAR').tone).toBe('belum');
-    expect(getActivityMeta('[ADD] Tambah Member ADIT').tone).toBe('blue');
+    expect(getActivityMeta('[ADD] Tambah Pelanggan ADIT').tone).toBe('blue');
     expect(getActivityMeta('[EDIT] Edit Member AJI').tone).toBe('blue');
   });
   it('login/logout/gratis/sync', () => {

@@ -244,20 +244,20 @@ describe('T13-07 Atur Tampilan: kartu yang disembunyikan benar-benar hilang', ()
 });
 
 describe('T13-02 FAB di layar', () => {
-  it('Member: FAB "Tambah Member" ada saat terbuka, hilang saat kunci Member terkunci (dan FabSpace ikut hilang)', () => {
+  it('Member: FAB "Tambah Pelanggan" ada saat terbuka, hilang saat kunci Member terkunci (dan FabSpace ikut hilang)', () => {
     const a = render(<MembersView />);
-    expect(screen.getByRole('button', { name: 'Tambah Member' })).toHaveClass('wp-fab');
+    expect(screen.getByRole('button', { name: 'Tambah Pelanggan' })).toHaveClass('wp-fab');
     expect(a.container.querySelector('.wp-fab-space')).not.toBeNull();
     a.unmount();
     setup({}, { membersLocked: true });
     const b = render(<MembersView />);
-    expect(screen.queryByRole('button', { name: 'Tambah Member' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tambah Pelanggan' })).not.toBeInTheDocument();
     expect(b.container.querySelector('.wp-fab-space')).toBeNull();
   });
 
-  it('Member: mengetuk FAB membuka sheet Tambah Member', async () => {
+  it('Member: mengetuk FAB membuka sheet Tambah Pelanggan', async () => {
     render(<MembersView />);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Tambah Member' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Tambah Pelanggan' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

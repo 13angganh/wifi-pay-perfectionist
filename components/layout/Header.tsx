@@ -9,6 +9,7 @@
 //     dan ikut perubahan zona terprogram (sebelumnya hanya saat tombol tab diklik).
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { saveDB } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
 import { logger } from '@/lib/logger';
@@ -16,7 +17,7 @@ import { showToast } from '@/components/ui/Toast';
 import GlobalSearch from '@/components/modals/GlobalSearch';
 import { useT } from '@/hooks/useT';
 import {
-  List, Lock, LockOpen, MagnifyingGlass, Sun, Moon, Crown,
+  List, Lock, LockOpen, MagnifyingGlass, Sun, Moon, Crown, User,
 } from '@phosphor-icons/react';
 import type { ThemeMode } from '@/store/slices/uiSlice';
 import { APP_NAME, APP_VERSION_FULL } from '@/lib/constants';
@@ -42,8 +43,8 @@ export default function Header({ onToggleSidebar, onOpenAccount }: Props) {
     theme, setTheme,
     appData, uid, setSyncStatus,
     settings, setAppData,
-    navMode, userName, userEmail,
-  } = useAppStore();
+    navMode, userName,
+  } = useAppStore(useShallow(s => ({ activeZone: s.activeZone, setZone: s.setZone, globalLocked: s.globalLocked, setGlobalLocked: s.setGlobalLocked, theme: s.theme, setTheme: s.setTheme, appData: s.appData, uid: s.uid, setSyncStatus: s.setSyncStatus, settings: s.settings, setAppData: s.setAppData, navMode: s.navMode, userName: s.userName })));
 
   const [searchOpen, setSearchOpen] = useState(false);
   const t = useT();
@@ -160,7 +161,7 @@ export default function Header({ onToggleSidebar, onOpenAccount }: Props) {
             style={theme === 'gold' ? { color: 'var(--gold)' } : undefined}
           />
           <button type="button" className="hdr-av" aria-label={t('sidebar.accountAria')} title={t('sidebar.manageAccount')} onClick={onOpenAccount}>
-            {getInitials(userName, userEmail)}
+            {getInitials(userName) || <User size={20} weight="fill" aria-hidden="true" />}
           </button>
         </div>
 

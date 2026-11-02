@@ -100,7 +100,8 @@ export default function LoginPage() {
     setState('form');
   }
 
-  const greeterName = remembered?.name || remembered?.email?.split('@')[0];
+  // v11.11.0: hanya nama tampilan akun (tanpa awalan email); kosong → sapaan netral "login.greetingNew"
+  const greeterName = remembered?.name || null;
 
   return (
     <AuthShell>

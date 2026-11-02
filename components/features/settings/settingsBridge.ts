@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════
 export type SettingsPageKey =
   | 'textsize'
-  | 'email' | 'tenant' | 'pin' | 'bio' | 'zone' | 'ip' | 'quick' | 'autodate'
+  | 'name' | 'email' | 'tenant' | 'pin' | 'bio' | 'zone' | 'ip' | 'quick' | 'autodate'
   | 'export' | 'wa' | 'theme' | 'nav' | 'toast' | 'lang';
 
 export const SETTINGS_PAGE_EVENT = 'wp:open-settings-page';

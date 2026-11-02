@@ -79,7 +79,7 @@ describe('BottomNav (A1)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Lainnya/ }));
     const dlg = screen.getByRole('dialog', { name: 'Lainnya' });
     expect(within(dlg).getAllByRole('button').filter(b => b.classList.contains('more-item'))).toHaveLength(5);
-    await userEvent.click(within(dlg).getByRole('button', { name: /Member/ }));
+    await userEvent.click(within(dlg).getByRole('button', { name: /Pelanggan/ }));
     expect(onNavigate).toHaveBeenCalledWith('members');
     expect(screen.queryByRole('dialog')).toBeNull();
   });

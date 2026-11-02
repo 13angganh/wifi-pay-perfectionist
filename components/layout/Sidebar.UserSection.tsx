@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════
 'use client';
 
-import { CaretRight } from '@phosphor-icons/react';
+import { CaretRight, User } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
 
 interface Props {
@@ -18,7 +18,7 @@ export default function SidebarUserSection({ initials, displayName, onOpenAccoun
   return (
     <div className="sb-user-section">
       <button type="button" className="sb-user-card" onClick={onOpenAccount} aria-label={t('sidebar.accountAria')}>
-        <span className="hdr-av hdr-av--sm" aria-hidden="true">{initials}</span>
+        <span className="hdr-av hdr-av--sm" aria-hidden="true">{initials || <User size={18} weight="fill" />}</span>
         <span className="sb-user-card__tx">
           <b>{displayName}</b>
           <span>{t('sidebar.manageAccount')}</span>

@@ -22,10 +22,11 @@ interface Props {
 
 export default function Sidebar({ onNavigate, onOpenAccount }: Props) {
   const t = useT();
-  const { currentView, userName, userEmail } = useAppStore();
+  const { currentView, userName } = useAppStore();
 
-  const initials    = getInitials(userName, userEmail);
-  const displayName = userName || userEmail?.split('@')[0] || 'Pengguna';
+  // v11.11.0: nama = nama tampilan yang diatur di Pengaturan; tanpa nama → "Pengguna" + avatar ikon (bukan awalan email)
+  const initials    = getInitials(userName);
+  const displayName = userName || t('sidebar.noName');
 
   function item({ v, Icon, labelKey }: NavItem) {
     const on = currentView === v;

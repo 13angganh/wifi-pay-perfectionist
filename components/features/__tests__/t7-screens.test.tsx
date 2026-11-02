@@ -53,10 +53,9 @@ function setup(over: Partial<AppData> = {}, extra: Record<string, unknown> = {})
 beforeEach(() => { nav.push.mockClear(); setup(); });
 
 describe('DashboardView (T7)', () => {
-  it('sapaan memakai nama pengguna; tiga stat; periode terpilih', () => {
+  it('sapaan memakai nama tampilan; tiga stat; periode terpilih', () => {
     render(<DashboardView />);
-    expect(screen.getByText('Selamat datang,')).toBeInTheDocument();
-    expect(screen.getByText(/Hakiki/)).toBeInTheDocument();
+    expect(screen.getByTestId('greeting-title')).toHaveTextContent(/Hakiki/);
     expect(screen.getByText('Lunas')).toBeInTheDocument();
     expect(screen.getByText('Gratis')).toBeInTheDocument();
   });
@@ -90,8 +89,8 @@ describe('DashboardView (T7)', () => {
   it('tanpa member: state kosong dengan tombol ke Member', async () => {
     setup({ krsMembers: [], slkMembers: [], zoneMembers: {}, payments: {} });
     render(<DashboardView />);
-    expect(screen.getByText('Belum ada member')).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Buka Member' }));
+    expect(screen.getByText('Belum ada pelanggan')).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Buka Pelanggan' }));
     expect(nav.push).toHaveBeenCalledWith('/members');
   });
 
@@ -129,7 +128,7 @@ describe('EntryView (T7)', () => {
     // kartu lunas: kotak centang nonaktif dan tidak bisa dipilih
     const lunasBox = screen.getByRole('checkbox', { name: /ADIT/ });
     expect(lunasBox).toBeDisabled();
-    expect(screen.getByRole('checkbox', { name: /Pilih member ABIL/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Pilih pelanggan ABIL/ })).toBeChecked();
   });
 
   it('mode pilih: mengetuk kartu lunas tidak menambah pilihan; mengetuk kartu belum bayar men-toggle', async () => {
@@ -156,7 +155,7 @@ describe('EntryView (T7)', () => {
   it('pencarian tanpa hasil: state kosong + Atur Ulang Pencarian mengosongkan query', async () => {
     setup({}, { search: 'ZZZ' });
     render(<EntryView />);
-    expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
+    expect(screen.getByText('Pelanggan tidak ditemukan')).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Atur Ulang Pencarian' }));
     expect(useAppStore.getState().search).toBe('');
   });

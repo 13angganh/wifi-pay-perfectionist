@@ -1,7 +1,7 @@
 # REDESAIN-MANIFEST.md — WiFi Pay redesain UI/UX
 
 Berkas koordinasi antar-tahap (kontrak T0 bagian 9 butir 5). Dipindah ke `docs/` di T11 (selesai).
-**Status terakhir: v11.10.2 (perbaikan tampilan, kelancaran, bahasa baku; lihat bagian 18). Sebelumnya v11.10.1 (pembaruan keamanan Next.js 16.4.3 di atas T13; lihat bagian 17). Sebelumnya TAHAP 13 selesai (menerapkan hasil uji prototipe R1–R17 ke zip produksi, v11.10.0; lihat bagian 16). Sebelumnya TAHAP 12 selesai (FITUR: Periode Member — Free multi-periode, Terdaftar sejak, Nonaktif/Reaktivasi — + perbaikan tanggal bayar; lihat bagian 15). Sebelumnya TAHAP 11: verifikasi + pembersihan + zip final (bagian 14)** · `APP_VERSION` = **v11.10.2** (patch perbaikan UX; v11.10.1 patch pembaruan Next.js; v11.10.0 di T13; sebelumnya v11.9.0 di T12; README punya entri baru paling atas).
+**Status terakhir: v11.11.0 (sapaan Beranda dinamis + Nama Tampilan; lihat bagian 21). Sebelumnya v11.10.4 (Splash mengikuti tema, istilah "pelanggan" seragam; lihat bagian 20). Sebelumnya v11.10.3 (Beranda rapi, pencarian seragam, scroll Entri lancar; lihat bagian 19). Sebelumnya v11.10.2 (perbaikan tampilan, kelancaran, bahasa baku; lihat bagian 18). Sebelumnya v11.10.1 (pembaruan keamanan Next.js 16.4.3 di atas T13; lihat bagian 17). Sebelumnya TAHAP 13 selesai (menerapkan hasil uji prototipe R1–R17 ke zip produksi, v11.10.0; lihat bagian 16). Sebelumnya TAHAP 12 selesai (FITUR: Periode Member — Free multi-periode, Terdaftar sejak, Nonaktif/Reaktivasi — + perbaikan tanggal bayar; lihat bagian 15). Sebelumnya TAHAP 11: verifikasi + pembersihan + zip final (bagian 14)** · `APP_VERSION` = **v11.11.0** (minor: fitur Nama Tampilan + sapaan dinamis; v11.10.4 patch perbaikan UX; v11.10.3 patch perbaikan UX; v11.10.2 patch perbaikan UX; v11.10.1 patch pembaruan Next.js; v11.10.0 di T13; sebelumnya v11.9.0 di T12; README punya entri baru paling atas).
 Zip asal: `wifi-pay-perfectionist-main.zip` (v11.7.1, tidak ditimpa) → T6: `wifi-pay-redesain-T6.zip` → T7: `wifi-pay-redesain-T7.zip` (tidak ditimpa) → T8: `wifi-pay-redesain-T8.zip` (tidak ditimpa) → T9: `wifi-pay-redesain-T9.zip` (tidak ditimpa) → T10: `wifi-pay-redesain-T10.zip` → T11: `wifi-pay-perfectionist-v11_8_0.zip` → T12: `wifi-pay-perfectionist-v11_9_0.zip` → T13: `wifi-pay-perfectionist-v11_10_0.zip` → zip ini: `wifi-pay-perfectionist-v11_10_1.zip`.
 
 ---
@@ -988,3 +988,25 @@ Tujuh butir permintaan user dari uji di HP (lihat README v11.10.2 untuk rincian)
 - Grafik pendapatan Beranda interaktif (batang = tombol + keterangan).
 - id.ts dibakukan (Beranda, Entri, Aktivitas, Ekspor/Impor, Cadangan, Unduh, Kata Sandi, Tautan, Berkas, Ubah, Atur Ulang, Perbarui, Luring/daring, Gratis, Tempat Sampah, Wawasan, Bilah Samping, Anda). Dipertahankan sengaja: **Quick Pay** (nama fitur) dan **Member** (nama menu; masih berdampingan dengan "pelanggan" pada sebagian teks, menunggu keputusan user). Teks aksi Log baru memakai istilah baku; entri Log lama (otomatis terhapus setelah 30 hari) tetap terbaca karena deteksi jenis Log berbasis tag `[PAY]/[DEL]/[FREE]` dan kata kunci yang tidak berubah.
 - Tidak berubah: data, aturan bisnis, `database.rules.json`, `vercel.json`, `next.config.ts`, dependensi.
+
+## 19. v11.10.3 — Beranda rapi, pencarian seragam, scroll Entri lancar (di atas v11.10.2)
+
+Empat butir permintaan user (lihat README v11.10.3 untuk rincian):
+- Beranda: satu tombol "+N lainnya ›", baris tombol Cadangan/WA rata tengah, `.trEnd :global(.wp-t-micro)`.
+- `SearchField` + `useMemberSearchPlaceholder` dipakai Entri/Rekap/Tunggakan (teks: "Cari nama member di {zona}...").
+- Scroll Entri: tidak ada lagi tulis store per frame; RiwayatModal per kartu hanya dipasang saat dibuka; `useShallow` di layar utama.
+- Temuan yang sengaja tidak diubah: 4 aturan CSS module yang menarget class global tanpa `:global()` (tidak pernah berlaku; mengaktifkannya mengubah tampilan angka), istilah "member" vs "pelanggan" yang masih bercampur (menunggu keputusan user).
+
+## 20. v11.10.4 — Splash mengikuti tema, istilah "pelanggan" seragam (di atas v11.10.3)
+
+Dua butir permintaan user (lihat README v11.10.4 untuk rincian):
+- Tema pada Splash/Login/Offline/Error: skrip tema pindah dari `<head>` (document.body null → gagal diam-diam) ke awal `<body>`; `lib/theme.ts` = `THEME_BG` + `applyTheme` + `themeBootScript`; `theme-color` ikut tema. CSS splash sudah penuh token tema.
+- Istilah: id "member" → "pelanggan" (termasuk menu), en "member" → "customer". Kunci kode/data, URL `/members`, dan entri Log lama tidak berubah. Menggantikan keputusan v11.10.2/v11.10.3 yang mempertahankan "Member".
+- Catatan yang tidak diubah: warna `background_color`/`theme_color` di `public/manifest.json` statis (splash bawaan OS saat membuka PWA dari ikon tidak bisa mengikuti tema); empat aturan CSS module yang menarget class global tanpa `:global()` (lihat bagian 19).
+
+## 21. v11.11.0 — Sapaan Beranda dinamis + Nama Tampilan (di atas v11.10.4)
+
+Permintaan user (lihat README v11.11.0 untuk rincian):
+- `lib/displayName.ts` (normalisasi, maks. 30), `doUpdateDisplayName()` di `hooks/useAuth.ts` (updateProfile Firebase Auth), `SettingsNameSection` + baris "Nama Tampilan" di grup Akun (`SettingsPageKey` 'name'), pintasan "Ubah nama" di AccountModal. Fallback awalan email dihapus total (dijaga test).
+- `lib/greeting.ts` (kalimat + pemilih murni), `lib/greetingSession.ts` (sesi + riwayat `wp_greet_recent`), `hooks/useGreeting.ts`; `DashboardView` memakai `useGreeting(stats)`. Sesi baru tiap app dibuka / kembali dari latar ≥ 2 menit.
+- Rekomendasi nama + logo/ikon/favicon baru (nama berbahasa Inggris) diberikan di chat saja; belum diterapkan ke zip (menunggu pilihan user).

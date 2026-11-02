@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowCounterClockwise, ChartBar, MagnifyingGlass, Scroll, Warning, X } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useT } from '@/hooks/useT';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { showToast } from '@/components/ui/Toast';
@@ -37,7 +38,7 @@ import {
 import l from './log.module.css';
 
 export default function LogView() {
-  const { appData, syncStatus, logSearch, setLogSearch, logType, setLogType } = useAppStore();
+  const { appData, syncStatus, logSearch, setLogSearch, logType, setLogType } = useAppStore(useShallow(s => ({ appData: s.appData, syncStatus: s.syncStatus, logSearch: s.logSearch, setLogSearch: s.setLogSearch, logType: s.logType, setLogType: s.setLogType })));
   const [logYear, setLogYear] = useState('');
   const [logMonth, setLogMonth] = useState('');
   const [detail, setDetail] = useState<ActivityLog | null>(null);

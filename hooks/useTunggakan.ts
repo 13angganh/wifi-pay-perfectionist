@@ -18,6 +18,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getArrears, isFree, getMonthStatus, isNotApplicable, fuzzyMatch, getMembersForZone, getAllActiveZones } from '@/lib/helpers';
 import { MONTHS, MONTHS_EN } from '@/lib/constants';
 import type { AppData, AppSettings } from '@/types';
@@ -94,7 +95,7 @@ export function buildTunggakan(
 }
 
 export function useTunggakan() {
-  const { appData, activeZone, selYear, selMonth, search } = useAppStore();
+  const { appData, activeZone, selYear, selMonth, search } = useAppStore(useShallow(s => ({ appData: s.appData, activeZone: s.activeZone, selYear: s.selYear, selMonth: s.selMonth, search: s.search })));
   const settings = useAppStore(s => s.settings);
   const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;

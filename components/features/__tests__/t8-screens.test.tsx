@@ -120,7 +120,7 @@ describe('RekapView (T8)', () => {
     await u.click(cell('ABIL', 9));               // belum, tarif 100
     await u.click(cell('AKBAR', 9));              // belum, tanpa tarif → QuickPay pertama (50)
     const sheet = screen.getByTestId('rekap-batch-sheet');
-    expect(within(sheet).getByText(/2 Member Dipilih/)).toBeInTheDocument();
+    expect(within(sheet).getByText(/2 Pelanggan Dipilih/)).toBeInTheDocument();
     expect(within(sheet).getByText('bawaan')).toBeInTheDocument();           // tag untuk AKBAR
     expect(within(sheet).getAllByText('Rp 100.000').length).toBeGreaterThan(0);
     expect(within(sheet).getByText('Rp 50.000')).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('RekapView (T8)', () => {
     const u = userEvent.setup();
     await u.click(screen.getByRole('button', { name: /Pilih Banyak/ }));
     await u.click(screen.getByRole('button', { name: 'Pilih Semua' }));
-    expect(within(screen.getByTestId('rekap-batch-sheet')).getByText(/3 Member Dipilih/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('rekap-batch-sheet')).getByText(/3 Pelanggan Dipilih/)).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Batalkan Semua' }));
     expect(screen.queryByTestId('rekap-batch-sheet')).not.toBeInTheDocument();
   });
@@ -182,7 +182,7 @@ describe('RekapView (T8)', () => {
     render(<RekapView />);
     const u = userEvent.setup();
     await u.click(cell('ANA', 9));
-    expect(within(screen.getByRole('dialog')).getByText('Member Gratis periode ini')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('Pelanggan Gratis periode ini')).toBeInTheDocument();
     expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Simpan' })).not.toBeInTheDocument();
   });
 
@@ -237,8 +237,8 @@ describe('RekapView (T8)', () => {
   it('zona kosong: keadaan kosong dengan tautan ke Member', () => {
     setup({}, { activeZone: 'SLK', appData: makeData({ slkMembers: [] }) });
     render(<RekapView />);
-    expect(screen.getByText('Belum ada member')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Buka Member' })).toHaveAttribute('href', '/members');
+    expect(screen.getByText('Belum ada pelanggan')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buka Pelanggan' })).toHaveAttribute('href', '/members');
     expect(screen.getByRole('button', { name: /Pilih Banyak/ })).toBeDisabled();
   });
 
@@ -246,7 +246,7 @@ describe('RekapView (T8)', () => {
     setup({}, { search: 'zzz' });
     render(<RekapView />);
     const u = userEvent.setup();
-    expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
+    expect(screen.getByText('Pelanggan tidak ditemukan')).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Atur Ulang Filter' }));
     expect(rowNames()).toHaveLength(5);
   });
@@ -300,12 +300,12 @@ describe('TunggakanView (T8)', () => {
   it('A19: pencarian nama menyaring daftar dan jumlah; tanpa hasil → keadaan tidak ditemukan + reset', async () => {
     render(<TunggakanView />);
     const u = userEvent.setup();
-    await u.type(screen.getByPlaceholderText('Cari nama pelanggan...'), 'adi');
+    await u.type(screen.getByPlaceholderText('Cari nama pelanggan di KRS...'), 'adi');
     expect(screen.getAllByTestId('tunggakan-card')).toHaveLength(1);
     expect(screen.getByTestId('tunggakan-card')).toHaveTextContent('ADIT');
-    await u.clear(screen.getByPlaceholderText('Cari nama pelanggan...'));
-    await u.type(screen.getByPlaceholderText('Cari nama pelanggan...'), 'zzz');
-    expect(screen.getByText('Member tidak ditemukan')).toBeInTheDocument();
+    await u.clear(screen.getByPlaceholderText('Cari nama pelanggan di KRS...'));
+    await u.type(screen.getByPlaceholderText('Cari nama pelanggan di KRS...'), 'zzz');
+    expect(screen.getByText('Pelanggan tidak ditemukan')).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Atur Ulang Filter' }));
     expect(screen.getAllByTestId('tunggakan-card')).toHaveLength(3);
   });
@@ -364,8 +364,8 @@ describe('TunggakanView (T8)', () => {
   it('zona tanpa member: keadaan kosong dengan tautan ke Member', () => {
     setup({ slkMembers: [] }, { activeZone: 'SLK' });
     render(<TunggakanView />);
-    expect(screen.getByText('Belum ada member')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Buka Member' })).toHaveAttribute('href', '/members');
+    expect(screen.getByText('Belum ada pelanggan')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buka Pelanggan' })).toHaveAttribute('href', '/members');
   });
 
   it('bahasa Inggris: nama bulan dan label mengikuti bahasa', () => {

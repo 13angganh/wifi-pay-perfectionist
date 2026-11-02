@@ -9,6 +9,7 @@
 import { useRouter } from 'next/navigation';
 import { CalendarBlank, CaretLeft, CaretRight, Medal, TrendUp, Wallet } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MONTHS, getYears, MONTHS_EN } from '@/lib/constants';
 import { getPay, isFree, isLunas, rp, getMonthStatus, isNotApplicable } from '@/lib/helpers';
 import { useT } from '@/hooks/useT';
@@ -28,7 +29,7 @@ export default function RiwayatModal({ open, onClose }: Props) {
   const {
     appData, settings, riwayatZone, riwayatName, riwayatYear,
     setRiwayatYear, setView, setZone, setEntryCard, setExpandedCard,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, settings: s.settings, riwayatZone: s.riwayatZone, riwayatName: s.riwayatName, riwayatYear: s.riwayatYear, setRiwayatYear: s.setRiwayatYear, setView: s.setView, setZone: s.setZone, setEntryCard: s.setEntryCard, setExpandedCard: s.setExpandedCard })));
 
   const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;

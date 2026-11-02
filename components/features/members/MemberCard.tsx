@@ -14,6 +14,7 @@ import {
   CaretDown, CaretUp, CalendarBlank, CreditCard, Check, Lock, Prohibit, Scroll, Trash, Lightning,
 } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MONTHS, MONTHS_EN, getYears } from '@/lib/constants';
 import { getPay, isFree, rp, resolveEntryCardPeriod, resolveDisplayStatus, getMonthStatus, isNotApplicable } from '@/lib/helpers';
 import { resolvePayDate, setPayDate, payDatePatch, applyPayDatePatch, readPayDate, restorePayDate, type PayDatePatch } from '@/lib/payDate';
@@ -75,7 +76,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
     setSyncStatus,
     setRiwayatZone, setRiwayatName, setRiwayatYear,
     settings, search,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, setAppData: s.setAppData, uid: s.uid, userEmail: s.userEmail, activeZone: s.activeZone, selYear: s.selYear, selMonth: s.selMonth, expandedCard: s.expandedCard, setExpandedCard: s.setExpandedCard, entryCardYear: s.entryCardYear, entryCardMonth: s.entryCardMonth, setEntryCard: s.setEntryCard, clearEntryCardFor: s.clearEntryCardFor, globalLocked: s.globalLocked, lockedEntries: s.lockedEntries, setSyncStatus: s.setSyncStatus, setRiwayatZone: s.setRiwayatZone, setRiwayatName: s.setRiwayatName, setRiwayatYear: s.setRiwayatYear, settings: s.settings, search: s.search })));
 
   const [riwOpen,       setRiwOpen]       = useState(false);
   // UX: loading state saat save (double-submit prevention)
@@ -678,8 +679,10 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
       {/* Portal: render di document.body agar tidak terpengaruh CSS transform dari parent —
           transform menciptakan containing block baru yang mematahkan position:fixed pada children. */}
-      {typeof window !== 'undefined' && createPortal(
-        <RiwayatModal open={riwOpen} onClose={() => setRiwOpen(false)} />,
+      {/* v11.10.3: dipasang HANYA saat dibuka (pola sama dengan Rekap/Tunggakan/Member). Dulu tiap kartu (±107) memasang
+          satu RiwayatModal tersembunyi yang berlangganan SELURUH store → 107 langganan ekstra dirender ulang di tiap perubahan. */}
+      {riwOpen && typeof window !== 'undefined' && createPortal(
+        <RiwayatModal open onClose={() => setRiwOpen(false)} />,
         document.body
       )}
     </>

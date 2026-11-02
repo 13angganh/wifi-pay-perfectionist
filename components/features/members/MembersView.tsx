@@ -17,6 +17,7 @@ import { FabSpace } from '@/components/ui/Fab';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Lock, LockOpen, MagnifyingGlass, Trash, UserPlus, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useT } from '@/hooks/useT';
 import { tLog } from '@/lib/i18n';
 import { MONTHS, MONTHS_EN } from '@/lib/constants';
@@ -60,7 +61,7 @@ export default function MembersView() {
     syncStatus, setSyncStatus,
     setRiwayatZone, setRiwayatName, setRiwayatYear,
     settings,
-  } = useAppStore();
+  } = useAppStore(useShallow(s => ({ appData: s.appData, setAppData: s.setAppData, uid: s.uid, userEmail: s.userEmail, activeZone: s.activeZone, memberTab: s.memberTab, setMemberTab: s.setMemberTab, search: s.search, setSearch: s.setSearch, membersLocked: s.membersLocked, setMembersLocked: s.setMembersLocked, selYear: s.selYear, selMonth: s.selMonth, syncStatus: s.syncStatus, setSyncStatus: s.setSyncStatus, setRiwayatZone: s.setRiwayatZone, setRiwayatName: s.setRiwayatName, setRiwayatYear: s.setRiwayatYear, settings: s.settings })));
   const t = useT();
   const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;

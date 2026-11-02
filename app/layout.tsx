@@ -2,13 +2,14 @@
 // app/layout.tsx — Root layout
 // task 3.01: Ganti Google Fonts <link> manual → next/font/google
 //            Inter (sans) + JetBrains Mono (mono) sesuai spec prompt-personal.md
-// Sesi Fix: Tambah Analytics + SpeedInsights + anti-FOUC script
+// Sesi Fix: Tambah Analytics + SpeedInsights + anti-FOUC script (v11.10.4: dipindah ke awal <body>, lihat lib/theme.ts)
 // ══════════════════════════════════════════
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
+import { THEME_BG, themeBootScript } from '@/lib/theme';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -33,21 +34,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   // task 1.07: dihapus maximumScale + userScalable — pelanggaran WCAG 1.4.4
-  themeColor: '#121212',
+  themeColor: THEME_BG.dark, // default gelap; skrip tema (body) & AppShell menyesuaikan dengan tema aktif
 };
-
-// Anti-FOUC: baca preferensi tema dari localStorage SEBELUM hydration
-// Mencegah flash warna dari dark → light (atau sebaliknya) saat load
-const antiFOUC = `
-(function() {
-  try {
-    var t = localStorage.getItem('wp_theme');
-    document.body.classList.remove('light','gold');
-    if (t === 'light') document.body.classList.add('light');
-    else if (t === 'gold') document.body.classList.add('gold');
-  } catch(e) {}
-})();
-`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -56,10 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Anti-FOUC: jalankan sebelum render body */}
-        <script dangerouslySetInnerHTML={{ __html: antiFOUC }} />
       </head>
       <body suppressHydrationWarning>
+        {/* Tema (anti-flash): HARUS skrip pertama di <body> — di <head> document.body masih null sehingga tidak pernah bekerja */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {children}
         <Analytics />
         <SpeedInsights />

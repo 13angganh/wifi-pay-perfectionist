@@ -93,9 +93,11 @@ export function WaCard({ d }: { d: VM }) {
           <b>{t('dashboard.waSummary')}</b>
           <div className="wp-t-cap">{d.bulanLbl}</div>
         </div>
-        <Button variant="success" size="sm" onClick={() => doWASummary(appData, d.dy, d.dm)}>
-          <WhatsappLogo weight="fill" aria-hidden="true" /> {t('dashboard.sendWA')} {d.bulanLbl}
-        </Button>
+        <div className={s.rowActs}>
+          <Button variant="success" size="sm" onClick={() => doWASummary(appData, d.dy, d.dm)}>
+            <WhatsappLogo weight="fill" aria-hidden="true" /> {t('dashboard.sendWA')} {d.bulanLbl}
+          </Button>
+        </div>
       </div>
       <div className="wp-t-micro" style={{ marginTop: 8, textAlign: 'center' }}>{t('dashboard.periodNote')}</div>
     </Card>

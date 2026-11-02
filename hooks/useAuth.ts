@@ -24,6 +24,8 @@ import {
 } from 'firebase/auth';
 import { auth, firebaseConfig } from '@/lib/firebase';
 import { friendlyAuthError } from '@/lib/helpers';
+import { normalizeDisplayName } from '@/lib/displayName';
+import { tLog } from '@/lib/i18n';
 import { useAppStore } from '@/store/useAppStore';
 
 // ── Google provider (singleton) ──
@@ -59,8 +61,15 @@ const KEY_PASS  = 'wp_remember_pass';
 function saveRememberCred(email: string, pass: string, displayName: string) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEY_EMAIL, email);
-  localStorage.setItem(KEY_NAME,  displayName || email.split('@')[0]);
+  // v11.11.0: nama tersimpan = nama tampilan akun saja (kosong = tidak disimpan), tidak lagi awalan email
+  if (displayName) localStorage.setItem(KEY_NAME, displayName); else localStorage.removeItem(KEY_NAME);
   localStorage.setItem(KEY_PASS,  pass);
+}
+
+/** Samakan nama pada kartu "akun tersimpan" di layar masuk bila akun yang sama baru mengganti nama tampilannya. */
+function syncRememberedName(email: string, name: string) {
+  if (typeof window === 'undefined' || !email || localStorage.getItem(KEY_EMAIL) !== email) return;
+  if (name) localStorage.setItem(KEY_NAME, name); else localStorage.removeItem(KEY_NAME);
 }
 
 export function getRememberedCred(): { email: string; name: string; pass: string } | null {
@@ -69,7 +78,7 @@ export function getRememberedCred(): { email: string; name: string; pass: string
   const name  = localStorage.getItem(KEY_NAME);
   const pass  = localStorage.getItem(KEY_PASS);
   if (!email || !pass) return null;
-  return { email, name: name || email.split('@')[0], pass };
+  return { email, name: name || '', pass };
 }
 
 /** @deprecated gunakan getRememberedCred() */
@@ -86,7 +95,8 @@ export function useAuth() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUser(user.uid, user.email || '', user.displayName || user.email?.split('@')[0] || '');
+        // v11.11.0: nama = displayName profil akun saja. TIDAK lagi memakai awalan email (kosong = belum diatur).
+        setUser(user.uid, user.email || '', normalizeDisplayName(user.displayName));
         setSessionCookie();
         // Titik pertama uid diketahui — reload PIN/biometrik/preferensi
         // operasional dari key per-uid akun ini (bahasa tetap ikut device,
@@ -114,7 +124,7 @@ export async function doLogin(
   try {
     await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithEmailAndPassword(auth, email, pass);
-    if (remember) saveRememberCred(email, pass, result.user.displayName || email.split('@')[0]);
+    if (remember) saveRememberCred(email, pass, normalizeDisplayName(result.user.displayName));
     return {};
   } catch (e: unknown) {
     return { error: friendlyAuthError(getFirebaseCode(e)) };
@@ -182,6 +192,23 @@ export async function doRegister(
     await updateProfile(result.user, { displayName: name });
     saveRememberCred(email, pass, name);
     return {};
+  } catch (e: unknown) {
+    return { error: friendlyAuthError(getFirebaseCode(e)) };
+  }
+}
+
+// ── Ubah nama tampilan (v11.11.0) ──
+// Disimpan di profil Firebase Auth (ikut akun di semua perangkat); kosong = hapus nama. Store diperbarui langsung karena
+// onAuthStateChanged TIDAK menyala untuk perubahan profil.
+export async function doUpdateDisplayName(raw: string): Promise<{ error?: string; name?: string }> {
+  const user = auth.currentUser;
+  if (!user) return { error: tLog('nameSection.noSession') };
+  const name = normalizeDisplayName(raw);
+  try {
+    await updateProfile(user, { displayName: name || null });
+    useAppStore.getState().setUser(user.uid, user.email || '', name);
+    syncRememberedName(user.email || '', name);
+    return { name };
   } catch (e: unknown) {
     return { error: friendlyAuthError(getFirebaseCode(e)) };
   }

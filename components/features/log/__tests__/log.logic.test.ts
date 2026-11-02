@@ -18,7 +18,7 @@ describe('isPayLog — aturan "Hanya Bayar" zip, tidak berubah', () => {
     expect(isPayLog('Hapus bayar ABIL')).toBe(true);
     expect(isPayLog('\u{1F4B0} lama')).toBe(true);
   });
-  it('bukan pembayaran: kosong, Login, Tambah Member', () => {
+  it('bukan pembayaran: kosong, Login, Tambah Pelanggan', () => {
     expect(isPayLog('')).toBe(false);
     expect(isPayLog('Login')).toBe(false);
     expect(isPayLog('Tambah member X')).toBe(false);

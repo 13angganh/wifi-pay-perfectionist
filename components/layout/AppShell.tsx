@@ -16,6 +16,7 @@ import { hasAnyMembers, useEscapeClose } from './shellLogic';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { usePWA } from '@/hooks/usePWA';
 import { useRoutePrefetch } from '@/hooks/useRoutePrefetch';
+import { applyTheme } from '@/lib/theme';
 import { useOfflineDetect } from '@/hooks/useOfflineDetect';
 import AppErrorBoundary from './AppErrorBoundary';
 import Header        from './Header';
@@ -110,12 +111,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (seg) setView(seg, { keepPeriod: true });
   }, [pathname, setView]);
 
-  // Apply theme class ke body
-  useEffect(() => {
-    document.body.classList.remove('light', 'gold');
-    if (theme === 'light') document.body.classList.add('light');
-    else if (theme === 'gold') document.body.classList.add('gold');
-  }, [theme]);
+  // Apply theme class ke body (+ warna theme-color browser) — lib/theme.ts; skrip awal di app/layout.tsx memasangnya
+  // lebih dulu supaya Splash/Login juga bertema.
+  useEffect(() => { applyTheme(theme); }, [theme]);
 
   // Auto backup
   const backupChecked = useRef(false);

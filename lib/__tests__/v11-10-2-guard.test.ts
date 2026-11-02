@@ -61,7 +61,7 @@ describe('v11.10.2 — navigasi menu tidak lag', () => {
 });
 
 describe('v11.10.2 — bahasa Indonesia baku (id.ts)', () => {
-  const asing = /\b(Dashboard|dashboard|Password|password|Export|Import|Backup|backup|Download|download|didownload|Reset|reset|Update|update|diupdate|Offline|offline|online|kamu|Kamu|Recycle|clipboard|inbox|Free|free|Edit|edit|Entry|entry|Link|link|File|file|field|Share|share|error|Oops|App|app|header|Header|toast|Toast|Sidebar|Insight|Custom|Batch|batch|Restore|default|Default|sync|Sync|tap|Tap|klik|Klik|Unlock|Ops|Net|pp)\b/;
+  const asing = /\b(Dashboard|dashboard|Password|password|Export|Import|Backup|backup|Download|download|didownload|Reset|reset|Update|update|diupdate|Offline|offline|online|kamu|Kamu|Recycle|clipboard|inbox|Free|free|Edit|edit|Entry|entry|Link|link|File|file|field|Share|share|error|Oops|App|app|header|Header|toast|Toast|Sidebar|Insight|Custom|Batch|batch|Restore|default|Default|sync|Sync|tap|Tap|klik|Klik|Unlock|Ops|Net|pp|tapi|selector|modal|login|Login)\b/;
 
   it('tidak ada kata asing / tidak baku yang sudah dibakukan di nilai teks Indonesia', () => {
     const bocor = Object.entries(id).filter(([, v]) => asing.test(v)).map(([k, v]) => `${k} = ${v}`);

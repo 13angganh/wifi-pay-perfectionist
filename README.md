@@ -1,6 +1,33 @@
-# WiFi Pay Next — Update v11.10.2
+# WiFi Pay Next — Update v11.11.0
 
 > Redesain UI/UX menyeluruh (tahap T6–T11): tampilan baru dengan 3 tema (Terang/Gelap/Emas), Mode Navigasi (Bottom/Sidebar), Posisi Toast, Pusat Notifikasi, dan layar Log, Operasional, Pengaturan versi baru. **Logika bisnis zip v11.7.1 dipertahankan**; perubahan logika hanya yang disetujui user (Register Tambahan A1–A3 dan A27–A29, serta perbaikan zona kustom). Rincian lengkap per tahap: `docs/REDESAIN-MANIFEST.md`.
+
+## v11.11.0 — Sapaan Beranda dinamis + Nama Tampilan yang bisa diatur
+
+Dua fitur dari permintaan user. Data pelanggan, logika bisnis, dan struktur data TIDAK berubah (nama tampilan disimpan di profil Firebase Auth, bukan di database aplikasi, jadi `database.rules.json` tidak berubah).
+
+- **Nama Tampilan (Pengaturan → Akun → Nama Tampilan):** nama yang tampil di sapaan Beranda, avatar, dan menu akun kini bisa diatur sendiri (maks. 30 karakter, spasi dirapikan; kolom kosong lalu hapus = tanpa nama). Disimpan di profil akun Firebase (`displayName`) sehingga ikut akun di semua perangkat. **Nama TIDAK LAGI diambil dari awalan email**: fallback itu dihapus di lima tempat (store saat masuk, avatar Header, kartu akun Sidebar, sapaan Beranda, kartu "akun tersimpan" di layar masuk). Tanpa nama: avatar memakai ikon pengguna, Sidebar menampilkan "Pengguna", sapaan tetap utuh tanpa nama, layar masuk memakai sapaan netral. Menu akun menampilkan "Belum diatur" + tombol **Ubah nama** (pintasan ke Pengaturan). Baris Pengaturan memperlihatkan nama saat ini di badge. **Catatan:** akun email yang belum punya `displayName` (mis. akun yang sebelumnya tampil sebagai awalan email) kini tampil tanpa nama sampai diatur sekali di Pengaturan; akun Google tetap memakai nama Google sampai diubah.
+- **Sapaan Beranda dinamis** (`lib/greeting.ts`, `lib/greetingSession.ts`, `hooks/useGreeting.ts`): menggantikan "Selamat datang, nama". Judul mengikuti waktu (pagi 04–11, siang 12–14, sore 15–17, malam 18–23, larut malam 00–03) dengan nada FORMAL atau SANTAI yang berganti-ganti ("Selamat pagi, Budi" / "Pagi, Budi! Kopi dulu?"); baris kedua dari data nyata bulan berjalan (semua lunas, awal bulan, akhir bulan, tunggakan terlama, progres lunas, pendapatan naik, hari Senin/Jumat, larut malam) dan hanya muncul setelah data siap. **Setiap app dibuka lagi (halaman dimuat) atau kembali dari latar belakang ≥ 2 menit = sapaan baru**; dalam satu sesi sapaan tetap. Riwayat 4 sapaan terakhir (`wp_greet_recent`, per perangkat) mencegah judul dan baris yang sama berulang; nada tidak pernah sama tiga kali berturut-turut. Dua bahasa (id/en) dengan id kalimat yang sama; tanpa emoji; ikon kecil sesuai waktu (matahari/bulan). Key `dashboard.greeting` dihapus.
+- **Test:** 1147 → 1204 test (64 → 71 file); tsc dan `eslint .` bersih; build produksi lolos.
+
+## v11.10.4 — Splash mengikuti tema, istilah "pelanggan" seragam
+
+Dua butir dari user. Data pelanggan, logika bisnis, dan struktur data TIDAK berubah.
+
+- **Splash/loading kini mengikuti tema aktif (Terang/Gelap/Emas)** sejak frame pertama. Akar masalah ada dua: (1) skrip anti-flash di `<head>` memakai `document.body` yang saat itu masih `null` (gagal diam-diam di `try/catch`), (2) satu-satunya yang memasang class `body.light`/`body.gold` adalah efek di AppShell — yang belum ada saat Splash tampil (layout menampilkan Splash selagi auth dicek), sehingga Splash (juga Login/Offline/Error) selalu gelap. Perbaikan: `lib/theme.ts` (`THEME_BG`, `applyTheme`, `themeBootScript`); skrip tema kini skrip PERTAMA di dalam `<body>` (`app/layout.tsx`), AppShell memakai `applyTheme`. Ikut diperbaiki: `theme-color` browser/PWA dulu statis `#121212` (tidak sama dengan latar app `#0B1020`); kini mengikuti tema aktif, juga saat tema diganti di Pengaturan. Warna latar tiap tema dijaga test agar sama dengan `--bg` di `styles/tokens.css`. CSS splash memang sudah 100% memakai token tema.
+- **"Member" → "Pelanggan" di seluruh teks Indonesia** (84 teks), termasuk nama menu (**Pelanggan**), "Daftar Pelanggan", "Tambah Pelanggan", "Cari nama pelanggan di KRS...", dst; sebelumnya "member" dan "pelanggan" bercampur bahkan dalam satu layar. Versi Inggris diseragamkan paralel: "member" → "customer" (85 teks; nama menu **Customers**), karena sebelumnya juga campur dengan "customers". Satu teks log yang di-hardcode (`… N member`) kini lewat kamus. TIDAK berubah: nama kode/data (`members`, `memberInfo`, `krsMembers`, …), URL `/members`, dan entri Log lama yang sudah tersimpan (memuat kata "member"; otomatis terhapus setelah 30 hari). Keputusan v11.10.2 yang mempertahankan "Member" digantikan oleh keputusan ini.
+- **Test:** 1135 → 1147 test (63 → 64 file); tsc dan `eslint .` bersih; build produksi lolos.
+
+## v11.10.3 — Beranda rapi, pencarian seragam, scroll Entri lancar
+
+Empat butir dari uji di HP. Data pelanggan, logika bisnis, dan struktur data TIDAK berubah.
+
+- **Beranda — kartu Tunggakan:** "+126 lainnya" dan panah ">" tampak seperti dua tombol. Penyebabnya Tailwind preflight membuat `svg` berupa `display: block`, sehingga panah di dalam tombol teks turun ke baris baru di kiri. Kini satu tombol sebaris dan rata tengah (`.wp-lnk` jadi `inline-flex`; ikut membetulkan "Lihat Semua ›" di Aktivitas Terbaru). **Cadangan Terakhir** (Unduh/Bagikan) dan **Ringkasan WA** (Kirim Ringkasan …): baris tombol kini selalu di baris sendiri dan rata tengah (`.rowActs`), tidak lagi bergantung lebar layar.
+- **Teks "5 bulan" dan "sejak Jun 2025" menempel** (terlihat di screenshot): aturan `.trEnd .wp-t-micro` di CSS module tidak pernah mengenai karena `.wp-t-micro` adalah class global dan ikut di-hash; kini `:global(.wp-t-micro)`. Empat aturan serupa yang tidak pernah berlaku (`.bsheetTx .wp-num`, `.end .wp-num` ×2, `.actEnd .wp-num`) sengaja TIDAK diaktifkan karena akan mengubah ukuran/warna angka yang sekarang tampil; dicatat sebagai temuan.
+- **Pencarian seragam:** komponen bersama `SearchField` + hook `useMemberSearchPlaceholder`; Entri, Rekap, dan Tunggakan kini identik: "Cari nama member di KRS..." (mengikuti zona aktif; Inggris "Search member name in KRS..."). Tiga key lama (`entry/rekap/tunggakan.searchPlaceholder`) diganti satu key `common.searchMemberIn`. Pencarian Member (nama/ID/IP), Log (nama/aksi), dan Pencarian Global tetap berbeda karena cakupannya memang beda.
+- **Scroll Entri tertunda — tiga penyebab:** (1) handler scroll menulis `entryScrollTop` ke store di SETIAP frame sehingga seluruh app + ±107 kartu dirender ulang tiap frame (nilainya tidak pernah dibaca; kini hanya variabel modul), (2) tiap kartu member memasang satu `RiwayatModal` tersembunyi yang berlangganan SELURUH store (±107 langganan ekstra) — kini dipasang hanya saat dibuka, (3) EntryView, MemberCard, Rekap, Tunggakan, Member, Beranda, Grafik, Log, Operasional, Header, RiwayatModal, `useTunggakan`, dan `useDashboard` berlangganan seluruh store; kini `useShallow` hanya pada field yang dipakai.
+- **Bahasa baku (susulan):** "selector" → "pemilih", "modal Rekap" → "jendela Rekap", "tapi" → "tetapi", "login" → "masuk".
+- **Test:** 1124 → 1135 test (61 → 63 file); tsc dan `eslint .` bersih; build produksi lolos.
 
 ## v11.10.2 — perbaikan tampilan, kelancaran, dan bahasa baku
 
@@ -1421,7 +1448,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.10.2 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.11.0 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

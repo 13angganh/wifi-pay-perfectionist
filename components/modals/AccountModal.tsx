@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { GoogleLogo, SignOut, UserSwitch } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogout, switchAccount, doLinkGoogle, getLinkedProviders } from '@/hooks/useAuth';
@@ -17,12 +18,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
 import { Sheet } from '@/components/ui/Sheet';
+import { requestSettingsPage } from '@/components/features/settings/settingsBridge';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function AccountModal({ open, onClose }: Props) {
-  const { userEmail, userName } = useAppStore();
+  const { userEmail, userName, setView } = useAppStore();
   const t = useT();
+  const router = useRouter();
   const [linking, setLinking] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -35,6 +38,9 @@ export default function AccountModal({ open, onClose }: Props) {
   const isEmailLinked = providers.includes('password');
 
   async function handleLogout() { onClose(); await doLogout(); }
+
+  // v11.11.0: pintasan ke Pengaturan → Nama Tampilan
+  function handleChangeName() { onClose(); requestSettingsPage('name'); setView('settings'); router.push('/settings'); }
 
   function handleSwitch() {
     showConfirm('switch', t('account.switchConfirmQuestion'), t('account.switchConfirmYes'), async () => {
@@ -57,8 +63,11 @@ export default function AccountModal({ open, onClose }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-h)' }}>
         <div>
           <span className="wp-t-label">{t('account.loggedInAs')}</span>
-          {userName && <b style={{ display: 'block', fontWeight: 'var(--fw-strong)' }}>{userName}</b>}
-          <span className="wp-t-cap">{userEmail}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+            <b style={{ fontWeight: 'var(--fw-strong)', color: userName ? undefined : 'var(--txt3)' }}>{userName || t('nameSection.notSet')}</b>
+            <button type="button" className="wp-lnk" onClick={handleChangeName}>{t('account.changeName')}</button>
+          </div>
+          <span className="wp-t-cap" style={{ display: 'block' }}>{userEmail}</span>
           <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 'var(--sp-2)', flexWrap: 'wrap' }}>
             {isEmailLinked && <Badge variant="neutral" size="xs">{t('account.badgeEmail')}</Badge>}
             {isGoogleLinked && <Badge variant="belum" size="xs">{t('account.badgeGoogle')}</Badge>}

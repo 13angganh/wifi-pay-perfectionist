@@ -22,6 +22,7 @@
 'use client';
 
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   getPay, isFree, getArrears, getPrevMonth, calcPctDelta, getMonthStatus, isNotApplicable,
   getAllActiveZones, getMembersForZone,
@@ -166,7 +167,7 @@ export function computeDashboard(data: AppData, settings: AppSettings, dy: numbe
 }
 
 export function useDashboard() {
-  const { appData, syncStatus, selYear, selMonth, settings } = useAppStore();
+  const { appData, syncStatus, selYear, selMonth, settings } = useAppStore(useShallow(s => ({ appData: s.appData, syncStatus: s.syncStatus, selYear: s.selYear, selMonth: s.selMonth, settings: s.settings })));
   const t    = useT();
   const lang = settings.language ?? 'id';
   const MONTH_NAMES = lang === 'en' ? MONTHS_EN : MONTHS;

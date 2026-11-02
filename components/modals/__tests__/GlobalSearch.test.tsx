@@ -35,7 +35,7 @@ function setup(settings: Record<string, unknown> = {}) {
 }
 
 const open = (onClose = vi.fn()) => { render(<GlobalSearch open onClose={onClose} />); return onClose; };
-const box = () => screen.getByRole('textbox', { name: 'Cari member' });
+const box = () => screen.getByRole('textbox', { name: 'Cari pelanggan' });
 
 beforeEach(() => { nav.push.mockClear(); setup(); });
 
@@ -45,11 +45,11 @@ describe('GlobalSearch — dialog (primitive Sheet)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('dialog ber-judul "Cari Member" + petunjuk awal; Esc menutup', async () => {
+  it('dialog ber-judul "Cari Pelanggan" + petunjuk awal; Esc menutup', async () => {
     const onClose = open();
-    const dlg = screen.getByRole('dialog', { name: 'Cari Member' });
+    const dlg = screen.getByRole('dialog', { name: 'Cari Pelanggan' });
     expect(dlg).toHaveAttribute('aria-modal', 'true');
-    expect(within(dlg).getByText('Ketik nama member untuk mencari di semua zona')).toBeInTheDocument();
+    expect(within(dlg).getByText('Ketik nama pelanggan untuk mencari di semua zona')).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalled();
   });
@@ -92,11 +92,11 @@ describe('GlobalSearch — pencarian lintas zona (zona kustom = KRS/SLK)', () =>
     open();
     await userEvent.type(box(), 'xyz');
     expect(screen.getByText('Tidak ada hasil')).toBeInTheDocument();
-    expect(screen.getByText('Tidak ada member dengan nama "xyz"')).toBeInTheDocument();
+    expect(screen.getByText('Tidak ada pelanggan dengan nama "xyz"')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Hapus pencarian' }));
     expect(box()).toHaveValue('');
     expect(box()).toHaveFocus();
-    expect(screen.getByText('Ketik nama member untuk mencari di semua zona')).toBeInTheDocument();
+    expect(screen.getByText('Ketik nama pelanggan untuk mencari di semua zona')).toBeInTheDocument();
   });
 
   it('ketuk hasil → zona aktif + Entry + kartu terbuka + tutup', async () => {

@@ -11,7 +11,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  AlignTopSimple, CalendarCheck, Database, DeviceMobile, Envelope, Export, Fingerprint, Info, Lightning, LockKey,
+  AlignTopSimple, CalendarCheck, Database, DeviceMobile, Envelope, Export, Fingerprint, IdentificationBadge, Info, Lightning, LockKey,
   MapTrifold, Network, Palette, ShieldCheck, Sun, SquaresFour, TextAa, Translate, UserCircle, UserPlus, WhatsappLogo,
 } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
@@ -22,6 +22,7 @@ import type { AnyIcon } from '@/components/ui/icons';
 import type { TileTone } from '@/components/ui/IconTile';
 import SettingsPinSection from './SettingsPinSection';
 import SettingsBiometricSection from './SettingsBiometricSection';
+import SettingsNameSection from './SettingsNameSection';
 import SettingsEmailSection from './SettingsEmailSection';
 import SettingsZoneSection from './SettingsZoneSection';
 import SettingsTarifSection from './SettingsTarifSection';
@@ -38,7 +39,7 @@ type GroupId = 'account' | 'security' | 'management' | 'data' | 'appearance' | '
 
 export default function SettingsView() {
   const t = useT();
-  const { settings, theme, navMode, toastPosition, textSize } = useAppStore();
+  const { settings, theme, navMode, toastPosition, textSize, userName } = useAppStore();
   const [open, setOpen] = useState<Record<GroupId, boolean>>({ account: false, security: false, management: false, data: false, appearance: false, info: false });
   const [page, setPage] = useState<SettingsPageKey | null>(null);
 
@@ -56,14 +57,14 @@ export default function SettingsView() {
   const activeColor = (v: boolean | undefined) => (on(v) ? 'var(--c-lunas)' : 'var(--txt4)');
 
   const titles: Record<SettingsPageKey, string> = {
-    email: t('settings.emailSectionTitle'), tenant: t('settings.tenant.sectionTitle'),
+    name: t('settings.nameSectionTitle'), email: t('settings.emailSectionTitle'), tenant: t('settings.tenant.sectionTitle'),
     pin: t('settings.pinSectionTitle'), bio: t('settings.biometricSectionTitle'),
     zone: t('settings.zones'), ip: t('settings.ipSectionTitle'), quick: t('settings.quickPaySectionTitle'),
     autodate: t('settings.autoDateSectionTitle'), export: t('settings.export'), wa: t('settings.waSummaryTitle'),
     theme: t('settings.theme'), textsize: t('display.textSize'), nav: t('display.navMode'), toast: t('display.toastPos'), lang: t('settings.language'),
   };
   const pages: Record<SettingsPageKey, ReactNode> = {
-    email: <SettingsEmailSection />, tenant: <SettingsTenantSection />,
+    name: <SettingsNameSection />, email: <SettingsEmailSection />, tenant: <SettingsTenantSection />,
     pin: <SettingsPinSection />, bio: <SettingsBiometricSection />,
     zone: <SettingsZoneSection />, ip: <SettingsIPSection />,
     quick: <SettingsTarifSection section="quickpay" />, autodate: <SettingsAppSection section="autodate" />,
@@ -90,8 +91,9 @@ export default function SettingsView() {
   return (
     <div className={s.root}>
       <div className={s.groups}>
-        {group('account', t('settings.group.account'), UserCircle, 'blue', 2,
+        {group('account', t('settings.group.account'), UserCircle, 'blue', 3,
           <RowGroup>
+            {row('name', IdentificationBadge, 'purple', { badge: userName || t('nameSection.notSet'), badgeColor: userName ? 'var(--c-lunas)' : 'var(--txt4)', description: t('settings.nameRowDesc') })}
             {row('email', Envelope, 'blue', { title: t('settings.group.accountMine'), description: titles.email })}
             {row('tenant', UserPlus, 'teal', { title: t('settings.group.accountTenant'), description: titles.tenant })}
           </RowGroup>)}

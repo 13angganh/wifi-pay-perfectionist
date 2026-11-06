@@ -281,7 +281,7 @@ describe('normalizeImportedData', () => {
   });
 
   it('data berskala realistis (mirip pola produksi nyata) dinormalisasi dengan benar', () => {
-    // Nama member persis DEFAULT_KRS (lib/constants.ts) — pola nyata, bukan fixture generik.
+    // Nama member berpola nyata (huruf kapital, ada tanda hubung/spasi) — bukan fixture generik.
     const input: Partial<AppData> = {
       krsMembers: ['ABIL', 'ADIT', 'AJI', 'AKBAR', 'ALFIN'],
       slkMembers: [],

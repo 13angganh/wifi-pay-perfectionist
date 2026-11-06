@@ -49,6 +49,25 @@ export function tLog(key: string): string {
     const lang: Language = useAppStore.getState()?.settings?.language ?? 'id';
     return createTranslator(lang)(key);
   } catch {
-    return t(key, 'id');
+    // v11.11.1: cadangan membaca bahasa dari localStorage (sama seperti t()), bukan dipaksa 'id' —
+    // supaya pesan tetap mengikuti bahasa app walau store tidak bisa dimuat lewat require().
+    return t(key);
   }
+}
+
+// ── v11.11.1: bahasa aktif (di luar React) + pengisi placeholder {nama} ──
+// Dipakai ekspor Excel/PDF/WA agar mengikuti bahasa app, sama seperti tLog().
+export function getActiveLang(): Language {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { useAppStore } = require('@/store/useAppStore');
+    return useAppStore.getState()?.settings?.language === 'en' ? 'en' : 'id';
+  } catch {
+    return getCurrentLang();
+  }
+}
+
+/** Isi placeholder {nama} pada kalimat terjemahan (satu kalimat utuh per bahasa, bukan potongan yang disambung). */
+export function fillText(text: string, vars: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 }

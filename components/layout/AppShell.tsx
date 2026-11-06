@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useScrollFade } from '@/hooks/useScrollFade';
 import Script from 'next/script';
 import { useAppStore } from '@/store/useAppStore';
 import { checkAutoBackup } from '@/lib/backup';
@@ -74,26 +75,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const t = useT();
 
-  // Scroll shadow — tampilkan gradient bottom jika masih ada konten di bawah
-  // v11.5 FIX: throttle dengan requestAnimationFrame — handler scroll sebelumnya dipanggil
-  // puluhan kali per detik tanpa throttle, menyebabkan overhead re-render berlebih saat
-  // scroll cepat di halaman berat seperti Rekap (tabel 100+ baris) → terlihat seperti jank/delay.
-  const [showScrollFade, setShowScrollFade] = useState(true);
-  const scrollFadeRaf = useRef<number | null>(null);
+  // Scroll shadow — tampil HANYA bila ada yang bisa digulir dan masih ada isi di bawah (hooks/useScrollFade.ts).
+  // v11.11.1: dulu selalu tampil di halaman pendek dan keadaannya terbawa antar halaman.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { visible: showScrollFade, onScroll: handleContentScroll } = useScrollFade(contentRef, pathname);
   const textSize = useAppStore(st => st.textSize);
   useEffect(() => { document.documentElement.dataset.textSize = textSize; }, [textSize]);
-  useEffect(() => () => { if (scrollFadeRaf.current !== null) cancelAnimationFrame(scrollFadeRaf.current); }, []);
-  function handleContentScroll(e: React.UIEvent<HTMLDivElement>) {
-    const el = e.currentTarget;
-    if (scrollFadeRaf.current !== null) return; // sudah ada rAF pending, skip
-    scrollFadeRaf.current = requestAnimationFrame(() => {
-      scrollFadeRaf.current = null;
-      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
-      setShowScrollFade(prev => (prev === !atBottom ? prev : !atBottom));
-    });
-  }
-
-
 
   useIdleTimeout(settings.pinTimeoutMinutes);
   usePWA(); // task 1.15: hook hasil pecah dari AppShell
@@ -182,6 +169,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="wp-content-wrap">
             <div
               id="content"
+              ref={contentRef}
               onScroll={handleContentScroll}
             >
               {children}

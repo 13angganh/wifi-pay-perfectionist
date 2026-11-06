@@ -10,6 +10,7 @@ export type { MonthStatus, BillableMonth } from './payment';
 export { getAllActiveZones, getMembersForZone, setMembersForZone, fuzzyMatch, textMatch, convertMemberIPs } from './member';
 
 import { AppData } from '@/types';
+import { tLog } from './i18n';
 
 // ── cn utility (class merge) — tetap di helpers.ts ──
 export function cn(...classes: (string | undefined | null | false)[]): string {
@@ -18,23 +19,24 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 
 // ── friendlyAuthError — tetap di helpers.ts (dipakai hooks/useAuth.ts) ──
 export function friendlyAuthError(code: string): string {
+  // v11.11.1: pesan galat mengikuti bahasa aplikasi (dulu selalu bahasa Indonesia).
   const map: Record<string, string> = {
-    'auth/invalid-email'             : 'Email tidak valid',
-    'auth/user-not-found'            : 'Akun tidak ditemukan',
-    'auth/wrong-password'            : 'Kata sandi salah',
-    'auth/email-already-in-use'      : 'Email sudah terdaftar',
-    'auth/weak-password'             : 'Kata sandi terlalu lemah',
-    'auth/invalid-credential'        : 'Email atau kata sandi salah',
-    'auth/invalid-login-credentials' : 'Email atau kata sandi salah',
-    'auth/network-request-failed'    : 'Gagal terhubung ke jaringan',
-    'auth/too-many-requests'         : 'Terlalu banyak percobaan, coba lagi nanti',
-    'auth/user-disabled'             : 'Akun telah dinonaktifkan',
-    'auth/operation-not-allowed'     : 'Masuk dengan email/kata sandi belum diaktifkan di Firebase',
-    'auth/internal-error'            : 'Terjadi kesalahan server, coba lagi',
-    'auth/unauthorized-domain'       : 'Domain belum diizinkan di Firebase Console',
+    'auth/invalid-email'             : 'auth.err.invalidEmail',
+    'auth/user-not-found'            : 'auth.err.userNotFound',
+    'auth/wrong-password'            : 'auth.err.wrongPassword',
+    'auth/email-already-in-use'      : 'auth.err.emailInUse',
+    'auth/weak-password'             : 'auth.err.weakPassword',
+    'auth/invalid-credential'        : 'auth.err.invalidCredential',
+    'auth/invalid-login-credentials' : 'auth.err.invalidCredential',
+    'auth/network-request-failed'    : 'auth.err.network',
+    'auth/too-many-requests'         : 'auth.err.tooMany',
+    'auth/user-disabled'             : 'auth.err.disabled',
+    'auth/operation-not-allowed'     : 'auth.err.notAllowed',
+    'auth/internal-error'            : 'auth.err.internal',
+    'auth/unauthorized-domain'       : 'auth.err.unauthorizedDomain',
   };
   if (!map[code]) console.error('[Auth Error Code]:', code);
-  return map[code] || `Terjadi kesalahan (${code})`;
+  return map[code] ? tLog(map[code]) : tLog('auth.err.unknown').replace('{code}', code);
 }
 
 // ── cleanOldEditLogs — tetap di helpers.ts (dipakai lib/db.ts) ──

@@ -23,8 +23,9 @@ const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
 const _parsed = envSchema.safeParse(process.env);
 
 if (!_parsed.success && !isBuildTime && typeof window === 'undefined') {
-  const missing = _parsed.error.errors.map((e: { path: (string | number)[]; message: string }) =>
-    `  - ${e.path.join('.')}: ${e.message}`
+  // zod 4: daftar masalah ada di `.issues` (properti `.errors` milik zod 3 sudah dihapus)
+  const missing = _parsed.error.issues.map((e: { path: PropertyKey[]; message: string }) =>
+    `  - ${e.path.map(String).join('.')}: ${e.message}`
   ).join('\n');
   console.error('[WiFi Pay] ❌ Environment variables tidak lengkap:\n' + missing);
   // Hanya warn, tidak throw — biarkan Firebase sendiri yang error dengan pesan jelas

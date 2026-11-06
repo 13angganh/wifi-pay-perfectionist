@@ -5,26 +5,72 @@
 import { ref, set, onValue, off, DatabaseReference, update } from 'firebase/database';
 import { db } from './firebase';
 import { AppData, AppSettings, ActivityLog, CustomZone, MemberInfo, MemberPeriods, TenantInfo } from '@/types';
-import { DEFAULT_KRS, DEFAULT_SLK } from './constants';
 import { cleanOldEditLogs } from './helpers';
 import { getAllActiveZones } from './member';
 import { cleanMemberPeriods, getMemberPeriods, migrateFreeMembers } from './memberPeriods';
 import type { PayDatePatch } from './payDate';
 import { zoneColor } from './design-tokens';
 
-export const DEFAULT_APP_DATA: AppData = {
-  krsMembers:     [...DEFAULT_KRS],
-  slkMembers:     [...DEFAULT_SLK],
-  zoneMembers:    {}, // task 1.02
-  payments:       {},
-  memberInfo:     {},
-  activityLog:    [],
-  freeMembers:    {}, // LEGACY (T12): hanya dibaca untuk migrasi; sumber baru = memberPeriods
-  memberPeriods:  {}, // REDESAIN T12 — Terdaftar sejak, Free multi-periode, Nonaktif/Reaktivasi
-  deletedMembers: {},
-  operasional:    {},
-  tenants:        {}, // v11.6 — fitur Penagih
-};
+// v11.11.1: TIDAK ada lagi daftar nama pelanggan bawaan. Data pelanggan hanya melekat pada akun masing-masing
+// (di Firebase); akun baru/kosong memulai dari keadaan kosong. Sebelumnya daftar nama pelanggan asli ikut
+// terkirim di bundle JS ke setiap pengunjung situs dan tersimpan ke akun baru saat penyimpanan pertama.
+/** Buat objek AppData kosong BARU (array/objek tidak dibagi antar pemanggil). */
+export function emptyAppData(): AppData {
+  return {
+    krsMembers:     [],
+    slkMembers:     [],
+    zoneMembers:    {}, // task 1.02
+    payments:       {},
+    memberInfo:     {},
+    activityLog:    [],
+    freeMembers:    {}, // LEGACY (T12): hanya dibaca untuk migrasi; sumber baru = memberPeriods
+    memberPeriods:  {}, // REDESAIN T12 — Terdaftar sejak, Free multi-periode, Nonaktif/Reaktivasi
+    deletedMembers: {},
+    operasional:    {},
+    tenants:        {}, // v11.6 — fitur Penagih
+  };
+}
+
+/** @deprecated gunakan emptyAppData() bila butuh objek baru; konstanta ini dipertahankan untuk kompatibilitas. */
+export const DEFAULT_APP_DATA: AppData = emptyAppData();
+
+// ── v11.11.1: PENJAGA TULIS ──
+// Selama data PERTAMA akun yang sedang masuk belum termuat dari Firebase, memori aplikasi bisa kosong atau masih
+// berisi sisa akun sebelumnya. Penulisan dari keadaan itu bisa menimpa data akun dengan data yang salah, jadi
+// semua penulisan ke ruang kerja akun itu ditolak sampai snapshot pertama tiba. Setelah termuat, tidak ada
+// pemblokiran lagi (tidak memuat ulang selama akun tidak berganti). Tanpa beginDataLoad() (mis. di tes/alur
+// lain), tidak ada yang diblokir.
+export class DataNotLoadedError extends Error {
+  constructor() { super('DATA_NOT_LOADED'); this.name = 'DataNotLoadedError'; }
+}
+let loadedUid: string | null  = null;
+let pendingUid: string | null = null;
+
+/** Tandai bahwa data akun `uid` mulai dimuat. Tidak berbuat apa-apa bila akun itu sudah termuat. */
+export function beginDataLoad(uid: string): void {
+  if (loadedUid === uid) return;
+  loadedUid  = null;
+  pendingUid = uid;
+}
+/** Snapshot pertama akun `uid` sudah tiba (termasuk akun kosong): penulisan boleh. */
+export function markDataLoaded(uid: string): void {
+  if (pendingUid === uid || loadedUid !== uid) {
+    loadedUid  = uid;
+    pendingUid = null;
+  }
+}
+/** Dipanggil saat keluar: tidak ada akun aktif. */
+export function resetDataLoad(): void {
+  loadedUid  = null;
+  pendingUid = null;
+}
+/** true bila ruang kerja `uid` masih menunggu snapshot pertama. */
+export function isWriteBlocked(uid: string): boolean {
+  return pendingUid === uid;
+}
+function assertWritable(uid: string): void {
+  if (isWriteBlocked(uid)) throw new DataNotLoadedError();
+}
 
 // ── Get DB ref untuk user ──
 export function getUserRef(uid: string): DatabaseReference {
@@ -39,11 +85,14 @@ export function listenDB(
   onLockChange?: (globalLocked: boolean, lockedEntries: Record<string, boolean>) => void
 ): () => void {
   const userRef = getUserRef(uid);
+  beginDataLoad(uid);
 
   // Listener utama
   onValue(userRef, (snap) => {
     const val = snap.val();
-    if (val && (val.krsMembers || val.payments)) {
+    // v11.11.1: SETIAP ruang kerja yang ada diteruskan (dulu hanya yang punya krsMembers/payments — akun yang
+    // isinya hanya SLK/zona kustom tidak pernah dianggap "termuat" dan layarnya menggantung/menampilkan sisa akun lain).
+    if (val) {
       const raw: AppData = {
         krsMembers:     val.krsMembers     || [],
         slkMembers:     val.slkMembers     || [],
@@ -65,9 +114,13 @@ export function listenDB(
       if (onLockChange) {
         onLockChange(val._globalLocked === true, val._lockedEntries || {});
       }
-    } else if (!val) {
-      onData({ ...DEFAULT_APP_DATA });
+    } else {
+      // Akun baru/kosong: mulai dari keadaan kosong (TANPA nama bawaan). Tidak ada yang ditulis ke Firebase di sini.
+      onData(emptyAppData());
+      if (onLockChange) onLockChange(false, {});
     }
+    // Data (dan state kunci) akun ini sudah dipasang → penulisan boleh.
+    markDataLoaded(uid);
   }, () => onError());
 
   // Return cleanup function
@@ -81,6 +134,7 @@ export async function saveDB(
   logEntry?: Omit<ActivityLog, 'ts' | 'user'>,
   userEmail?: string
 ): Promise<void> {
+  assertWritable(uid);
   const userRef = getUserRef(uid);
   let finalData = { ...data };
 
@@ -124,6 +178,7 @@ export async function updatePayment(
   key:   string,   // format dari fbKey(zone, name, year, month)
   value: number | null,
 ): Promise<void> {
+  assertWritable(uid);
   // null → hapus key dari Firebase (anggap belum bayar)
   const patch: Record<string, number | null> = { [key]: value };
   await update(ref(db, `users/${uid}/data/payments`), patch);
@@ -218,6 +273,7 @@ export async function persistPaymentGranular(
   getCurrentLockState: () => { globalLocked: boolean; lockedEntries: Record<string, boolean> },
   payDate?: PayDatePatch,
 ): Promise<void> {
+  assertWritable(uid);
   const patch = buildGranularPaymentPatch(
     paymentKey, paymentValue, currentActivityLog, logEntry, userEmail, getCurrentLockState(), Date.now(), payDate,
   );
@@ -231,6 +287,7 @@ export async function updateLockState(
   globalLocked: boolean,
   lockedEntries: Record<string, boolean>,
 ): Promise<void> {
+  assertWritable(uid);
   await update(ref(db, `users/${uid}/data`), {
     _globalLocked:  globalLocked,
     _lockedEntries: lockedEntries,
@@ -349,6 +406,7 @@ export function zonesToRegister(current: CustomZone[], zoneMembers: Record<strin
 // Input di-normalisasi ulang lewat normalizeImportedData() agar konsisten dengan apa
 // yang divalidasi di client, terlepas dari apakah caller sudah melakukannya sendiri.
 export async function importToDB(uid: string, data: AppData): Promise<void> {
+  assertWritable(uid);
   const normalized = normalizeImportedData(data);
   if (!normalized) throw new Error('Data tidak valid untuk diimpor');
   const patch: Record<string, unknown> = {
@@ -512,6 +570,7 @@ export async function registerTenant(
   ownerUid: string,
   tenant: TenantInfo,
 ): Promise<void> {
+  assertWritable(ownerUid);
   await set(ref(db, `users/${ownerUid}/data/tenants/${tenant.uid}`), tenant);
 }
 
@@ -526,5 +585,6 @@ export async function removeTenantFromList(
   ownerUid: string,
   tenantUid: string,
 ): Promise<void> {
+  assertWritable(ownerUid);
   await set(ref(db, `users/${ownerUid}/data/tenants/${tenantUid}`), null);
 }

@@ -290,6 +290,7 @@ export default function MembersView() {
               {membersLocked ? t('members.statusLocked') : t('members.statusUnlocked')}
             </div>
             <button
+              type="button"
               className="header-lock-action-btn"
               onClick={() => { setMembersLocked(!membersLocked); showToast(membersLocked ? t('members.unlocked') : t('members.locked')); }}
               aria-label={membersLocked ? t('members.actionAriaLocked') : t('members.actionAriaUnlocked')}

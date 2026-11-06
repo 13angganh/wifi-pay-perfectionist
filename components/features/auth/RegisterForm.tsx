@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════
 'use client';
 
+import { DISPLAY_NAME_MAX } from '@/lib/displayName';
 import { EnvelopeSimple, User } from '@phosphor-icons/react';
 import { useT } from '@/hooks/useT';
 import Button from '@/components/ui/Button';
@@ -38,6 +39,7 @@ export default function RegisterForm(p: Props) {
         <input
           className="wp-inp" type="text" autoComplete="name"
           placeholder={t('login.namePlaceholder')} aria-label={t('login.username')}
+          maxLength={DISPLAY_NAME_MAX}
           value={p.name} onChange={e => p.onName(e.target.value)}
         />
       </div>

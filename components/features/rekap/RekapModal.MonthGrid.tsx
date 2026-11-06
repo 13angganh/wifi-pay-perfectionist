@@ -103,7 +103,8 @@ export default function RekapMonthGrid({
         amounts={ordered}
         tarif={tarif}
         onPick={onQuickPay}
-        formatLabel={a => (a === tarif ? `${a}K ★` : `${a}K`)}
+        formatLabel={a => `${a}K`}
+        tarifLabel={t('entry.tarifMark')}
         ariaLabel={t('entry.quickAria')}
       />
       {showDate && (

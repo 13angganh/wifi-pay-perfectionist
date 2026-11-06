@@ -4,7 +4,8 @@
 // ══════════════════════════════════════════
 
 import type { AppData } from '@/types';
-import { MONTHS } from './constants';
+import { MONTHS, MONTHS_EN } from './constants';
+import { getActiveLang, createTranslator, fillText } from './i18n';
 import { isFree, getZoneTotal, getMonthStatus, getArrears } from './payment';
 import { getMembersForZone } from './member';
 import { zonesFromData } from './export.excel';
@@ -19,7 +20,10 @@ export function doWASummary(data: AppData, year?: number, month?: number, zones?
   const now = new Date();
   const dy  = year  ?? now.getFullYear();
   const dm  = month ?? now.getMonth();
-  const bulan = `${MONTHS[dm]} ${dy}`;
+  // v11.11.1: pesan mengikuti bahasa app (teks bahasa Indonesia TIDAK berubah dari sebelumnya).
+  const lang = getActiveLang();
+  const t = createTranslator(lang);
+  const bulan = `${(lang === 'en' ? MONTHS_EN : MONTHS)[dm]} ${dy}`;
   const list = zones && zones.length ? zones : zonesFromData(data);
 
   const rows = list.map(z => {
@@ -40,7 +44,8 @@ export function doWASummary(data: AppData, year?: number, month?: number, zones?
   const fmt = (v: number) => (v * 1000).toLocaleString('id-ID');
   const perZone = (pick: (r: typeof rows[number]) => string | number) => rows.map(r => `${r.z}: ${pick(r)}`).join(' | ');
 
-  const msg = `📶 *WiFi Pay – Rekap ${bulan}*\n\n💰 *Pendapatan*\n${rows.map(r => `  ${r.z} : Rp ${fmt(r.total)}`).join('\n')}\n  Total: Rp ${fmt(total)}\n\n✅ *Lunas*\n  ${perZone(r => r.lunas)}\n\n⚠️ *Belum Bayar ${bulan}*\n  ${perZone(r => r.belum)}\n\n🔴 *Ada Tunggakan*\n  ${perZone(r => r.tunggak)}\n\n💸 Operasional : Rp ${fmt(totalOps)}\n✨ Bersih         : Rp ${fmt(netIncome)}\n\n_WiFi Pay – ${new Date().toLocaleString('id-ID')}_`;
+  const dateText = new Date().toLocaleString(lang === 'en' ? 'en-US' : 'id-ID');
+  const msg = `📶 *${fillText(t('wa.summary.title'), { period: bulan })}*\n\n💰 *${t('wa.summary.income')}*\n${rows.map(r => `  ${r.z} : Rp ${fmt(r.total)}`).join('\n')}\n  ${t('wa.summary.total')} Rp ${fmt(total)}\n\n✅ *${t('wa.summary.paid')}*\n  ${perZone(r => r.lunas)}\n\n⚠️ *${fillText(t('wa.summary.unpaid'), { period: bulan })}*\n  ${perZone(r => r.belum)}\n\n🔴 *${t('wa.summary.arrears')}*\n  ${perZone(r => r.tunggak)}\n\n💸 ${t('wa.summary.opsLabel')} Rp ${fmt(totalOps)}\n✨ ${t('wa.summary.netLabel')} Rp ${fmt(netIncome)}\n\n_WiFi Pay – ${dateText}_`;
 
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -53,16 +58,17 @@ export function doWABlast(
   tarif:  number,
 ): void {
   if (unpaid.length === 0) return;
+  const t        = createTranslator(getActiveLang());
   const months   = unpaid.map(u => u.label).join(', ');
   const total    = unpaid.length * tarif * 1000;
   const totalFmt = total.toLocaleString('id-ID');
   const msg = [
-    `Halo *${name}*,`,
+    fillText(t('wa.blast.hello'), { name }),
     ``,
-    `Tagihan WiFi zona *${zone}* bulan *${months}* (${unpaid.length} bulan)`,
-    `sebesar *Rp ${totalFmt}* belum dibayar.`,
+    fillText(t('wa.blast.line1'), { zone, months, count: unpaid.length }),
+    fillText(t('wa.blast.line2'), { total: totalFmt }),
     ``,
-    `Mohon segera melakukan pembayaran. Terima kasih 🙏`,
+    `${t('wa.blast.line3')} 🙏`,
   ].join('\n');
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
 }

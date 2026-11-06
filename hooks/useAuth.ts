@@ -24,6 +24,7 @@ import {
 } from 'firebase/auth';
 import { auth, firebaseConfig } from '@/lib/firebase';
 import { friendlyAuthError } from '@/lib/helpers';
+import { beginDataLoad, resetDataLoad } from '@/lib/db';
 import { normalizeDisplayName } from '@/lib/displayName';
 import { tLog } from '@/lib/i18n';
 import { useAppStore } from '@/store/useAppStore';
@@ -40,7 +41,9 @@ function getFirebaseCode(e: unknown): string {
 
 // ── Cookie helper untuk middleware soft guard ──
 const COOKIE_NAME = 'wp_session';
-const COOKIE_MAX  = 60 * 60 * 24 * 30; // 30 hari
+// v11.11.1: 1 tahun (dulu 30 hari). Sesi Firebase sendiri tidak kedaluwarsa karena lama tidak dipakai; cookie ini
+// hanya "penanda" untuk proxy. Bila habis, layar Masuk sempat tampil sebelum dialihkan sendiri ke Beranda.
+const COOKIE_MAX  = 60 * 60 * 24 * 365; // 1 tahun
 const SECURE_FLAG = process.env.NODE_ENV === 'production' ? '; Secure' : '';
 
 function setSessionCookie() {
@@ -90,11 +93,18 @@ export function getRememberedEmail(): { email: string; name: string } | null {
 
 // ── Auth listener hook ──
 export function useAuth() {
-  const { setUser, clearUser, setAuthChecked, reloadSettingsForUid } = useAppStore();
+  const { setUser, clearUser, setAuthChecked, reloadSettingsForUid, resetData } = useAppStore();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
+        // v11.11.1: HANYA bila akun berganti (atau baru masuk): kosongkan salinan data di memori dan tahan penulisan
+        // sampai data akun ini termuat. Ini hanya salinan sementara di perangkat — Firebase TIDAK disentuh, dan tidak
+        // ada pemuatan ulang selama akun yang sama masih aktif.
+        if (useAppStore.getState().uid !== user.uid) {
+          beginDataLoad(user.uid);
+          resetData();
+        }
         // v11.11.0: nama = displayName profil akun saja. TIDAK lagi memakai awalan email (kosong = belum diatur).
         setUser(user.uid, user.email || '', normalizeDisplayName(user.displayName));
         setSessionCookie();
@@ -104,6 +114,9 @@ export function useAuth() {
         reloadSettingsForUid(user.uid);
       } else {
         clearUser();
+        // v11.11.1: keluar → tidak ada data akun yang tersisa di memori perangkat.
+        resetDataLoad();
+        resetData();
         clearSessionCookie();
         // Logout: tidak ada uid aktif — settings jatuh ke default+device
         // saja (tidak ada PIN akun manapun yang "bocor" tanpa login).
@@ -112,7 +125,7 @@ export function useAuth() {
       setAuthChecked(true);
     });
     return unsub;
-  }, [setUser, clearUser, setAuthChecked, reloadSettingsForUid]);
+  }, [setUser, clearUser, setAuthChecked, reloadSettingsForUid, resetData]);
 }
 
 // ── Login email/password ──
@@ -140,7 +153,7 @@ export async function doLoginGoogle(): Promise<{ error?: string }> {
   } catch (e: unknown) {
     const code = getFirebaseCode(e);
     if (code === AuthErrorCodes.POPUP_CLOSED_BY_USER || code === 'auth/popup-closed-by-user') {
-      return { error: 'Login dibatalkan' };
+      return { error: tLog('auth.err.signInCancelled') };
     }
     return { error: friendlyAuthError(code) };
   }
@@ -152,24 +165,24 @@ export async function doLoginGoogle(): Promise<{ error?: string }> {
 export async function doLinkGoogle(): Promise<{ error?: string; success?: boolean }> {
   try {
     const user = auth.currentUser;
-    if (!user) return { error: 'Tidak ada sesi aktif. Masuk dengan email dulu.' };
+    if (!user) return { error: tLog('auth.err.noSessionEmail') };
 
     // Cek apakah Google sudah terhubung
     const isLinked = user.providerData.some(p => p.providerId === 'google.com');
-    if (isLinked) return { error: 'Google sudah terhubung ke akun ini.' };
+    if (isLinked) return { error: tLog('auth.err.googleAlreadyLinked') };
 
     await linkWithPopup(user, googleProvider);
     return { success: true };
   } catch (e: unknown) {
     const code = getFirebaseCode(e);
     if (code === AuthErrorCodes.POPUP_CLOSED_BY_USER || code === 'auth/popup-closed-by-user') {
-      return { error: 'Dibatalkan' };
+      return { error: tLog('auth.err.cancelled') };
     }
     if (code === 'auth/credential-already-in-use') {
-      return { error: 'Akun Google ini sudah dipakai oleh akun lain.' };
+      return { error: tLog('auth.err.googleInUse') };
     }
     if (code === 'auth/email-already-in-use') {
-      return { error: 'Email Google ini sudah terdaftar di akun lain.' };
+      return { error: tLog('auth.err.googleEmailInUse') };
     }
     return { error: friendlyAuthError(code) };
   }
@@ -189,8 +202,13 @@ export async function doRegister(
   try {
     await setPersistence(auth, browserLocalPersistence);
     const result = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(result.user, { displayName: name });
-    saveRememberCred(email, pass, name);
+    // v11.11.1: nama dinormalisasi (maks. 30 karakter, spasi dirapikan) sama seperti di Pengaturan, dan store langsung
+    // diperbarui — onAuthStateChanged sudah menyala SEBELUM updateProfile selesai (dan tidak menyala lagi sesudahnya),
+    // jadi tanpa ini nama yang baru diisi tidak tampil sampai app dimuat ulang.
+    const cleanName = normalizeDisplayName(name);
+    await updateProfile(result.user, { displayName: cleanName || null });
+    useAppStore.getState().setUser(result.user.uid, result.user.email || email, cleanName);
+    saveRememberCred(email, pass, cleanName);
     return {};
   } catch (e: unknown) {
     return { error: friendlyAuthError(getFirebaseCode(e)) };
@@ -220,7 +238,7 @@ export async function doUpdateDisplayName(raw: string): Promise<{ error?: string
 export async function doUpdateEmail(newEmail: string): Promise<{ error?: string }> {
   try {
     const user = auth.currentUser;
-    if (!user) return { error: 'Tidak ada sesi aktif.' };
+    if (!user) return { error: tLog('auth.err.noSession') };
 
     // Coba update langsung dulu
     try {
@@ -243,7 +261,7 @@ export async function doUpdateEmail(newEmail: string): Promise<{ error?: string 
       await reauthenticateWithPopup(user, googleProvider);
     } else {
       // User hanya email/password — tidak bisa reauthenticate otomatis tanpa password
-      return { error: 'Sesi kedaluwarsa. Logout lalu login ulang untuk mengubah email.' };
+      return { error: tLog('auth.err.sessionExpiredEmail') };
     }
 
     // Sekarang coba lagi setelah reauthenticate
@@ -253,16 +271,16 @@ export async function doUpdateEmail(newEmail: string): Promise<{ error?: string 
   } catch (e: unknown) {
     const code = getFirebaseCode(e);
     if (code === 'auth/popup-closed-by-user' || code === AuthErrorCodes.POPUP_CLOSED_BY_USER) {
-      return { error: 'Verifikasi dibatalkan.' };
+      return { error: tLog('auth.err.verifyCancelled') };
     }
     if (code === 'auth/email-already-in-use') {
-      return { error: 'Email ini sudah dipakai akun lain.' };
+      return { error: tLog('auth.err.emailTaken') };
     }
     if (code === 'auth/invalid-email') {
-      return { error: 'Format email tidak valid.' };
+      return { error: tLog('auth.err.emailFormat') };
     }
     if (code === 'auth/requires-recent-login') {
-      return { error: 'Sesi kedaluwarsa. Logout lalu login ulang, kemudian coba lagi.' };
+      return { error: tLog('auth.err.sessionExpiredRetry') };
     }
     return { error: friendlyAuthError(code) };
   }
@@ -271,15 +289,18 @@ export async function doUpdateEmail(newEmail: string): Promise<{ error?: string 
 // ── Reset password via email ──
 export async function doResetPassword(email: string): Promise<{ error?: string }> {
   try {
-    if (!email.trim()) return { error: 'Masukkan email akun.' };
+    if (!email.trim()) return { error: tLog('auth.err.enterEmail') };
     await sendPasswordResetEmail(auth, email.trim());
     return {};
   } catch (e: unknown) {
     const code = getFirebaseCode(e);
-    if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+    if (code === 'auth/user-not-found') {
       // Jangan bocorkan info apakah email terdaftar atau tidak
       return {};
     }
+    // v11.11.1: galat NYATA ditampilkan (format email salah, jaringan putus, terlalu sering mencoba, dst). Dulu
+    // 'invalid-email' ikut disamarkan dan pemanggil mengabaikan hasil, sehingga selalu tampil "terkirim".
+    if (code === 'auth/invalid-email') return { error: tLog('auth.err.emailFormat') };
     return { error: friendlyAuthError(code) };
   }
 }

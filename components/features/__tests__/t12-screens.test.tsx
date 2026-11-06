@@ -276,11 +276,11 @@ describe('Entry — bulan N/A butuh konfirmasi; tanggal bayar tiap jalur (D3, D5
     expect(within(cardOf('AKBAR')).getByText('Belum terdaftar')).toBeInTheDocument();
     await u.click(within(adit).getByRole('button', { name: /ADIT/ }));
     expect(within(adit).getByText(/nonaktif pada bulan ini/)).toBeInTheDocument();
-    expect(within(adit).queryByRole('button', { name: '100K' })).not.toBeInTheDocument();
+    expect(within(adit).queryByRole('button', { name: '100K, tarif' })).not.toBeInTheDocument();
     await u.click(within(adit).getByRole('button', { name: 'Tetap catat' }));
     expect(useAppStore.getState().confirmDialog.icon).toBe('info');
     await runConfirm();
-    await u.click(within(adit).getByRole('button', { name: '100K' }));
+    await u.click(within(adit).getByRole('button', { name: '100K, tarif' }));
     expect(useAppStore.getState().appData.payments[key('ADIT')]).toBe(100);
     expect(info('ADIT')?.[`date_${Y}_${M}`]).toBe('2026-10-22');
   });
@@ -292,7 +292,7 @@ describe('Entry — bulan N/A butuh konfirmasi; tanggal bayar tiap jalur (D3, D5
     const u = userEvent.setup();
     const abil = cardOf('ABIL');
     await u.click(within(abil).getByRole('button', { name: /ABIL/ }));
-    await u.click(within(abil).getByRole('button', { name: '100K' }));
+    await u.click(within(abil).getByRole('button', { name: '100K, tarif' }));
     expect(info('ABIL')?.[`date_${Y}_${M}`]).toBe('2026-10-22');
   });
 
@@ -340,7 +340,7 @@ describe('Entry — bulan N/A butuh konfirmasi; tanggal bayar tiap jalur (D3, D5
     const abil = cardOf('ABIL');
     await u.click(within(abil).getByRole('button', { name: /ABIL/ }));
     expect(abil.querySelector('input[type="date"]')).toBeEnabled();
-    await u.click(within(abil).getByRole('button', { name: '100K' }));
+    await u.click(within(abil).getByRole('button', { name: '100K, tarif' }));
     expect(info('ABIL')?.[`date_${Y}_${M}`]).toBeUndefined();
 
     await u.click(btn(/Pilih Banyak/));
@@ -393,7 +393,7 @@ describe('Rekap — sel N/A, modal, batch, tanggal bayar', () => {
     await u.click(within(dlg).getByRole('button', { name: 'Tetap catat' }));
     await runConfirm();
     dlg = screen.getByRole('dialog');
-    await u.click(within(dlg).getByRole('button', { name: '100K ★' }));
+    await u.click(within(dlg).getByRole('button', { name: '100K, tarif' }));
     expect(useAppStore.getState().appData.payments[key('ADIT')]).toBe(100);
     expect(info('ADIT')?.[`date_${Y}_${M}`]).toBe('2026-10-22');
   });
@@ -404,7 +404,7 @@ describe('Rekap — sel N/A, modal, batch, tanggal bayar', () => {
     render(<RekapView />);
     const u = userEvent.setup();
     await u.click(rekapCell('ABIL', M));
-    await u.click(within(screen.getByRole('dialog')).getByRole('button', { name: '100K ★' }));
+    await u.click(within(screen.getByRole('dialog')).getByRole('button', { name: '100K, tarif' }));
     expect(info('ABIL')?.[`date_${Y}_${M}`]).toBe('2026-10-22');
 
     await u.click(rekapCell('ABIL', M - 1));
@@ -426,7 +426,7 @@ describe('Rekap — sel N/A, modal, batch, tanggal bayar', () => {
     const picker = within(dlg).getByLabelText('Tgl Bayar') as HTMLInputElement;
     expect(picker.value).toBe('2026-10-22');
     fireEvent.change(picker, { target: { value: '2026-10-05' } });
-    await u.click(within(dlg).getByRole('button', { name: '100K ★' }));
+    await u.click(within(dlg).getByRole('button', { name: '100K, tarif' }));
     expect(info('ABIL')?.[`date_${Y}_${M}`]).toBe('2026-10-05');
 
     await u.click(rekapCell('ABIL', M - 1));                                  // modal baru: kembali ke hari ini

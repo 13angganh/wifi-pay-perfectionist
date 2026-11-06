@@ -167,7 +167,7 @@ describe('EntryView (T7)', () => {
     render(<EntryView />);
     const abil = screen.getAllByTestId('member-card').find(c => within(c).queryByText('ABIL'))!;
     await userEvent.setup().click(within(abil).getByRole('button', { name: /ABIL/ }));
-    expect(within(abil).getByRole('button', { name: '100K' })).toBeInTheDocument(); // tarif diurutkan pertama
+    expect(within(abil).getByRole('button', { name: '100K, tarif' })).toBeInTheDocument(); // tarif diurutkan pertama
     expect(within(abil).getByRole('button', { name: '60K' })).toBeInTheDocument();
     expect(within(abil).getByRole('button', { name: '120K' })).toBeInTheDocument();
     expect(within(abil).queryByRole('button', { name: '50K' })).not.toBeInTheDocument(); // bukan nominal default

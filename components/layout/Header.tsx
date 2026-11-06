@@ -184,6 +184,7 @@ export default function Header({ onToggleSidebar, onOpenAccount }: Props) {
             {globalLocked ? t('header.statusLocked') : t('header.statusUnlocked')}
           </div>
           <button
+            type="button"
             className="header-lock-action-btn"
             onClick={toggleGlobalLock}
             aria-label={globalLocked ? t('header.actionAriaLocked') : t('header.actionAriaUnlocked')}

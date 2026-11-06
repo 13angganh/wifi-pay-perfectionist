@@ -44,6 +44,7 @@ export default function GlobalError({ error, reset }: Props) {
           {t('errorpage.globalDesc')}
         </div>
         <button
+          type="button"
           onClick={reset}
           style={{
             marginTop: 8,

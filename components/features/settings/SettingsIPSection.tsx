@@ -11,6 +11,7 @@ import { ArrowsLeftRight } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { useT } from '@/hooks/useT';
 import { showToast } from '@/components/ui/Toast';
+import { tLog, fillText as fill } from '@/lib/i18n';
 import { showConfirm } from '@/components/ui/Confirm';
 import { persistPayment } from '@/lib/db';
 import { selectiveRollback } from '@/lib/rollback';
@@ -59,9 +60,11 @@ export default function SettingsIPSection() {
     const f = find.trim();
     if (!f) { showToast(t('settings.ip.findRequired'), 'err'); return; }
     const { newInfo, count } = convertMemberIPs(appData.memberInfo || {}, getMembersForZone(zone, appData), zone, f, replace);
-    if (count === 0) { showToast(`${t('settings.ip.noneFound')} ${zone}`, 'err'); return; }
-    const ok = await persist({ ...appData, memberInfo: newInfo }, `[IP] Konversi "${f}"→"${replace}" zona ${zone}`, `${count} member diperbarui`);
-    if (ok) { showToast(`${count} IP zona ${zone} ${t('settings.ip.converted')}`); setFind(''); setReplace(''); }
+    if (count === 0) { showToast(fill(t('settings.ip.noneFoundMsg'), { zone }), 'err'); return; }
+    const ok = await persist({ ...appData, memberInfo: newInfo },
+      `[IP] ${fill(tLog('log.action.convertIpMsg'), { from: f, to: replace, zone })}`,
+      fill(tLog('log.action.convertIpDetail'), { count }));
+    if (ok) { showToast(fill(t('settings.ip.convertedMsg'), { count, zone })); setFind(''); setReplace(''); }
     else showToast(t('common.saveFailed'), 'err');
   }
 
@@ -69,7 +72,7 @@ export default function SettingsIPSection() {
     const f = find.trim();
     if (!f) { showToast(t('settings.ip.findRequired'), 'err'); return; }
     showConfirm('switch',
-      `${t('settings.ip.confirmPrefix')} ${zone} ${t('settings.ip.confirmFrom')} "${f}" ${t('settings.ip.confirmTo')} "${replace}"?`,
+      fill(t('settings.ip.confirmMsg'), { zone, from: f, to: replace }),
       t('settings.ip.convertYes'), doConvert, { description: t('settings.ip.confirmNote') });
   }
 
@@ -88,7 +91,7 @@ export default function SettingsIPSection() {
       <Input label={t('settings.ip.replaceLabel')} className={s.mono} autoComplete="off" placeholder={t('settings.ip.replacePlaceholder')} value={replace} onChange={e => setReplace(e.target.value)} />
       {f && (
         <Notice tone={previewCount > 0 ? 'info' : 'warn'}>
-          {previewCount > 0 ? `${previewCount} ${t('settings.ip.willBeChanged')} ${zone}` : `${t('settings.ip.noMatch')} ${zone}`}
+          {previewCount > 0 ? fill(t('settings.ip.previewMsg'), { count: previewCount, zone }) : fill(t('settings.ip.noneFoundMsg'), { zone })}
         </Notice>
       )}
       <Button variant="primary" block disabled={!f} onClick={handleConvertClick}>

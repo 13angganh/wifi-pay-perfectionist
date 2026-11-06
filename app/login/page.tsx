@@ -8,6 +8,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { normalizeDisplayName } from '@/lib/displayName';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { doLogin, doRegister, doLoginGoogle, doResetPassword, switchAccount, getRememberedCred } from '@/hooks/useAuth';
@@ -37,8 +38,8 @@ export default function LoginPage() {
   const [err,        setErr]        = useState('');
   const [loading,    setLoading]    = useState(false);
   const [gLoading,   setGLoading]   = useState(false);
-  const [resetSent,   setResetSent]   = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0); // v11.11.1: jeda kirim ulang (detik)
   const [rEmail,     setREmail]     = useState('');
   const [rPass,      setRPass]      = useState('');
   const [rName,      setRName]      = useState('');
@@ -75,17 +76,26 @@ export default function LoginPage() {
     router.replace('/dashboard');
   }
 
+  // v11.11.1: jeda kirim ulang 60 dtk; pesan "terkirim" hilang bersama jeda itu (bukan 5 dtk), agar sempat terbaca.
+  useEffect(() => {
+    if (resetCooldown <= 0) return;
+    const id = setTimeout(() => setResetCooldown(c => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resetCooldown]);
+
   async function handleReset() {
+    if (resetLoading || resetCooldown > 0) return;
     if (!email) { setErr(t('login.resetEmailRequired')); return; }
     setResetLoading(true); setErr('');
-    await doResetPassword(email);
+    const res = await doResetPassword(email);
     setResetLoading(false);
-    setResetSent(true);
-    setTimeout(() => setResetSent(false), 5000);
+    // v11.11.1: galat NYATA ditampilkan (dulu hasil diabaikan dan selalu tampil "terkirim").
+    if (res.error) { setErr(res.error); return; }
+    setResetCooldown(60);
   }
 
   async function handleRegister() {
-    if (!rEmail || !rPass || !rName) { setRErr(t('login.requiredFields')); return; }
+    if (!rEmail || !rPass || !normalizeDisplayName(rName)) { setRErr(t('login.requiredFields')); return; }
     if (rPass.length < 6) { setRErr(t('login.passwordMin')); return; }
     setRLoading(true); setRErr('');
     const res = await doRegister(rEmail, rPass, rName);
@@ -116,7 +126,7 @@ export default function LoginPage() {
         <LoginForm
           email={email} pass={pass} remember={remember} error={err}
           loading={loading} googleLoading={gLoading}
-          resetSent={resetSent} resetLoading={resetLoading}
+          resetSent={resetCooldown > 0} resetLoading={resetLoading} resetCooldown={resetCooldown}
           hasRemembered={!!remembered}
           onEmail={setEmail} onPass={setPass} onRemember={setRemember}
           onLogin={handleLogin} onGoogle={handleLoginGoogle} onReset={handleReset}

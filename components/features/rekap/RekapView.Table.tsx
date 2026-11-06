@@ -76,7 +76,7 @@ const Row = memo(function Row({
         );
         const content =
           c.kind === 'free' ? <Gift size={12} weight="duotone" aria-hidden="true" />
-          : c.kind === 'akm' ? <span>Akm</span>
+          : c.kind === 'akm' ? <span>{t('rekap.accumulationShort')}</span>
           : c.kind === 'paid' ? fmt(c.v as number)
           : c.kind === 'due' ? <X size={10} weight="bold" aria-hidden="true" />
           : c.kind === 'na' ? <Prohibit size={11} aria-hidden="true" />

@@ -226,6 +226,7 @@ select.wp-inp { appearance: none; -webkit-appearance: none; padding-right: 36px;
 /* ── QuickPay (Entry + RekapModal) ── */
 .wp-qk { display: flex; flex-wrap: wrap; gap: 6px; }
 .wp-qk button { flex: 1 0 28%; height: 38px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--bg3); color: var(--txt); font: var(--fw-strong) var(--fs-body) var(--font-mono); cursor: pointer; transition: transform var(--t-fast); }
+.wp-qk button .wp-qk__star { margin-left: 4px; vertical-align: -1px; flex: none; }
 .wp-qk button:active { transform: scale(.95); }
 .wp-qk button[data-tarif="true"] { background: var(--accentdim); border-color: var(--accent); color: var(--accent); }
 .wp-qk button:disabled { opacity: .4; }

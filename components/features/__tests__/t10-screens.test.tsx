@@ -395,12 +395,12 @@ describe('Pengaturan — dua level dan halaman isi', () => {
     expect(db.saveDB).toHaveBeenCalled();
   });
 
-  it('Quick Pay: simpan 2–8 nominal; kurang dari 2 ditolak', async () => {
+  it('Bayar Cepat: simpan 2–8 nominal; kurang dari 2 ditolak', async () => {
     setup();
     render(<SettingsView />);
     const u = userEvent.setup();
     await openGroup(u, '^Manajemen');
-    await u.click(screen.getByRole('button', { name: /^Quick Pay/ }));
+    await u.click(screen.getByRole('button', { name: /^Bayar Cepat/ }));
     const input = screen.getByPlaceholderText('50, 80, 90, 100, 150, 200');
     await u.clear(input); await u.type(input, '70');
     await u.click(btn('Simpan Nominal Bawaan'));

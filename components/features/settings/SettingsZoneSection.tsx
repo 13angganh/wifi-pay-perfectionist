@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════
 'use client';
 
+import { tLog } from '@/lib/i18n';
 import { useState } from 'react';
 import { Check, Eye, EyeSlash, PencilSimple, Plus, X } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
@@ -114,7 +115,7 @@ export default function SettingsZoneSection() {
       if (appData.zoneMembers?.[key]) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [key]: _del, ...rest } = appData.zoneMembers;
-        persistData({ ...appData, zoneMembers: rest }, `[DEL] Hapus zona ${key}`, '').then(ok => {
+        persistData({ ...appData, zoneMembers: rest }, `[DEL] ${tLog('log.action.deleteZone')} ${key}`, '').then(ok => {
           showToast(ok ? `${prefix} ${key} ${t('zona.deleted')}` : t('common.saveFailed'), ok ? 'ok' : 'err');
         });
       } else {

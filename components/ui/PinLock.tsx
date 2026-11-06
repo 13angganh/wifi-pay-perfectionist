@@ -8,6 +8,8 @@
 // masukan utama lewat Numpad primitive. Tampilan: PinScreen + AppLogo + PinDots + Numpad.
 // ══════════════════════════════════════════
 import { useState, useRef, useEffect } from 'react';
+import { clearPinThrottle, pinLockRemaining, readPinThrottle, recordPinFail } from '@/lib/pinThrottle';
+import { fillText } from '@/lib/i18n';
 import { Fingerprint } from '@phosphor-icons/react';
 import { useAppStore } from '@/store/useAppStore';
 import { useT } from '@/hooks/useT';
@@ -28,7 +30,7 @@ export function simpleHash(str: string): string {
 }
 
 export default function PinLock() {
-  const { settings, setPinUnlocked, pinUnlocked } = useAppStore();
+  const { settings, setPinUnlocked, pinUnlocked, uid } = useAppStore();
   const t = useT();
   const [digits, setDigits] = useState<string[]>(EMPTY);
   const [error, setError] = useState('');
@@ -36,6 +38,8 @@ export default function PinLock() {
   const [bioAvail, setBioAvail] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  // v11.11.1: sisa detik jeda setelah 5 kali PIN salah (disimpan di perangkat, per akun)
+  const [lockLeft, setLockLeft] = useState(() => pinLockRemaining(readPinThrottle(uid)));
 
   useEffect(() => {
     refs.current[0]?.focus();
@@ -44,10 +48,22 @@ export default function PinLock() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Hitung mundur jeda; setelah habis, pesan hilang dan percobaan mulai dari nol.
+  useEffect(() => {
+    if (lockLeft <= 0) return;
+    const id = setTimeout(() => {
+      const left = pinLockRemaining(readPinThrottle(uid));
+      setLockLeft(left);
+      if (left <= 0) { setError(''); setDigits(EMPTY()); }
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [lockLeft, uid]);
+
   if (!settings.pinEnabled || pinUnlocked) return null;
 
   function handleDigit(i: number, val: string) {
     if (!/^\d?$/.test(val)) return;
+    if (lockLeft > 0) return; // sedang dijeda
     const next = [...digits];
     next[i] = val;
     setDigits(next);
@@ -55,15 +71,19 @@ export default function PinLock() {
     if (val && i < 5) refs.current[i + 1]?.focus();
     if (next.every(d => d !== '') && val) {
       if (simpleHash(next.join('')) === settings.pin) {
+        clearPinThrottle(uid);
         setPinUnlocked(true);
       } else {
+        const st = recordPinFail(uid);
+        const left = pinLockRemaining(st);
+        if (left > 0) setLockLeft(left);
         setShake(true);
-        setError(t('pin.wrongRetry'));
+        setError(left > 0 ? fillText(t('pin.tooMany'), { n: left }) : t('pin.wrongRetry'));
         // v11.5.18/19 (dipertahankan): reset ke 6 slot + bersihkan pesan di titik yang sama (jangan 4 slot, jangan pesan menyangkut).
         setTimeout(() => {
           setShake(false);
           setDigits(EMPTY());
-          setError('');
+          if (left <= 0) setError('');
           refs.current[0]?.focus();
         }, 600);
       }
@@ -91,7 +111,7 @@ export default function PinLock() {
     setBioLoading(true);
     try {
       const ok = await verifyBiometric();
-      if (ok) setPinUnlocked(true);
+      if (ok) { clearPinThrottle(uid); setPinUnlocked(true); }
       else { setError(t('pin.bioFailed')); setTimeout(() => setError(''), 2000); }
     } catch {
       setError(t('biometric.cancelled'));
@@ -110,7 +130,9 @@ export default function PinLock() {
       <span className="wp-t-label">{t('pin.enter')}</span>
 
       <PinDots filled={filled} shake={shake} label={`${filled}/6`} />
-      <div className="wp-t-cap" role="alert" style={{ minHeight: '1.5em', color: 'var(--c-belum)', textAlign: 'center' }}>{error}</div>
+      <div className="wp-t-cap" role="alert" style={{ minHeight: '1.5em', color: 'var(--c-belum)', textAlign: 'center' }}>
+        {lockLeft > 0 ? fillText(t('pin.tooMany'), { n: lockLeft }) : error}
+      </div>
 
       {/* Input tersembunyi: readOnly + inputMode=none mencegah keyboard mobile; semua masukan via Numpad */}
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}>

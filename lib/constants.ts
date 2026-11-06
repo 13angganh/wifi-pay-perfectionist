@@ -9,7 +9,7 @@
 // tampil "v11.4" tanpa suffix "Next" yang dipakai di semua tempat lain).
 // Saat naik versi: HANYA ubah baris ini, seluruh app otomatis konsisten.
 export const APP_NAME         = 'WiFi Pay';
-export const APP_VERSION      = 'v11.11.0';
+export const APP_VERSION      = 'v11.11.1';
 export const APP_VERSION_SUFFIX = 'Next';
 export const APP_VERSION_FULL = `${APP_VERSION} ${APP_VERSION_SUFFIX}`; // "v11.5 Next"
 
@@ -27,27 +27,8 @@ export function getYears(): number[] {
 
 export const QUICK = [50, 80, 90, 100, 150, 200];
 
-export const DEFAULT_KRS = [
-  "ABIL","ADIT","AJI","AKBAR","ALFIN","ANA","ARIFIN","ARPAN","AYU NANDA",
-  "B-ANI","B-IKE","B-NINGSIH","B-WULAN","BAGAS","BERI","CECEK","DAYAT",
-  "DELLA","DIKA JON","DISTY","DIYAN","EGA","ELLA","ENGGAR","ESRA","FARHAN",
-  "FEBI","FEMLI","FERA","FIRLI","GILANG","GO","HABIBAH","HABIL","HALIK",
-  "HAMIM","HOLIP","ICAN","IING","IMAM","IMAMAH","INTAN GN","INTAN RIO",
-  "JIHAN","LENI","LILIS","LINDA","MAHRUS","MAY","MUHAMMAD","MUIS","NATUL",
-  "NIA","NININ","NONIK","NORMA","P-BUDI","POS","PUPUT","QORI","QORI SAS",
-  "RAGIL","RANI","RIA","RIFA","RILA","RIRIB","RITA","ROSI","RYAN","SAHYUN",
-  "SANTI","SDN","SIFA","SUD","SURYA","TK PGRI","UCI","VINA","VIO","WAHYU",
-  "WARSA","WAWAN","WILDA","WILDAN","YENI","ZEN"
-];
-
-export const DEFAULT_SLK = [
-  "AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DAIFI","DHEA",
-  "DIKRI","ELIYA","ERFAN","FAHMI","FAIL","FATIA","FIROCH","GUNAWAN","H-MUALIS",
-  "HAIKAL","HENDRA","IKROM","INUL","IPUL","IRHAM","LUKMAN","MAHRUS","MAKSUM",
-  "MAY","MELLY","NAFIS","NAUFAL","NIA SALAK","NISA","NURIL","OPEK","P-IIL",
-  "RIFKI","RINA","ROBI","ROSI","SAMSUDI","SATAM","SHELA","SHOFIA","SOFI",
-  "SUKI","SUTIK","UUS","VIVI","WAHYU","WARDA","ZAHDAN"
-];
+// v11.11.1: daftar nama pelanggan bawaan DIHAPUS dari kode. Data pelanggan hanya melekat pada akun masing-masing
+// di Firebase; tidak ada nama pelanggan yang ikut terkirim di bundle JS ke pengunjung situs.
 
 // v11.6.5: Rekap pagination — jumlah baris (member) per halaman. Dipusatkan di
 // sini (bukan hardcode di RekapView.tsx) mengikuti pola project yang sudah

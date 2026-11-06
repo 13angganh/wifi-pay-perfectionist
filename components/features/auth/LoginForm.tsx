@@ -22,6 +22,7 @@ interface Props {
   googleLoading: boolean;
   resetSent:     boolean;
   resetLoading:  boolean;
+  resetCooldown: number;
   hasRemembered: boolean;
   onEmail:       (v: string) => void;
   onPass:        (v: string) => void;
@@ -65,14 +66,18 @@ export default function LoginForm(p: Props) {
 
       <div className="auth-row">
         <Checkbox label={t('login.remember')} checked={p.remember} onChange={e => p.onRemember(e.target.checked)} />
-        <button type="button" className="wp-lnk" onClick={p.onReset} disabled={p.resetLoading}>
-          {p.resetLoading ? t('login.resetSending') : t('login.forgot')}
+        <button type="button" className="wp-lnk" onClick={p.onReset} disabled={p.resetLoading || p.resetCooldown > 0}>
+          {p.resetLoading
+            ? t('login.resetSending')
+            : p.resetCooldown > 0
+              ? t('login.resetCooldown').replace('{n}', String(p.resetCooldown))
+              : t('login.forgot')}
         </button>
       </div>
 
       {p.resetSent && (
         <Notice tone="ok" icon={CheckCircle}>
-          {t('login.resetSentTo')} {p.email} — {t('login.resetSentCheck')}
+          {t('login.resetSentHonest').replace('{email}', p.email)} {t('login.resetGoogleHint')}
         </Notice>
       )}
 

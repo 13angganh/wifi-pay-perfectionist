@@ -28,9 +28,11 @@ export function useAppData() {
       (data) => {
         setAppData(data);
         setSyncStatus('ok');
-        // Lock state dari Firebase — single source, tidak ada double call
-        if (data._globalLocked !== undefined) setGlobalLocked(data._globalLocked);
-        if (data._lockedEntries)              setLockedEntries(data._lockedEntries);
+        // Lock state dari Firebase — single source, tidak ada double call.
+        // v11.11.1: SELALU mengikuti snapshot akun ini (akun baru/kosong = tidak terkunci), agar state kunci akun
+        // sebelumnya (tersimpan per-device) tidak terbawa ke akun lain dan tidak tertulis ke ruang kerjanya.
+        setGlobalLocked(data._globalLocked === true);
+        setLockedEntries(data._lockedEntries || {});
       },
       () => { setSyncStatus('err'); showToast(`${tLog('error.loadFailed')}. ${tLog('dashboard.loadErrorDesc')}`, 'err'); }
       // BUG-002: onLockChange dihapus — onData sudah handle, duplikasi menyebabkan double setGlobalLocked

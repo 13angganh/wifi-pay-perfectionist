@@ -31,3 +31,5 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 
+# Service Worker hasil build (dibuat tiap build oleh scripts/inject-sw-hash.js dari public/sw.template.js)
+public/sw.js

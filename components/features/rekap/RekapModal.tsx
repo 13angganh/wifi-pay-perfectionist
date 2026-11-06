@@ -158,7 +158,7 @@ export default function RekapModal({ inputDirty, modalClosing, onClose }: RekapM
       const revert = { ...latest, payments: { ...latest.payments } };
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
-      await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+      await persist(revert, `[UNDO] ${tLog('log.action.undo')} ${name}`, tLog('log.detail.cancelledByUser'));
       showToast(`${name} ${t('entry.cancelled')}`, 'info');
     });
     // FIX: jika write Firebase di background ini gagal, beri tahu user secara eksplisit

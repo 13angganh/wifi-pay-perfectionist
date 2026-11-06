@@ -17,9 +17,8 @@ export function usePWA() {
     return () => window.removeEventListener('beforeinstallprompt', h);
   }, [setDeferredPrompt]);
 
-  // SW registration sudah dipindah ke root app/layout.tsx (inline script)
-  // agar aktif dari semua halaman termasuk /login dan /offline
-  // usePWA hanya handle: update banner notification
+  // SW didaftarkan oleh components/layout/ServiceWorkerRegister.tsx (di root app/layout.tsx, aktif di semua halaman
+  // termasuk /login dan /offline). usePWA hanya menangani: update banner notification.
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.ready.then(reg => {

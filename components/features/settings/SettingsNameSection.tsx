@@ -56,7 +56,7 @@ export default function SettingsNameSection() {
         value={value}
         hint={t('nameSection.hint')}
         onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && !unchanged && !busy && run(clean, clean ? 'save' : 'clear')}
+        onKeyDown={e => e.key === 'Enter' && !!clean && !unchanged && !busy && run(clean, 'save')}
       />
       <span className={s.capSm} data-testid="name-preview">{t('nameSection.preview')}: <b>{previewTitle(clean, lang)}</b></span>
       <Button variant="primary" block loading={busy === 'save'} disabled={unchanged || !clean || busy !== null} onClick={() => run(clean, 'save')}>

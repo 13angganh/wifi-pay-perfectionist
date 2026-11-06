@@ -167,12 +167,12 @@ describe('RekapView (T8)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('RekapModal: tarif member lebih dulu dan bertanda ★; Simpan menulis nominal ketikan', async () => {
+  it('RekapModal: tarif member lebih dulu dan bertanda ikon bintang; Simpan menulis nominal ketikan', async () => {
     render(<RekapView />);
     const u = userEvent.setup();
     await u.click(cell('ABIL', 9));
     const dlg = screen.getByRole('dialog');
-    expect(within(dlg).getByRole('button', { name: '100K ★' })).toBeInTheDocument();
+    expect(within(dlg).getByRole('button', { name: '100K, tarif' })).toBeInTheDocument();
     await u.type(within(dlg).getByLabelText('Nominal'), '75');
     await u.click(within(dlg).getByRole('button', { name: 'Simpan' }));
     expect(useAppStore.getState().appData.payments[`KRS__ABIL__${Y}__${M}`]).toBe(75);

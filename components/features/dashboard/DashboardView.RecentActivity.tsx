@@ -24,7 +24,7 @@ const rise = (i: number) => ({ ['--i' as string]: i }) as CSSProperties;
 /** Ikon + warna per jenis aksi (aturan pencocokan sama dengan LogView di zip). */
 export function getActivityMeta(action: string): { icon: ElementType; tone: TileTone } {
   const a = action || '';
-  if (a.startsWith('[PAY]') || a.includes('Quick Pay') || a.includes('bayar') || a.includes('Bayar')) return { icon: Money, tone: 'lunas' };
+  if (a.startsWith('[PAY]') || a.includes('Quick Pay') || a.includes('Bayar Cepat') || a.includes('bayar') || a.includes('Bayar')) return { icon: Money, tone: 'lunas' };
   if (a.startsWith('[DEL]') || a.includes('Hapus')) return { icon: Trash, tone: 'belum' };
   if (a.startsWith('[EDIT]') || a.includes('Edit') || a.includes('Ubah')) return { icon: PencilSimple, tone: 'blue' };
   if (a.startsWith('[ADD]') || a.includes('Tambah')) return { icon: UserPlus, tone: 'blue' };

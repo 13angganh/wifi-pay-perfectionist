@@ -330,7 +330,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
         // terhadap staleness tanpa perlu getState() manual — lihat penjelasan lengkap di
         // doQuickPay untuk kenapa closure staleness ini penting.
         showToastUndo(undoMsg, async () => {
-          await persistPaymentOnly(k, prevVal, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+          await persistPaymentOnly(k, prevVal, `[UNDO] ${tLog('log.action.undo')} ${name}`, tLog('log.detail.cancelledByUser'));
           showToast(`${name} ${t('entry.cancelled')}`, 'info');
         });
       }
@@ -365,7 +365,7 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
       const revert = { ...latest, payments: { ...latest.payments } };
       if (prevVal === null) delete revert.payments[k];
       else revert.payments[k] = prevVal;
-      await persist(revert, `[UNDO] Batalkan ${name}`, 'Dibatalkan user');
+      await persist(revert, `[UNDO] ${tLog('log.action.undo')} ${name}`, tLog('log.detail.cancelledByUser'));
       showToast(`${name} ${t('entry.cancelled')}`, 'info');
     });
     // Firebase write di background
@@ -634,13 +634,14 @@ export default function MemberCard({ name, index, batchMode = false, batchSelect
 
                   {/* Quick pay — nominal kustom dari pengaturan (settings.quickAmounts) */}
                   <div className="wp-field">
-                    <span className={clsx('wp-t-label', m.lbl)}><Lightning size={12} aria-hidden="true" /> QUICK</span>
+                    <span className={clsx('wp-t-label', m.lbl)}><Lightning size={12} aria-hidden="true" /> {t('entry.quickPay')}</span>
                     <QuickPayGrid
                       amounts={orderedAmounts}
                       tarif={tarif}
                       onPick={quickPay}
                       formatLabel={a => `${a}K`}
                       disabled={isSaving}
+                      tarifLabel={t('entry.tarifMark')}
                       ariaLabel={t('entry.quickAria')}
                     />
                     {!tarif && <span className="wp-t-cap">{t('entry.noTarifShort')}. {t('entry.setTarifHint')}</span>}

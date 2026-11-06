@@ -1,6 +1,44 @@
-# WiFi Pay Next — Update v11.11.0
+# WiFi Pay Next — Update v11.11.1
 
 > Redesain UI/UX menyeluruh (tahap T6–T11): tampilan baru dengan 3 tema (Terang/Gelap/Emas), Mode Navigasi (Bottom/Sidebar), Posisi Toast, Pusat Notifikasi, dan layar Log, Operasional, Pengaturan versi baru. **Logika bisnis zip v11.7.1 dipertahankan**; perubahan logika hanya yang disetujui user (Register Tambahan A1–A3 dan A27–A29, serta perbaikan zona kustom). Rincian lengkap per tahap: `docs/REDESAIN-MANIFEST.md`.
+
+## v11.11.1 — Pengaman data, dua bahasa konsisten, build npm + lockfile
+
+Hasil audit v11.11.0 dan keputusan user (2026-11-03). Data pelanggan, logika bisnis, dan struktur data di Firebase TIDAK berubah; tidak ada migrasi dan tidak ada penulisan otomatis ke Firebase.
+
+**Pengaman data**
+- **`listenDB` meneruskan SETIAP ruang kerja yang ada.** Dulu hanya yang punya `krsMembers`/`payments`; akun yang isinya hanya SLK atau zona kustom tidak pernah dianggap termuat (layar menggantung dan memperlihatkan sisa akun lain).
+- **Penjaga tulis** (`lib/db.ts`: `beginDataLoad`/`markDataLoaded`/`isWriteBlocked`): selama snapshot PERTAMA akun yang baru masuk belum tiba, semua penulisan ke ruang kerja akun itu ditolak (`DataNotLoadedError`). Tidak ada pemblokiran lagi sesudahnya dan tidak ada pemuatan ulang selama akun yang sama aktif.
+- **Memori dikosongkan hanya saat akun berganti atau keluar** (hanya salinan sementara di perangkat; Firebase tidak disentuh). State kunci (`_globalLocked`/`_lockedEntries`) kini selalu mengikuti snapshot akun yang aktif.
+- **Daftar nama pelanggan bawaan dihapus dari kode** (`DEFAULT_KRS`/`DEFAULT_SLK`): sebelumnya ikut terkirim di bundle JS ke setiap pengunjung dan tersimpan ke akun baru saat penyimpanan pertama. Akun baru/kosong kini mulai dari keadaan kosong; Beranda menampilkan kerangka muat (bukan 140 nama "belum bayar") sampai data tiba.
+
+**Akun & sesi**
+- Cookie sesi `wp_session` 30 hari → 1 tahun (sesi Firebase sendiri tidak kedaluwarsa karena lama tidak dipakai).
+- **Daftar:** nama dirapikan (maks. 30 karakter) dan langsung tampil di store (`onAuthStateChanged` sudah menyala sebelum `updateProfile` selesai dan tidak menyala lagi sesudahnya).
+- **Lupa kata sandi:** galat NYATA ditampilkan di halaman Masuk dan Pengaturan (dulu hasil diabaikan dan selalu tampil "terkirim"); teks jujur ("Jika email terdaftar…, periksa Spam"); jeda kirim ulang 60 detik. Kartu reset hanya untuk akun bersandi; akun khusus Google mendapat catatan.
+- **Pengaturan → Akun → Masuk dengan Google:** baris/kartu untuk menautkan Google ke akun email (satu akun, data tetap).
+- Pesan galat Masuk/Daftar/Akun (`friendlyAuthError` + `useAuth`) kini lewat terjemahan dan memakai "Masuk/Keluar".
+- Kolom Nama Tampilan: Enter pada kolom kosong tidak lagi menghapus nama.
+
+**Konsistensi teks (dua bahasa)**
+- **"Quick Pay" → "Bayar Cepat"** di seluruh tampilan Indonesia (label kartu, Pengaturan, toast, log). Log lama tersimpan sebagai "Quick Pay" dan tetap dikenali; bahasa Inggris tetap "Quick Pay".
+- Tanda tarif pada nominal cepat: karakter teks → ikon bintang Phosphor (juga di kartu Entri), nama aksesibel "100K, tarif".
+- Toast Konversi IP: satu kalimat utuh per bahasa (bukan potongan yang disambung); label sel "Akm" lewat terjemahan; teks log "Batalkan"/"Hapus zona"/"Konversi IP" lewat terjemahan.
+- **Ekspor Excel, PDF, dan pesan WA mengikuti bahasa app** (judul, kolom, status, nama bulan, isi pesan). Teks bahasa Indonesia tidak berubah.
+
+**Tampilan & keamanan ringan**
+- Bayangan scroll di dasar halaman hanya tampil bila ada yang bisa digulir dan masih ada isi di bawah; dihitung ulang saat pindah halaman atau isi berubah (`hooks/useScrollFade.ts`).
+- PIN: 5 kali salah berturut-turut → masukan PIN dijeda 30 detik, tersimpan di perangkat per akun (`lib/pinThrottle.ts`); biometrik tidak terpengaruh.
+- `type="button"` pada 3 tombol yang belum punya.
+
+**PWA & build**
+- **Satu Service Worker:** yang dibuat tiap build (`public/sw.template.js` → `public/sw.js`, dengan `skipWaiting` + `clients.claim`). Salinan ganda `app/sw.js/route.ts` dihapus dan SW kini benar-benar didaftarkan (`components/layout/ServiceWorkerRegister.tsx`, produksi saja). `public/sw.js` hasil build masuk `.gitignore`.
+- **npm + `package-lock.json`** menggantikan pnpm: `vercel.json` memakai `npm ci` sehingga build Vercel persis sama dengan dependensi yang diuji (dulu `npm install` mengabaikan `pnpm-lock.yaml`). Field `packageManager` dan `pnpm-lock.yaml` dihapus; `version` di `package.json` disamakan dengan `APP_VERSION`.
+- Dependensi diperbarui dalam rentang yang diizinkan; `overrides` untuk `dompurify` (≥ 3.4.17) dan `@grpc/grpc-js` (^1.14.7); `zod` 3 → 4 (`lib/env.ts`: `.errors` → `.issues`). `npm audit --omit=dev` = 0; sisa 8 moderate hanya perkakas pengembangan (eslint-config-next).
+- `database.rules.json` disamakan dengan aturan yang aktif di Firebase Console (per-uid). Aturan untuk fitur salin penagih (v11.12.0) direncanakan terpisah.
+- Selektor e2e menu Entri diperbarui.
+
+- **Test:** 1204 → 1269 test (71 → 79 file); dipasang ulang dari nol dengan `npm ci` lalu diverifikasi; tsc dan `eslint .` bersih; build produksi lolos.
 
 ## v11.11.0 — Sapaan Beranda dinamis + Nama Tampilan yang bisa diatur
 
@@ -1448,7 +1486,7 @@ v11.2 Next — Patch Perbaikan (Apr 2026)
 
 ---
 
-*WiFi Pay Next v11.11.0 · [@13angganh](https://github.com/13angganh)*
+*WiFi Pay Next v11.11.1 · [@13angganh](https://github.com/13angganh)*
 
 ---
 

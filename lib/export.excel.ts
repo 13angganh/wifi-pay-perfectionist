@@ -13,7 +13,8 @@
 // ══════════════════════════════════════════
 
 import type { AppData, AppSettings } from '@/types';
-import { MONTHS, APP_NAME, APP_VERSION_FULL } from './constants';
+import { MONTHS, MONTHS_EN, APP_NAME, APP_VERSION_FULL } from './constants';
+import { getActiveLang, createTranslator, fillText } from './i18n';
 import { getPay, getMonthStatus, isNotApplicable } from './payment';
 import { getAllActiveZones, getMembersForZone } from './member';
 
@@ -22,13 +23,20 @@ import { getAllActiveZones, getMembersForZone } from './member';
 // Tanpa pembayaran: Free → 'Gratis' (sebelumnya tercetak 'Belum' — Free bukan Belum, D4), Nonaktif → 'Nonaktif',
 // Belum terdaftar → 'Belum terdaftar' (tidak tampak seperti penunggak), selain itu 'Belum'. Total/jumlah tetap
 // jumlah pembayaran apa adanya, jadi bulan N/A tidak menambah apa pun ke total.
+// v11.11.1: ekspor mengikuti bahasa app (Excel/PDF). Teks bahasa Indonesia TIDAK berubah dari sebelumnya.
+function exportLocale() {
+  const lang = getActiveLang();
+  return { t: createTranslator(lang), months: lang === 'en' ? MONTHS_EN : MONTHS, dateLocale: lang === 'en' ? 'en-US' : 'id-ID' };
+}
+
 export function exportStatusLabel(data: AppData, zone: string, name: string, year: number, month: number): string {
-  if (getPay(data, zone, name, year, month) !== null) return 'Lunas';
+  const { t } = exportLocale();
+  if (getPay(data, zone, name, year, month) !== null) return t('export.status.paid');
   switch (getMonthStatus(data, zone, name, year, month)) {
-    case 'free':           return 'Gratis';
-    case 'nonaktif':       return 'Nonaktif';
-    case 'belumTerdaftar': return 'Belum terdaftar';
-    default:               return 'Belum';
+    case 'free':           return t('export.status.free');
+    case 'nonaktif':       return t('export.status.inactive');
+    case 'belumTerdaftar': return t('export.status.notRegistered');
+    default:               return t('export.status.unpaid');
   }
 }
 
@@ -84,6 +92,7 @@ export async function generatePDF(
   const { default: autoTable } = await import('jspdf-autotable');
 
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const L = exportLocale();
 
   // v11.5.16: baris `autoTable(doc, { head:[[]], body:[] })` "init" yang
   // sebelumnya ada di sini SUDAH DIHAPUS — diverifikasi langsung dari source
@@ -99,9 +108,9 @@ export async function generatePDF(
 
   const mems = zoneRows(data, zone, zones);
 
-  const title = month !== null
-    ? `Rekap WiFi Pay ${zone} - ${MONTHS[month]} ${year}`
-    : `Rekap WiFi Pay ${zone} - ${year}`;
+  const title = fillText(L.t('export.titleMonth'), {
+    zone, period: month !== null ? `${L.months[month]} ${year}` : String(year),
+  });
 
   // Header branding WiFiPay
   doc.setFontSize(9); doc.setFont('helvetica','bold');
@@ -111,7 +120,7 @@ export async function generatePDF(
   doc.setFontSize(14); doc.setFont('helvetica','bold');
   doc.text(title, 14, 18);
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(120);
-  doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')} · ${APP_NAME} ${APP_VERSION_FULL}`, 14, 24);
+  doc.text(fillText(L.t('export.createdAt'), { date: new Date().toLocaleString(L.dateLocale), label: `${APP_NAME} ${APP_VERSION_FULL}` }), 14, 24);
   doc.setTextColor(0);
   doc.setDrawColor(201, 149, 42); doc.setLineWidth(0.3);
   doc.line(14, 26, 283, 26);
@@ -153,7 +162,7 @@ export async function generatePDF(
   const rawValuesByRow: number[][] = [];
 
   if (month !== null) {
-    head = [['#','Nama','Zona','Tgl Bayar','Jumlah','Status']];
+    head = [['#', L.t('export.col.name'), L.t('export.col.zone'), L.t('export.col.payDate'), L.t('export.col.amount'), L.t('export.col.status')]];
     body = mems.map(({ n, z }, i) => {
       const v    = getPay(data, z, n, year, month);
       const info = data.memberInfo?.[z+'__'+n] || {};
@@ -163,7 +172,7 @@ export async function generatePDF(
     });
     sumColIndexes = [4];
   } else {
-    head = [['#','Nama',...MONTHS,'Total']];
+    head = [['#', L.t('export.col.name'), ...L.months, L.t('export.col.total')]];
     body = mems.map(({ n, z }, i) => {
       let t = 0;
       const raws: number[] = [];
@@ -207,13 +216,13 @@ export async function generatePDF(
   // bisa terisi angka tanpa terkecuali. Mode bulanan TIDAK disentuh: tetap
   // persis seperti sebelumnya (label di grandFootCols-2 = kolom "Jumlah").
   if (month === null) {
-    grandFootRow[1] = 'GRAND TOTAL';
+    grandFootRow[1] = L.t('export.grandTotal');
     MONTHS.forEach((_, mi) => {
       const monthTotal = mems.reduce((s, { n, z }) => s + (getPay(data, z, n, year, mi) || 0), 0);
       grandFootRow[2 + mi] = monthTotal > 0 ? monthTotal.toLocaleString('id-ID') : '—';
     });
   } else {
-    grandFootRow[grandFootCols - 2] = 'GRAND TOTAL';
+    grandFootRow[grandFootCols - 2] = L.t('export.grandTotal');
   }
 
   // sumColIndexes berbasis index kolom TABEL (termasuk kolom '#' dan 'Nama' di
@@ -290,7 +299,7 @@ export async function generatePDF(
       let x = x0;
       cols.forEach((col, ci) => {
         let label = '';
-        if (ci === 1) label = 'TOTAL HALAMAN';
+        if (ci === 1) label = L.t('export.pageTotal');
         else if (ci in pageSums) label = pageSums[ci] > 0 ? pageSums[ci].toLocaleString('id-ID') : '—';
         if (label) doc.text(label, x + 2, y + 4.2);
         x += col.width;
@@ -301,7 +310,7 @@ export async function generatePDF(
   });
 
   const blob     = doc.output('blob');
-  const filename = `wifi-pay-${zone}-${month !== null ? MONTHS[month]+'-' : ''}${year}.pdf`;
+  const filename = `wifi-pay-${zone}-${month !== null ? L.months[month]+'-' : ''}${year}.pdf`;
   return { blob, filename };
 }
 
@@ -314,39 +323,40 @@ export function generateExcel(
   if (!XLSX) throw new Error('SheetJS belum tersedia');
 
   const mems = zoneRows(data, zone, zones);
+  const L = exportLocale();
 
   const wb = XLSX.utils.book_new();
   let ws: any;
 
   if (month !== null) {
-    const rows: any[][] = [['#','Nama','Zona','Tgl Bayar','Jumlah','Status']];
+    const rows: any[][] = [['#', L.t('export.col.name'), L.t('export.col.zone'), L.t('export.col.payDate'), L.t('export.col.amount'), L.t('export.col.status')]];
     mems.forEach(({ n, z }, i) => {
       const v    = getPay(data, z, n, year, month);
       const info = data.memberInfo?.[z+'__'+n] || {};
       rows.push([i+1, n, z, (info[`date_${year}_${month}`] as string)||'', v !== null ? v : 0, exportStatusLabel(data, z, n, year, month)]);
     });
     const total = mems.reduce((s, { n, z }) => s + (getPay(data, z, n, year, month) || 0), 0);
-    rows.push(['','','','TOTAL', total,'']);
+    rows.push(['','','',L.t('export.total'), total,'']);
     ws = XLSX.utils.aoa_to_sheet(rows);
   } else {
-    const rows: any[][] = [['#','Nama','Zona',...MONTHS,'Total']];
+    const rows: any[][] = [['#', L.t('export.col.name'), L.t('export.col.zone'), ...L.months, L.t('export.col.total')]];
     mems.forEach(({ n, z }, i) => {
       let t = 0;
       const cols = MONTHS.map((_, mi) => { const v = getPay(data, z, n, year, mi); t += v||0; return v||0; });
       rows.push([i+1, n, z, ...cols, t]);
     });
     const totals = MONTHS.map((_, mi) => mems.reduce((s, { n, z }) => s + (getPay(data, z, n, year, mi)||0), 0));
-    rows.push(['','TOTAL','',...totals, totals.reduce((a,b)=>a+b,0)]);
+    rows.push(['',L.t('export.total'),'',...totals, totals.reduce((a,b)=>a+b,0)]);
     ws = XLSX.utils.aoa_to_sheet(rows);
   }
 
-  const sheetName = month !== null ? `${MONTHS[month]} ${year}` : `Tahun ${year}`;
+  const sheetName = month !== null ? `${L.months[month]} ${year}` : fillText(L.t('export.sheetYear'), { year });
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const blob = new Blob(
     [XLSX.write(wb, { bookType:'xlsx', type:'array' })],
     { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
   );
-  const filename = `wifi-pay-${zone}-${month !== null ? MONTHS[month]+'-' : ''}${year}.xlsx`;
+  const filename = `wifi-pay-${zone}-${month !== null ? L.months[month]+'-' : ''}${year}.xlsx`;
   return { blob, filename };
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }

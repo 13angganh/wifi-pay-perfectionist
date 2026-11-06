@@ -16,7 +16,7 @@ export type LogFilterType = 'all' | LogKind;
 export function isPayLog(action: string): boolean {
   const a = action || '';
   return !!a && (
-    a.includes('Quick Pay')
+    a.includes('Quick Pay') || a.includes('Bayar Cepat') // log lama tersimpan "Quick Pay"; log baru (id) "Bayar Cepat"
     || a.startsWith('[PAY]') || a.startsWith('[DEL]') || a.startsWith('[FREE]')
     // Legacy: data lama memakai awalan emoji (kantong uang, tempat sampah, tanda "FREE")
     || /^[\u{1F4B0}\u{1F5D1}\u{1F193}]/u.test(a)

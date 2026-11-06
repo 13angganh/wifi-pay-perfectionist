@@ -24,7 +24,7 @@ async function goToEntry(page: Page) {
     await page.goto('/entry');
     await page.waitForLoadState('networkidle');
   } catch {
-    const entryBtn = page.getByRole('button', { name: /entry|bayar/i }).first();
+    const entryBtn = page.getByRole('button', { name: /entri|entry|bayar/i }).first();
     if (await entryBtn.count() > 0) await entryBtn.click();
   }
 }
